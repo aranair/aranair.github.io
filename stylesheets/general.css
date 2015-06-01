@@ -1,0 +1,57 @@
+body {
+  font-weight: 400;
+  font-family: "Open Sans", Arial, Helvetica, Geneva, sans-serif;
+  font-smooth: always;
+  -webkit-font-smoothing: antialiased;
+  color: #444;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Open Sans", Arial, Helvetica, Geneva, sans-serif;
+  font-weight: 200;
+  line-height: normal;
+  margin-bottom: .5em;
+  line-height: 1.2em;
+  color: #444;
+}
+h1 a,
+h2 a,
+h3 a,
+h4 a,
+h5 a,
+h6 a {
+  border-bottom: 1px solid transparent;
+}
+h1 a:hover,
+h2 a:hover,
+h3 a:hover,
+h4 a:hover,
+h5 a:hover,
+h6 a:hover {
+  color: rgba(0, 0, 0, 0.98);
+  border-color: rgba(0, 0, 0, 0.4);
+}
+p {
+  font-size: 1.1em;
+  line-height: 1.8em;
+  margin-bottom: 1.8em;
+}
+a {
+  color: #444;
+}
+a:hover {
+  color: #444;
+  text-decoration: none;
+}
+.wrapper {
+  margin: 0 1%;
+  padding: 7.5% 5% 7.5%;
+}
+.mid-container {
+  max-width: 600px;
+  margin: auto;
+}
