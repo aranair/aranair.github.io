@@ -2,23 +2,122 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Blog Name</title>
   <subtitle>Blog subtitle</subtitle>
-  <id>http://blog.url.com/blog</id>
-  <link href="http://blog.url.com/blog"/>
+  <id>http://blog.url.com/posts</id>
+  <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2012-01-01T08:00:00+08:00</updated>
+  <updated>2015-05-05T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
   <entry>
-    <title>Example Article</title>
-    <link rel="alternate" href="http://blog.url.com/blog/2012/01/01/example-article.html"/>
-    <id>http://blog.url.com/blog/2012/01/01/example-article.html</id>
-    <published>2012-01-01T08:00:00+08:00</published>
-    <updated>2015-06-01T15:27:37+08:00</updated>
+    <title>Golang + Protobuf</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2015/05/05/golang-protobuf/"/>
+    <id>http://blog.url.com/posts/2015/05/05/golang-protobuf/</id>
+    <published>2015-05-05T00:00:00+08:00</published>
+    <updated>2015-06-02T00:50:30+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;This is an example article. You probably want to delete it and write your own articles!&lt;/p&gt;
+    <content type="html">&lt;h3&gt;Golang&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;m sure most of you have heard about Golang by now, so I&amp;rsquo;ll just fast forward past that. But in case you&amp;rsquo;re not aware, do check out the relatively young language &lt;a title="Golang" href="http://golang.org/"&gt;here&lt;/a&gt;. &lt;/p&gt;
+
+&lt;p&gt;Recently, I&amp;rsquo;ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing, with one caveat: we&amp;rsquo;re using Protobuf Buffers (or otherwise just Protobuf) for our serialisation of data.&lt;/p&gt;
+
+&lt;h3&gt;What is Protobuf?&lt;/h3&gt;
+
+&lt;p&gt;Its basically a protocol that comes with a language &lt;a title="proto" href="https://developers.google.com/protocol-buffers/docs/proto"&gt;proto&lt;/a&gt; with which you define your data structure once and then you can use this source code to generate helpers/classes/models for different languages such as Golang, Python, Ruby etc .. Do note that only C++, Python and Java are officially supported right now.&lt;/p&gt;
+
+&lt;p&gt;Think of it as XML, JSON but smaller, faster, and simpler; yet at the same time pretty defined and structured as well. 
+So, Wego is set on replacing the semi-spaghetti JSON communication that we&amp;rsquo;re currently working with, with Protobuf. &lt;/p&gt;
+
+&lt;h3&gt;Context&lt;/h3&gt;
+
+&lt;p&gt;As usual, the process always have some form of a bump for us to overcome before being able to use it. Typically, I think most golang protobuf repos will have rather simple/flat structure. &lt;/p&gt;
+
+&lt;p&gt;Our repo was built in a slightly odd that worked well to define the structure for other protobuf generators (we also use Protobuf for Ruby and Java). Below is a rough idea of how it looked like before a huge round of changes:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# OLD STRUCTURE
+- protos
+  - wego-protos
+  - base.proto
+  - flights.proto
+  - hotels.proto
+  - analytics.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The 1st Hurdle&lt;/h3&gt;
+
+&lt;p&gt;Well technically it isn&amp;rsquo;t a bug, more like convention. The basic command for protoc (the tool that converts .proto files) which is shown below, is meant to be run once per package. This command will then look at the included files for a package name to compile them into. But initially, our files that were all in the root folder belong to separate packages. &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;protoc --proto_path=./protos \
+  --go_out ./libs/wego-protos-go \
+  ./protos/wego-protos/flights.proto
+
+protoc --proto_path=./protos \
+  --go_out ./libs/wego-protos-go \
+  ./protos/wego-protos/hotels.proto
+
+...
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Specifying one file at a time and repeating it for the 4 files did not work either. Because it would break the name spaces inside them; they essentially become the same package instead of separate packages. &lt;/p&gt;
+
+&lt;p&gt;This issue doesn&amp;rsquo;t really exist in other languages because I think files are resolved file level in Java/Ruby but at a package level in Golang. &lt;a title="import issue" href="https://github.com/golang/protobuf/issues/8"&gt;this issue&lt;/a&gt; and &lt;a title="commit" href="https://github.com/golang/protobuf/commit/dded9133a99a3cd7c3a9d24a9f85c2b8ef76ff31"&gt;this commit&lt;/a&gt; describes it in fuller details.&lt;/p&gt;
+
+&lt;p&gt;And so to get past it, we restructured the files in this way, such that each of the packages reside in individual folders, following the convention of Golang. &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# NEW STRUCTURE
+- protos
+  - wego-protos
+   - wego
+    - base.proto
+   - flights
+      - base.proto
+   - hotels
+    - base.proto 
+   - analytics 
+    - base.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The 2nd Problem&lt;/h3&gt;
+
+&lt;p&gt;This problem is abit uglier. So in the &lt;code&gt;wego-protos&lt;/code&gt; files, we do imports that are from the other repo &lt;code&gt;wegosdk-protos&lt;/code&gt;. It is an entirely separate git repo that is included as a git submodule. &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;package wego.flights
+import "wegosdk-protos/wegosdk/base.proto";
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The generated package name from that snippet was wrong. I had to include an undocumented option go&lt;em&gt;package in proto2 (it is available in proto3). &amp;ldquo;` option go&lt;/em&gt;package = &amp;quot;wego&amp;rdquo;; &amp;ldquo;`&lt;/p&gt;
+
+&lt;p&gt;This actually generates &lt;code&gt;import &amp;quot;wegosdk-protos/wegosdk/base&amp;quot;&lt;/code&gt; in the *.pb.go files. It was clear that we needed to customise the import paths + package names.&lt;/p&gt;
+
+&lt;p&gt;Looking at &lt;a title="protobuf code" href="https://github.com/golang/protobuf/blob/master/protoc-gen-go/plugin/Makefile#L38"&gt;this file&lt;/a&gt;, we found that the &amp;ndash;go-out has a &amp;quot;M&amp;rdquo; flag that allows us to modify the final import paths to point to the correct github.com/wego/wego-protos filepaths. We also don&amp;rsquo;t do another &lt;code&gt;go get github.com/wego/wegosdk-proto&lt;/code&gt;; basically treating it as one repo.&lt;/p&gt;
+
+&lt;h3&gt;The Solution&lt;/h3&gt;
+
+&lt;p&gt;Finally I ended up with this long &amp;ndash;go-out option to somewhat &amp;ldquo;replace&amp;rdquo; all of the default imports (that works with other languages) to use the correct $GOPATH source path.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;--go-out=Mwegosdk-protos/wegosdk_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_hotels,
+Mwegosdk-protos/wegosdk_flights/fares.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk,
+Mwego-protos/wego_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_hotels,
+Mwego-protos/wego_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_flights,
+Mwego-protos/wego_analytics/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_analytics,
+Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego,
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;On hindsight, it would probably have been alot easier if we just treated wegosdk-protos as an entirely separate project in Golang. Nevertheless I think the workaround is reasonable if we wanted to work with only 1 repo at that time.&lt;/p&gt;
 </content>
   </entry>
 </feed>
