@@ -11,10 +11,7 @@ gem "middleman-deploy", "~> 1.0"
 gem "redcarpet"
 gem "therubyracer"
 gem "nokogiri"
-
-# For feed.xml.builder
-# gem "builder", "~> 3.0"
-# gem "less"
+gem "less"
 
 # For feed.xml.builder
 gem "builder", "~> 3.0"
