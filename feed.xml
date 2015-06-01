@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Blog Name</title>
+  <subtitle>Blog subtitle</subtitle>
+  <id>http://blog.url.com/blog</id>
+  <link href="http://blog.url.com/blog"/>
+  <link href="http://blog.url.com/feed.xml" rel="self"/>
+  <updated>2012-01-01T08:00:00+08:00</updated>
+  <author>
+    <name>Blog Author</name>
+  </author>
+  <entry>
+    <title>Example Article</title>
+    <link rel="alternate" href="http://blog.url.com/blog/2012/01/01/example-article.html"/>
+    <id>http://blog.url.com/blog/2012/01/01/example-article.html</id>
+    <published>2012-01-01T08:00:00+08:00</published>
+    <updated>2015-06-01T15:27:37+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;This is an example article. You probably want to delete it and write your own articles!&lt;/p&gt;
+</content>
+  </entry>
+</feed>
