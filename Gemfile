@@ -11,7 +11,7 @@ gem "middleman-deploy", "~> 1.0"
 gem "redcarpet"
 gem "therubyracer"
 gem "nokogiri"
-gem "less"
+gem "bootstrap-sass", require: false
 
 # For feed.xml.builder
 gem "builder", "~> 3.0"
