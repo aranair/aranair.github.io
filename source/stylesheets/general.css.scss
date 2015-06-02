@@ -12,9 +12,9 @@ h1, h2, h3, h4, h5, h6 {
   line-height: normal;
   margin-bottom: .5em;
   line-height: 1.2em;
-  color: #444;
+  letter-spacing: -1px;
+  color: #333;
 }
-
 
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
   border-bottom: 1px solid transparent;
@@ -46,6 +46,6 @@ a:hover {
 }
 
 .mid-container {
-  max-width: 600px;
+  max-width: 650px;
   margin:auto;
 }
