@@ -1,3 +1,5 @@
+@import url(http://fonts.googleapis.com/css?family=Roboto:400,100,300,500,700,900);
+
 body {
   font-weight: 400;
   font-family: "Open Sans", Arial, Helvetica, Geneva, sans-serif;
@@ -13,7 +15,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: .5em;
   line-height: 1.2em;
   letter-spacing: -1px;
-  color: #333;
+  color: #B02B2C;
 }
 
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
@@ -33,11 +35,15 @@ p {
 
 a {
   color: #444;
+  border-bottom: 1px solid transparent;
 }
 
+a:active,
+a:focus,
 a:hover {
   color: #444;
   text-decoration: none;
+  border-color: rgba(0,0,0,.4);
 }
 
 .wrapper {
@@ -47,5 +53,42 @@ a:hover {
 
 .mid-container {
   max-width: 650px;
-  margin:auto;
+  margin: auto;
+}
+
+.logo {
+  .logo__logo-text {
+    margin: 0px;
+    line-height: 1em;
+  }
+  position: fixed;
+  display: block;
+  top: 10px;
+  left: 15px;
+}
+
+
+.index-content {
+  text-align: center;
+}
+
+h1.index-content__index-title {
+  font-family: "Roboto";
+  font-size: 4em;
+}
+
+.index-content__moustache {
+  width: 100%;
+  margin: auto;
+  display: block;
+  background: url("/images/moustache.png") 86% 0 no-repeat;
+  height: 270px;
+  background-size: contain;
+}
+
+.index-content__index-title {
+  .index-title__name {
+    font-size: 0.5em;
+    line-height:0.5em;
+  }
 }

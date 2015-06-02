@@ -3,7 +3,6 @@ title: Golang + Protobuf
 date: 2015-05-05
 tags: golang, protobuf
 ---
-### Golang 
 
 I'm sure most of you have heard about Golang by now, so I'll just fast forward past that. But in case you're not aware, do check out the relatively young language [here](http://golang.org/ "Golang"). 
 
@@ -42,7 +41,7 @@ Our repo was built in a slightly odd that worked well to define the structure fo
 
 Well technically it isn't a bug, more like convention. The basic command for protoc (the tool that converts .proto files) which is shown below, is meant to be run once per package. This command will then look at the included files for a package name to compile them into. But initially, our files that were all in the root folder belong to separate packages. 
 
-```
+```ruby
 protoc --proto_path=./protos \
   --go_out ./libs/wego-protos-go \
   ./protos/wego-protos/flights.proto
