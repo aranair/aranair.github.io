@@ -56,23 +56,31 @@ a:hover {
   margin: auto;
 }
 
-.logo {
-  // background: url("/images/single-h.png") 50% 0 no-repeat;
-  // background-size: contain;
-  // display: block;
-  // height: 35px;
-  // width: 25px;
-  // opacity: 0.75;
+// .logo {
+//   // background: url("/images/single-h.png") 50% 0 no-repeat;
+//   // background-size: contain;
+//   // display: block;
+//   // height: 35px;
+//   // width: 25px;
+//   // opacity: 0.75;
 
-  .logo__logo-text {
-    margin: 0px;
-    line-height: 1em;
-    font-family: "Philosopher";
-  }
-  position: fixed;
-  display: block;
-  top: 10px;
-  left: 10px;
+//   position: fixed;
+//   display: block;
+//   top: 10px;
+//   left: 10px;
+// }
+.navbar-custom-links {
+  float: left;
+  padding: 12.5px 15px;
+  font-size: 1.5em;
+  line-height: 1em;
+  height: 50px;
+  font-family: "Philosopher";
+}
+
+.logo__logo-text {
+  font-size: 2em;
+  font-family: "Philosopher";
 }
 
 // a:hover .logo {
