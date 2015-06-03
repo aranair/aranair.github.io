@@ -30,7 +30,7 @@ h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
 p {
   font-size: 1.13em;
   line-height: 1.8em;
-  margin-bottom: 1.8em;
+  margin-bottom: 1.6em;
 }
 
 a {
@@ -57,42 +57,29 @@ a:hover {
 }
 
 .logo {
+  background: url("/images/single-h.png") 50% 0 no-repeat;
+  background-size: contain;
+  display: block;
+  height: 35px;
+  width: 25px;
+  opacity: 0.75;
+
   .logo__logo-text {
     margin: 0px;
     line-height: 1em;
   }
   position: fixed;
   display: block;
-  top: 0px;
+  top: 10px;
   left: 10px;
+}
+
+a:hover .logo {
+  border-bottom: 2px solid;
+  border-color: rgba(0,0,0,.4);
 }
 
 .navbar-default {
   background-color: #fff;
   border-color: #fff;
-}
-
-.index-content {
-  text-align: center;
-}
-
-h1.index-content__index-title {
-  font-family: "Roboto";
-  font-size: 4em;
-}
-
-.index-content__moustache {
-  width: 100%;
-  margin: auto;
-  display: block;
-  background: url("/images/moustache.png") 86% 0 no-repeat;
-  height: 270px;
-  background-size: contain;
-}
-
-.index-content__index-title {
-  .index-title__name {
-    font-size: 0.5em;
-    line-height:0.5em;
-  }
 }

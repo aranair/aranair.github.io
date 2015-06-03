@@ -1,0 +1,24 @@
+.index-content {
+  text-align: center;
+}
+
+h1.index-content__index-title {
+  font-family: "Roboto";
+  font-size: 4em;
+}
+
+.index-content__moustache {
+  width: 100%;
+  margin: auto;
+  display: block;
+  background: url("/images/moustache.png") 86% 0 no-repeat;
+  height: 270px;
+  background-size: contain;
+}
+
+.index-content__index-title {
+  .index-title__name {
+    font-size: 0.5em;
+    line-height:0.5em;
+  }
+}
