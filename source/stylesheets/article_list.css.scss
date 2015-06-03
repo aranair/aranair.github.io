@@ -31,10 +31,9 @@
 .article-list__article-summary pre {
   font-size: 0.8em;
   line-height: 1.2em;
-  border-color: rgba(194,190,190,0.46);
-  -webkit-box-shadow: 1px 1px 2px 0px rgba(50, 50, 50, 0.2);
-  -moz-box-shadow:    1px 1px 2px 0px rgba(50, 50, 50, 0.2);
-  box-shadow:         1px 1px 2px 0px rgba(50, 50, 50, 0.2);
+  border: none;
+  border-left: 2px solid rgba(176, 43, 44, 0.83);
+  border-radius: 0;
   background-color: #ffffff;
 }
 
