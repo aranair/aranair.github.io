@@ -57,16 +57,17 @@ a:hover {
 }
 
 .logo {
-  background: url("/images/single-h.png") 50% 0 no-repeat;
-  background-size: contain;
-  display: block;
-  height: 35px;
-  width: 25px;
-  opacity: 0.75;
+  // background: url("/images/single-h.png") 50% 0 no-repeat;
+  // background-size: contain;
+  // display: block;
+  // height: 35px;
+  // width: 25px;
+  // opacity: 0.75;
 
   .logo__logo-text {
     margin: 0px;
     line-height: 1em;
+    font-family: "Philosopher";
   }
   position: fixed;
   display: block;
@@ -74,10 +75,10 @@ a:hover {
   left: 10px;
 }
 
-a:hover .logo {
-  border-bottom: 1px solid;
-  border-color: rgb(68, 68, 68);
-}
+// a:hover .logo {
+//   border-bottom: 1px solid;
+//   border-color: rgb(68, 68, 68);
+// }
 
 .navbar-default {
   background-color: #fff;
