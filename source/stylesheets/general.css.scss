@@ -1,6 +1,7 @@
 @import url(http://fonts.googleapis.com/css?family=Roboto:400,100,300,500,700,900);
 
 body {
+  padding-top: 70px;
   font-weight: 400;
   font-family: "Open Sans", Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
@@ -51,7 +52,7 @@ a:hover {
   padding: 7.5% 5% 7.5%;
 }
 
-.mid-container {
+.container {
   max-width: 650px;
   margin: auto;
 }
@@ -63,10 +64,14 @@ a:hover {
   }
   position: fixed;
   display: block;
-  top: 10px;
-  left: 15px;
+  top: 0px;
+  left: 10px;
 }
 
+.navbar-default {
+  background-color: #fff;
+  border-color: #fff;
+}
 
 .index-content {
   text-align: center;

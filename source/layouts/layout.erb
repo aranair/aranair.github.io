@@ -19,13 +19,15 @@
 
   </head>
   <body class="<%= page_classes %>">
-    <div class="logo">
-      <h1 class="logo__logo-text">
-        <a href="/">H</a>
-      </h1>
-    </div>
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="logo">
+        <h1 class="logo__logo-text">
+          <a href="/">H</a>
+        </h1>
+      </div>
+    </nav>
     <div class="wrapper">
-      <div class="mid-container">
+      <div class="container">
         <%= yield %>
       </div>
     </div>
