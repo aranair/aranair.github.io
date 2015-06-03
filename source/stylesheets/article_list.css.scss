@@ -29,12 +29,14 @@
 
 .article pre, 
 .article-list__article-summary pre {
-  font-size: 0.8em;
-  line-height: 1.2em;
+  font-size: 0.77em;
+  line-height: 1.25em;
   border: none;
   border-left: 2px solid rgba(176, 43, 44, 0.83);
   border-radius: 0;
   background-color: #ffffff;
+  padding: 10px 0px 10px 20px;
+  margin: 0 0 1.8em 0px;
 }
 
 h1.article__article-title {

@@ -41,7 +41,7 @@ I personally don't like this method because you end up doing a lot of manipulati
 
 The general idea is to read it into a generic interface -> then slowly step by step cast it into moar interfaces. e.g.
 
-**First define the final structure you want the results to be in and `Unmarshal` the JSON into a blank `interface{}`**
+First define the final structure you want the results to be in and `Unmarshal` the JSON into a blank `interface{}`
 
 ```go
 type Person struct {
@@ -52,7 +52,7 @@ var i interface{}
 json.Unmarshal(data, &i)
 ```
 
-**Type assert `results/collection` into an array of interfaces{} and create a `slice` to hold the final data. **
+Type assert `results/collection` into an array of interfaces{} and create a `slice` to hold the final data.
 
 ```go
 m := i.(map[string]interface{})
@@ -60,7 +60,8 @@ people := m["results"].(map[string]interface{})["collection"].([]interface{})
 peopleSlices := make([]Person, len(people))
 ```
 
-**Loop through the slice and further type assert the generic interface{} objects into their corresponding data types. You can also employ the type switch technique that is described here (http://golang.org/doc/effective_go.html#type_switch) to do this instead of setting it in stone.**
+
+Loop through the slice and further type assert the generic interface{} objects into their corresponding data types. You can also employ the type switch technique that is described here (http://golang.org/doc/effective_go.html#type_switch) to do this instead of setting it in stone.
 
 ```go
 for i, value := range people {
@@ -77,9 +78,9 @@ for i, value := range people {
 
 ### Pre-defined Structs
 
-This method seems to be the more conventional way. The problem with this is that if your desired format is vastly different from the original JSON format, you basically have to define 2 sets of structs. **On the bright side, the code is much much cleaner**
+This method seems to be the more conventional way. The problem with this is that if your desired format is vastly different from the original JSON format, you basically have to define 2 sets of structs. On the bright side, the code is much much cleaner
 
-**Define the format of the *initial JSON* into a var struct{}.**
+Define the format of the *initial JSON* into a var struct{}.
 
 ```go
 var People struct {
@@ -95,7 +96,7 @@ var People struct {
 }
 ```
 
-**Simply Unmarshal it and profit! How simple is that?**
+Simply Unmarshal it and profit! How simple is that?
 
 ```go
 json.Unmarshal(body, &People)
