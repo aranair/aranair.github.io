@@ -56,26 +56,19 @@ a:hover {
   margin: auto;
 }
 
-// .logo {
-//   // background: url("/images/single-h.png") 50% 0 no-repeat;
-//   // background-size: contain;
-//   // display: block;
-//   // height: 35px;
-//   // width: 25px;
-//   // opacity: 0.75;
-
-//   position: fixed;
-//   display: block;
-//   top: 10px;
-//   left: 10px;
-// }
-.navbar-custom-links {
-  float: left;
+.navbar-customlinks {
   padding: 12.5px 15px;
   font-size: 1.5em;
   line-height: 1em;
   height: 50px;
   font-family: "Philosopher";
+}
+
+.navbar-customlinks--right{
+  float: right;
+}
+.navbar-customlinks--left{
+  float: left;
 }
 
 .logo__logo-text {
