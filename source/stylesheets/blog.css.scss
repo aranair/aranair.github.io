@@ -1,4 +1,7 @@
+$p-font-size: 1.1em;
+$maroon: #B02B2C;
 $font-size-base: 18px;
+
 @import "bootstrap-sprockets";
 @import "bootstrap";
 @import "pygment";
@@ -8,3 +11,5 @@ $font-size-base: 18px;
 @import "blog";
 @import "index";
 @import "article_list";
+
+@import "media_queries";
