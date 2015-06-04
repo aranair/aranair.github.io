@@ -4,11 +4,9 @@ date: 2014-04-22 00:00 SGT
 tags: bem, frontend
 ---
 
-What exactly is BEM? 
+What exactly is BEM? ```BEM stands for Block, Element, Modifier. ```
 
-```BEM stands for Block, Element, Modifier. ```
-
-In case you haven't heard of BEM yet, do go to http://bem.info/method/definitions/ to have a look. It's a really interesting naming convention for your DOM elements that makes it more manageable in the long run that has gained popularity recently. Trending yo!
+In case you haven't heard of BEM yet, have a look at the [definition](http://bem.info/method/definitions/ "Bem Definition")  to have a look. It's a really interesting naming convention for your DOM elements that makes it more manageable in the long run that has gained popularity recently. Trending yo!
 
 Its pretty useful in that it sort of namespaces each of the items on the page to help with classification and readability. When you look at a class name for example: ```left-panel__superheader```, you immediately know that you're looking at the superheader that is embedded in the left-panel block.
 
@@ -18,9 +16,9 @@ The convention is pretty good in most cases but I seem to always get stuck with 
 
 ```
 <block-1>
-  <block-2> 
-    <element-1> 
-    <element-2> 
+  <block-2>
+    <element-1>
+    <element-2>
   </block-2>
 </block-1>
 ```
