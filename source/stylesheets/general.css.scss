@@ -15,7 +15,6 @@ h1, h2, h3, h4, h5, h6 {
   line-height: normal;
   margin-bottom: .5em;
   line-height: 1.2em;
-  // letter-spacing: -1px;
   color: #B02B2C;
 }
 
@@ -32,6 +31,7 @@ p {
   font-size: 1.1em;
   line-height: 1.8em;
   margin-bottom: 1.6em;
+
   a {
     border-bottom: 1px dotted #999;
   }
@@ -51,7 +51,6 @@ a:hover {
 
 .wrapper {
   margin: 0 0.5%;
-  padding: 2.5% 5% 7.5%;
 }
 
 .container {
