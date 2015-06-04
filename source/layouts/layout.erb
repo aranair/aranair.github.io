@@ -19,15 +19,14 @@
 
   </head>
   <body class="<%= page_classes %>">
-    <nav class="navbar navbar-default navbar-fixed-top">
+    <div class="logo">
       <a href="/" class="navbar-brand logo__logo-text">H</a>
+    </div>
+    <div class="page-links">
       <a href="/posts" class="navbar-customlinks navbar-customlinks--right">
-        Read
+        Posts
       </a>
-      <%# <a href="/posts" class="navbar-boxlinks navbar-customlinks--right"> %>
-      <%#   Homan %>
-      <%# </a> %>
-    </nav>
+    </div>
     <div class="wrapper">
       <div class="container">
         <%= yield %>

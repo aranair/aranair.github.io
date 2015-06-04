@@ -3,6 +3,12 @@
 /* Landscape phone to portrait tablet */
 @media (max-width: 767px) {
   $p-font-size: 0.95em;
+  .logo {
+    position: absolute;
+  }
+  .page-links {
+    position: absolute;
+  }
 
   .article-list__article-summary {
     border-bottom: 1px solid;

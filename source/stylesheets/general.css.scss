@@ -72,7 +72,18 @@ a:hover {
 .navbar-customlinks--left{
   float: left;
 }
+.page-links {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+}
 
+.logo {
+  background: white;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+}
 .logo__logo-text {
   font-size: 2em;
   font-family: "Philosopher";
