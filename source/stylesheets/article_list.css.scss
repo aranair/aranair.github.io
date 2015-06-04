@@ -10,14 +10,14 @@
 
 .article-summary__article-title {
   span { // date
-    font-size: $p-font-size * 0.47;
+    font-size: $p-font-size * 0.46;
     color: rgba(0, 0, 0, 0.32);
     font-weight: 300;
   }
-  font-size: $p-font-size * 2.1;
+  font-size: $p-font-size * 2.3;
   font-weight: bold;
   color: #333;
-  margin-bottom: 0.3em;
+  margin-bottom: 0.2em;
   margin-top: 1em;
 }
 

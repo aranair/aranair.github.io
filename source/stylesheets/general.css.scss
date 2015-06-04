@@ -32,11 +32,13 @@ p {
   font-size: 1.1em;
   line-height: 1.8em;
   margin-bottom: 1.6em;
+  a {
+    border-bottom: 1px dotted #999;
+  }
 }
 
 a {
   color: #444;
-  border-bottom: 1px solid transparent;
 }
 
 a:active,
@@ -44,7 +46,7 @@ a:focus,
 a:hover {
   color: #444;
   text-decoration: none;
-  border-color: rgba(0,0,0,.4);
+  border-bottom: 1px solid rgba(0,0,0,.4);
 }
 
 .wrapper {
