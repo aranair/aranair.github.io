@@ -4,11 +4,9 @@ date: 2014-01-31
 tags: emberjs
 ---
 
-So after a few months of inactivity from Emberjs, I've decided to come back to abit of development fun!
+So after a few months of inactivity from Emberjs, I've decided to come back to abit of development fun! First things first, I had to upgrade a couple of things (once again). I went on to upgrade ember to 1.3.0 and ember-data to one of their 1.0.0 nightly builds. It didn't require that many changes like before (thank god for that). 
 
-I went on to upgrade ember to 1.3.0 and ember-data to one of their 1.0.0 nightly builds. It didn't require that many changes like before (thank god for that). 
-
-Anyways, I had this piece of existing code break on me: 
+One particular piece of existing code that broke, was this:
 
 ```javascript
 task.save().then(function() {
