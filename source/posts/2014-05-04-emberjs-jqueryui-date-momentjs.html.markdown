@@ -4,8 +4,7 @@ date: 2014-05-04
 tags: emberjs
 ---
 
-### The Reason
-When handling the dates in one of my EmberJS apps, obviously I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with `jQuery UI's date picker` + `moment.js` for the parsing/display of the dates.
+When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with `jQuery UI's date picker` + `moment.js` for the parsing/display of the dates.
 
 ### The Issues
 There were a few things that kinda put me off guard. 
