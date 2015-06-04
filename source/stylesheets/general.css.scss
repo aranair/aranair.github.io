@@ -30,7 +30,7 @@ h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
 p {
   font-size: 1.13em;
   line-height: 1.8em;
-  margin-bottom: 1.8em;
+  margin-bottom: 1.6em;
 }
 
 a {
@@ -56,43 +56,32 @@ a:hover {
   margin: auto;
 }
 
-.logo {
-  .logo__logo-text {
-    margin: 0px;
-    line-height: 1em;
-  }
-  position: fixed;
-  display: block;
-  top: 0px;
-  left: 10px;
+.navbar-customlinks {
+  padding: 12.5px 15px;
+  font-size: 1.5em;
+  line-height: 1em;
+  height: 50px;
+  font-family: "Philosopher";
 }
+
+.navbar-customlinks--right{
+  float: right;
+}
+.navbar-customlinks--left{
+  float: left;
+}
+
+.logo__logo-text {
+  font-size: 2em;
+  font-family: "Philosopher";
+}
+
+// a:hover .logo {
+//   border-bottom: 1px solid;
+//   border-color: rgb(68, 68, 68);
+// }
 
 .navbar-default {
   background-color: #fff;
   border-color: #fff;
-}
-
-.index-content {
-  text-align: center;
-}
-
-h1.index-content__index-title {
-  font-family: "Roboto";
-  font-size: 4em;
-}
-
-.index-content__moustache {
-  width: 100%;
-  margin: auto;
-  display: block;
-  background: url("/images/moustache.png") 86% 0 no-repeat;
-  height: 270px;
-  background-size: contain;
-}
-
-.index-content__index-title {
-  .index-title__name {
-    font-size: 0.5em;
-    line-height:0.5em;
-  }
 }

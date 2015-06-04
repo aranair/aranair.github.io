@@ -1,3 +1,5 @@
+@import "variables";
+
 .article-list__article-summary {
   border-bottom: 1px solid;
   border-color: rgba(0,0,0,.1);
@@ -5,20 +7,23 @@
 }
 
 .article-summary__article-title {
-  span {
-    font-size: 0.48em;
-    color: rgba(0,0,0,.32);
+  span { // date
+    font-size: $p-font-size * 0.5;
+    color: rgba(0, 0, 0, 0.32);
     font-weight: 300;
   }
-  font-size: 2.5em;
+  font-size: $p-font-size * 2;
   font-weight: bold;
   color: #333;
 }
 
 .article-summary__readmore {
-  line-height: 3em;
-  color: #888;
-  color: #B02B2C;
+  line-height: $p-font-size * 3;
+  color: $maroon;
+}
+a.article-summary__readmore:hover {
+  color: $maroon;
+  border-color: $maroon;
 }
 
 .article {
@@ -29,19 +34,19 @@
 
 .article pre, 
 .article-list__article-summary pre {
-  font-size: 0.77em;
-  line-height: 1.25em;
+  font-size: $p-font-size * 0.7;
+  line-height: $p-font-size * 1.25;
   border: none;
   border-left: 2px solid rgba(176, 43, 44, 0.83);
   border-radius: 0;
-  background-color: #ffffff;
+  background-color: #fff;
   padding: 10px 0px 10px 20px;
   margin: 0 0 1.8em 0px;
 }
 
 h1.article__article-title {
-  font-size: 2.5em;
-  margin-bottom: 1.5em;
+  font-size: $p-font-size * 2;
+  margin-bottom: $p-font-size * 1.1;
   font-weight: bold;
   color: #333;
 }

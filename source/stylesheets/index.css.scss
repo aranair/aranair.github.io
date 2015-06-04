@@ -1,0 +1,43 @@
+.index-content {
+  text-align: center;
+}
+
+h1.index-content__index-title {
+  font-family: "Roboto";
+  font-family: "Philosopher";
+  font-size: 3.5em;
+}
+.index-title__text {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+}
+a:hover {
+  .index-title__text {
+    border-color: #B02B2C;
+  }
+}
+
+.index-content__moustache {
+  width: 100%;
+  margin: auto;
+  display: block;
+  background: url("/images/moustache.png") 5px 0 no-repeat;
+  height: 135px;
+  background-size: contain;
+
+  .moustache__action-text {
+    width: 100px;
+    margin: auto;
+    h2 {
+      border: 1px solid white;
+      font-family: "Open Sans";
+      color: white;
+    }
+  }
+}
+
+.index-content__index-title {
+  .index-title__name {
+    font-size: 0.5em;
+    line-height:0.5em;
+  }
+}
