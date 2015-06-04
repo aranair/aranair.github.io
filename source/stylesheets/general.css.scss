@@ -60,6 +60,8 @@ a:hover {
   margin: auto;
 }
 
+a.navbar-customlinks:focus,
+a.navbar-customlinks:active,
 a.navbar-customlinks:hover {
   border-left: 3px solid $maroon;
   border-bottom: none;
