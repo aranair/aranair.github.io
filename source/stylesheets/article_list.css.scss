@@ -3,17 +3,22 @@
 .article-list__article-summary {
   border-bottom: 1px solid;
   border-color: rgba(0,0,0,.1);
+  p {
+    font-size: $p-font-size * 0.95;
+  }
 }
 
 .article-summary__article-title {
   span { // date
-    font-size: $p-font-size * 0.5;
+    font-size: $p-font-size * 0.47;
     color: rgba(0, 0, 0, 0.32);
     font-weight: 300;
   }
-  font-size: $p-font-size * 2;
+  font-size: $p-font-size * 2.1;
   font-weight: bold;
   color: #333;
+  margin-bottom: 0.8em;
+  margin-top: 1em;
 }
 
 .article-summary__readmore {
