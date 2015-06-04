@@ -9,6 +9,13 @@
   .page-links {
     position: absolute;
   }
+  .pagination {
+    display: none;
+  }
+  .pagination-mobile {
+    display: block;
+    margin-top: 15px;
+  }
 
   .article-list__article-summary {
     border-bottom: 1px solid;
