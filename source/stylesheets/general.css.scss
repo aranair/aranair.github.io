@@ -3,16 +3,14 @@
 body {
   padding-top: 70px;
   font-weight: 400;
-  // font-family: "Open Sans", Arial, Helvetica, Geneva, sans-serif;
-  // font-family: "Droid Serif", Arial, Helvetica, Geneva, sans-serif;
-  font-family: "Merriweather", Arial, Helvetica, Geneva, sans-serif;
+  font-family: $body_font, Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
   color: #555;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Lato", Arial, Helvetica, Geneva, sans-serif;
+  font-family: $heading_font, Arial, Helvetica, Geneva, sans-serif;
   font-weight: 400;
   line-height: normal;
   margin-bottom: .5em;
@@ -31,7 +29,7 @@ h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
 
 p {
   font-size: 1.1em;
-  line-height: 1.8em;
+  line-height: 1.93em;
   margin-bottom: 1.6em;
 
   a {

@@ -7,11 +7,9 @@ tags: emberjs
 When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with `jQuery UI's date picker` + `moment.js` for the parsing/display of the dates.
 
 ### The Issues
-There were a few things that kinda put me off guard. 
+There were a few things that kinda put me off guard. The first: when deserializing/serializing it seems that there is some timezone problem with moment.js. The solution wasn't too difficult to find with a little bit of googling. It was to simply subtract away the timezone offset when serializing the data. 
 
-The first: when deserializing/serializing it seems that there is some timezone problem with moment.js. The solution wasn't too difficult to find with a little bit of googling. It was to simply subtract away the timezone offset when serializing the data. 
-
-```
+```javascript
 DS.JSONTransforms.customdate = {
   deserialize: function(serialized) {
     var date, offset;
@@ -37,7 +35,7 @@ DS.JSONTransforms.customdate = {
 
 After which, to wrap the query date picker in a ember view (so that it is easier to work with in the handlebars). There was this very nice hook that I couldn't find ANYWHERE except in some blog posts. 
 
-```
+```javascript
 App.DateField = Ember.TextField.extend({
   didInsertElement: function() {
     // return this.$().fdatepicker({format: 'MM dd yyyy'});
@@ -55,7 +53,7 @@ It basically means that when it inserts the time view (or rather kinda like a on
 
 So when that was done, i realized that we had a CSRF issue that seems to have popped out of nowhere. I spent quite a bit of time searching on how to perform the automatic appending of the token to all the ajax requests (e.g. from DS.RestAdapter). With usual jQuery with rails, jQuery-rails gem handles the sending of the CSRF token. However, since we are not going to use that gem and ember has nothing to do with that(lol), we had to inject some code in order to send that manually.
 
-```
+```javascript
 $(function() {
   $(document).foundation();
   var token;
