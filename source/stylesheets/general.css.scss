@@ -1,16 +1,16 @@
 @import "variables";
 
 body {
-  padding-top: 70px;
+  padding-top: 40px;
   font-weight: 400;
-  font-family: $body_font, Arial, Helvetica, Geneva, sans-serif;
+  font-family: $body-font, Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
-  color: #555;
+  color: #444;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: $heading_font, Arial, Helvetica, Geneva, sans-serif;
+  font-family: $heading-font, Arial, Helvetica, Geneva, sans-serif;
   font-weight: 400;
   line-height: normal;
   margin-bottom: .5em;
@@ -25,6 +25,12 @@ h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
 h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
   color: rgba(0,0,0,.98);
   border-color: rgba(0,0,0,.4);
+}
+
+h1.page-header {
+  font-size: $p-font-size * 2.5;
+  font-weight: $heading-weight;
+  color: #333;
 }
 
 p {
@@ -58,46 +64,124 @@ a:hover {
   margin: auto;
 }
 
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover {
+  color: #222;
+}
+
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover,
 a.navbar-customlinks:focus,
 a.navbar-customlinks:active,
 a.navbar-customlinks:hover {
-  border-left: 3px solid $maroon;
   border-bottom: none;
-}
-
-.navbar-customlinks {
-  border-left: 3px solid transparent;
-  padding: 15px 15px;
-  font-size: 1.2em;
-  line-height: 1em;
-  height: 50px;
-  font-family: "Philosopher";
-}
-
-.navbar-customlinks--right{
-  float: right;
-}
-.navbar-customlinks--left{
-  float: left;
-}
-.page-links {
-  position: fixed;
-  top: 50px;
-  left: 0px;
 }
 
 .logo {
   background: white;
   position: fixed;
   top: 0px;
+  font-family: "Lato";
+  font-weight: 900;
+  color: #555;
+  display: block;
+}
+
+.navbar-right {
+  right: 100px;
+  float: left;
+}
+
+.navbar-left {
   left: 0px;
 }
-.logo__logo-text {
-  font-size: 2em;
-  font-family: "Philosopher";
+
+.logo__logo-social {
+  color: rgba(0, 0, 0, 0.32);
+  font-size: 1.2em;
+  padding-left: 15px;
+  padding-top: 15px;
+  float: right;
+  line-height: 25px;
+  height: 50px;
+}
+
+.logo__logo-diamond {
+  font-size: 1.3em;
+}
+
+.logo__logo-home {
+  font-family: "Lato";
+  font-size: 1.5em;
+  font-weight: 900;
 }
 
 .navbar-default {
   background-color: #fff;
   border-color: #fff;
+}
+
+.rotate-cw {
+  animation: rotate-cw linear 2s;
+  animation-iteration-count: infinite;
+  transform-origin: 50% 50%;
+  -webkit-animation: rotate-cw linear 2s;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-transform-origin: 50% 50%;
+  -moz-animation: rotate-cw linear 2s;
+  -moz-animation-iteration-count: infinite;
+  -moz-transform-origin: 50% 50%;
+  -o-animation: rotate-cw linear 2s;
+  -o-animation-iteration-count: infinite;
+  -o-transform-origin: 50% 50%;
+  -ms-animation: rotate-cw linear 2s;
+  -ms-animation-iteration-count: infinite;
+  -ms-transform-origin: 50% 50%;
+}
+
+@keyframes rotate-cw {
+  0% {
+    transform:  translate(0px, 0px)  rotate(0deg) ;
+  }
+  100% {
+    transform:  translate(0px, 0px)  rotate(360deg) ;
+  }
+}
+
+@-moz-keyframes rotate-cw{
+  0% {
+    -moz-transform:  translate(0px, 0px)  rotate(0deg) ;
+  }
+  100% {
+    -moz-transform:  translate(0px, 0px)  rotate(360deg) ;
+  }
+}
+
+@-webkit-keyframes rotate-cw {
+  0% {
+    -webkit-transform:  translate(0px, 0px)  rotate(0deg) ;
+  }
+  100% {
+    -webkit-transform:  translate(0px, 0px)  rotate(360deg) ;
+  }
+}
+
+@-o-keyframes rotate-cw {
+  0% {
+    -o-transform:  translate(0px, 0px)  rotate(0deg) ;
+  }
+  100% {
+    -o-transform:  translate(0px, 0px)  rotate(360deg) ;
+  }
+}
+
+@-ms-keyframes rotate-cw {
+  0% {
+    -ms-transform:  translate(0px, 0px)  rotate(0deg) ;
+  }
+  100% {
+    -ms-transform:  translate(0px, 0px)  rotate(360deg) ;
+  }
 }

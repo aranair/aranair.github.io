@@ -4,7 +4,7 @@
   border-bottom: 1px solid;
   border-color: rgba(0,0,0,.1);
   p {
-    font-size: $p-font-size * 0.95;
+    // font-size: $p-font-size * 0.95;
   }
 }
 
@@ -15,11 +15,15 @@
     font-weight: 300;
     padding-left: 2px;
   }
-  // font-size: $p-font-size * 2.3;
-  font-weight: 600;
+  font-size: $p-font-size * 2.5;
+  font-weight: $heading-weight;
   color: #333;
   margin-bottom: 0.2em;
   margin-top: 1em;
+
+  a {
+    color: #333;
+  }
 }
 
 .article-summary__readmore {
@@ -57,18 +61,16 @@ h1.article__article-title {
     padding-left: 3px;
   }
   font-size: $p-font-size * 2.5;
-  font-weight: 600;
+  font-weight: $heading-weight;
   color: #333;
 }
 
 .pagination {
-  position: fixed;
-  bottom: 0px;
-  right: 100px;
-}
-
-.pagination-mobile {
   display: none;
+}
+.pagination-mobile {
+  display: block;
+  margin-top: 15px;
 }
 
 .blockquote {

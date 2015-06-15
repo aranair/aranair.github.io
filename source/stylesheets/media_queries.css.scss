@@ -1,20 +1,32 @@
 @import "variables";
 
+@media (min-width: 1020px) {
+  .pagination {
+    display: block;
+    position: fixed;
+    bottom: 0px;
+    right: 100px;
+  }
+  .pagination-mobile {
+    display: none;
+  }
+}
+
 /* Landscape phone to portrait tablet */
-@media (max-width: 767px) {
+@media (max-width: 1020px) {
   $p-font-size: 0.95em;
   .logo {
     position: absolute;
   }
+  .navbar-right {
+    right: 10px;
+  }
   .page-links {
     position: absolute;
   }
-  .pagination {
-    display: none;
-  }
-  .pagination-mobile {
-    display: block;
-    margin-top: 15px;
+  .container {
+    padding-left: 30px;
+    padding-right: 30px;
   }
 
   .article-list__article-summary {
@@ -33,7 +45,7 @@
       font-weight: 300;
     }
     font-size: $p-font-size * 2;
-    font-weight: bold;
+    font-weight: $heading-weight;
     color: #333;
   }
 
@@ -65,9 +77,9 @@
   }
 
   h1.article__article-title {
-    font-size: $p-font-size * 2;
+    font-size: $p-font-size * 2.2;
     margin-bottom: $p-font-size * 1.1;
-    font-weight: bold;
+    font-weight: $heading-weight;
     color: #333;
   }
 }

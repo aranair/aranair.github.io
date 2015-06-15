@@ -12,6 +12,7 @@ gem "redcarpet"
 gem "therubyracer"
 gem "nokogiri"
 gem "bootstrap-sass", require: false
+gem "jquery-middleman"
 
 # For feed.xml.builder
 gem "builder", "~> 3.0"

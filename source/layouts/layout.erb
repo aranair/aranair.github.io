@@ -12,19 +12,30 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <%= stylesheet_link_tag "normalize", "all" %>
+    <%= stylesheet_link_tag "normalize" %>
     <%= stylesheet_link_tag "blog" %>
     <%= javascript_include_tag  "all" %>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 
 
   </head>
   <body class="<%= page_classes %>">
-    <div class="logo">
-      <a href="/" class="navbar-brand logo__logo-text">H</a>
-    </div>
-    <div class="page-links">
-      <a href="/posts" class="navbar-customlinks navbar-customlinks--left">
-        Posts
+    <div class="navbar-left logo">
+      <a href="/" class="navbar-icons navbar-brand logo__logo-home">
+        <i class="fa fa-home"></i>
+      </a>
+      <a href="/posts" class="navbar-icons navbar-brand logo__logo-diamond">
+        <i class="fa fa-file-code-o"></i>
+      </a>
+      <a href="/projects" class="navbar-icons navbar-brand logo__logo-diamond">
+        <i class="fa fa-diamond"></i>
+      </a>
+      <a href="http://github.com/aranair" class="navbar-icons logo__logo-social">
+        <i class="fa fa-github"></i>
+      </a>
+      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-icons logo__logo-social">
+        <i class="fa fa-linkedin"></i>
       </a>
     </div>
     <div class="wrapper">
