@@ -89,6 +89,14 @@ a.navbar-customlinks:hover {
   display: block;
 }
 
+.navbar-icons {
+  float: left;
+  padding: 12.5px 15px;
+  font-size: 23px;
+  line-height: 25px;
+  height: 50px;
+}
+
 .navbar-right {
   right: 100px;
   float: left;
@@ -99,21 +107,19 @@ a.navbar-customlinks:hover {
 }
 
 .logo__logo-social {
-  color: rgba(0, 0, 0, 0.32);
-  font-size: 1.2em;
-  padding-left: 15px;
-  padding-top: 15px;
   float: right;
   line-height: 25px;
   height: 50px;
+  color: rgba(0, 0, 0, 0.32);
 }
 
-.logo__logo-diamond {
+.logo__logo-others {
   font-size: 1.3em;
+  color: rgba(0, 0, 0, 0.32);
 }
 
 .logo__logo-home {
-  font-family: "Lato";
+  color: rgba(0, 0, 0, 0.32);
   font-size: 1.5em;
   font-weight: 900;
 }
