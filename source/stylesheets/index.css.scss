@@ -11,6 +11,23 @@ h1.index-content__index-title {
   letter-spacing: -1px;
 }
 
+a.index-title__chevron:hover{
+a.index-title__chevron:focus{
+a.index-title__chevron:active{
+  border: none;
+  .glyphicon-chevron-down {
+    color: #121212;
+  }
+}
+
+.index-title__chevron {
+  .glyphicon-chevron-down {
+    font-weight: 300;
+    font-size: 0.5em;
+    color: rgba(0, 0, 0, 0.32);
+  }
+}
+
 .index-title__text {
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
