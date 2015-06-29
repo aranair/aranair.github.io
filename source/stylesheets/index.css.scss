@@ -3,10 +3,14 @@
 }
 
 h1.index-content__index-title {
-  font-family: "Roboto";
-  font-family: "Philosopher";
-  font-size: 3.5em;
+  margin-top: 10%;
+  color: #121212;
+  font-family: "Montserrat";
+  font-size: 10rem;
+  font-weight: 700;
+  letter-spacing: -1px;
 }
+
 .index-title__text {
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
@@ -32,12 +36,5 @@ a:hover {
       font-family: "Open Sans";
       color: white;
     }
-  }
-}
-
-.index-content__index-title {
-  .index-title__name {
-    font-size: 0.5em;
-    line-height:0.5em;
   }
 }
