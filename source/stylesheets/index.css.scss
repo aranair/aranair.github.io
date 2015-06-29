@@ -11,8 +11,8 @@ h1.index-content__index-title {
   letter-spacing: -1px;
 }
 
-a.index-title__chevron:hover{
-a.index-title__chevron:focus{
+a.index-title__chevron:hover,
+a.index-title__chevron:focus,
 a.index-title__chevron:active{
   border: none;
   .glyphicon-chevron-down {
