@@ -1,6 +1,6 @@
 ---
 title: Opt-Arrow Navigation in iTerm2
-date: 2015-05-12 00:00 SGT
+date: 2014-05-12 00:00 SGT
 tags: vim, iterm
 ---
 
