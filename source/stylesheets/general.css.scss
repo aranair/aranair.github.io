@@ -37,11 +37,16 @@ h1.page-header {
 p {
   font-size: 1.1em;
   line-height: 1.93em;
-  margin-bottom: 1.6em;
+  margin-bottom: 1.5em;
+  margin-top: 1.5em;
 
   a {
-    border-bottom: 1px dotted #999;
+    border-bottom: 1px dotted #333;
   }
+}
+
+li a {
+  border-bottom: 1px dotted #333;
 }
 
 a {
@@ -128,6 +133,11 @@ a.navbar-customlinks:hover {
 .navbar-default {
   background-color: #fff;
   border-color: #fff;
+}
+
+ul li, 
+ol li{
+  line-height: 2em;
 }
 
 .rotate-cw {

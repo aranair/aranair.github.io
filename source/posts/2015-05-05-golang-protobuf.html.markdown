@@ -4,7 +4,7 @@ date: 2015-05-05
 tags: golang, protobuf
 ---
 
-I'm sure most of you have heard about Golang by now, so I'll just fast forward past that. But in case you're not aware, do check out the relatively young language [here](http://golang.org/ "Golang"). 
+(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)
 
 Recently, I've had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing, with one caveat: we're using Protobuf Buffers (or otherwise just Protobuf) for our serialisation of data.
 
