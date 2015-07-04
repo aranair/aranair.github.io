@@ -2,6 +2,12 @@
 pageable: true
 per_page: 15
 ---
+<div class="tags">
+  <% page_articles.map(&:tags).each do |tag| %>
+    <%= link_to tag, tag_path(tag) %>
+  <% end %>
+</div>
+
 <div class="pagination">
   <% if paginate && num_pages > 1 %>
     Page <%= page_number %> of <%= num_pages %>
@@ -40,3 +46,4 @@ per_page: 15
     </p>
   <% end %>
 </div>
+

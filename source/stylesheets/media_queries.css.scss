@@ -1,6 +1,12 @@
 @import "variables";
 
 @media (min-width: 1020px) {
+  .tags {
+    display: block;
+    position: fixed;
+    top: 100px;
+    right: 100px;
+  }
   .pagination {
     display: block;
     position: fixed;
