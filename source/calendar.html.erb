@@ -2,9 +2,7 @@
 pageable: true
 per_page: 10
 ---
-<%# --- %>
-<%# pageable: true %>
-<%# --- %>
+
 <h2>Archive for
   <% case page_type
      when 'day' %>
@@ -15,33 +13,6 @@ per_page: 10
     <%= year %>
   <% end %>
 </h2>
-
-<%# <% if paginate && num_pages > 1 %1> %>
-<%#   <p>Page <%= page_number %1> of <%= num_pages %1></p> %>
-
-<%#   <% if prev_page %1> %>
-<%#     <p><%= link_to 'Previous page', prev_page %1></p> %>
-<%#   <% end %1> %>
-<%# <% end %1> %>
-
-<%# <ul> %>
-<%#   <% page_articles.each_with_index do |article, i| %1> %>
-<%#     <li><%= link_to article.title, article %1> <span><%= article.date.strftime('%b %e') %1></span></li> %>
-<%#   <% end %1> %>
-<%# </ul> %>
-
-<%# <% if paginate %1> %>
-<%#   <% if next_page %1> %>
-<%#     <p><%= link_to 'Next page', next_page %1></p> %>
-<%#   <% end %1> %>
-<%# <% end %1> %>
-<% if paginate && num_pages > 1 %>
-  <p>Page <%= page_number %> of <%= num_pages %></p>
-
-  <% if prev_page %>
-    <p><%= link_to 'Previous page', prev_page %></p>
-  <% end %>
-<% end %>
 
 <% page_articles.each_with_index do |article, i| %>
   <div class="article-list__article-summary">
@@ -54,8 +25,17 @@ per_page: 10
   </div>
 <% end %>
 
-<% if paginate %>
-  <% if next_page %>
-    <p><%= link_to 'Next page', next_page %></p>
-  <% end %>
-<% end %>
+<%= partial("pagination", locals: { 
+  prev_page: prev_page, next_page: next_page,
+  num_pages: num_pages, page_number: page_number,
+  paginate: paginate
+}) %>
+
+<%= partial "tags_partial" %>
+<%= partial("pagination", locals: { 
+  prev_page: prev_page, next_page: next_page,
+  num_pages: num_pages, page_number: page_number,
+  paginate: paginate
+}) %>
+
+<%= partial "tags_partial" %>

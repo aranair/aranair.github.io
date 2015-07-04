@@ -1,0 +1,6 @@
+<div class="tags">
+  <% page_articles.map(&:tags).each do |tag| %>
+    <%= link_to tag, tag_path(tag) %>
+  <% end %>
+</div>
+
