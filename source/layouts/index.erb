@@ -20,23 +20,7 @@
     <%= partial "ga" %>
   </head>
   <body class="<%= page_classes %>">
-    <div class="navbar-left logo">
-      <a href="/" class="navbar-icons logo__logo-home">
-        <i class="fa fa-home"></i>
-      </a>
-      <a href="/posts" class="navbar-icons logo__logo-others">
-        <i class="fa fa-file-code-o"></i>
-      </a>
-      <a href="/projects" class="navbar-icons logo__logo-others">
-        <i class="fa fa-diamond"></i>
-      </a>
-      <a href="http://github.com/aranair" class="navbar-icons logo__logo-social">
-        <i class="fa fa-github"></i>
-      </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-icons logo__logo-social">
-        <i class="fa fa-linkedin"></i>
-      </a>
-    </div>
+    <%= partial "navbar" %>
     <div class="wrapper">
       <%= yield %>
     </div>

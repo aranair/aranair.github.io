@@ -85,14 +85,38 @@ a.navbar-customlinks:hover {
   border-bottom: none;
 }
 
-.logo {
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  color: purple;
+}
+
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  border-bottom: none;
+}
+
+.navbar {
   background: white;
   position: fixed;
   top: 0px;
-  font-family: "Lato";
-  font-weight: 900;
   color: #555;
   display: block;
+  width: 100%;
+  padding-right: 15px;
+}
+
+.navbar-links {
+  line-height: 27px;
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300;
+  padding: 12.5px 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 16px;
+  height: 50px;
 }
 
 .navbar-icons {
@@ -103,13 +127,14 @@ a.navbar-customlinks:hover {
   height: 50px;
 }
 
-.navbar-right {
-  right: 100px;
-  float: left;
-}
-
 .navbar-left {
   left: 0px;
+}
+
+.tags-link {
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300;
 }
 
 .logo__logo-social {
@@ -120,14 +145,9 @@ a.navbar-customlinks:hover {
 }
 
 .logo__logo-others {
-  font-size: 1.3em;
+  font-size: 1em;
+  line-height: 27px;
   color: rgba(0, 0, 0, 0.32);
-}
-
-.logo__logo-home {
-  color: rgba(0, 0, 0, 0.32);
-  font-size: 1.5em;
-  font-weight: 900;
 }
 
 .navbar-default {

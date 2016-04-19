@@ -6,7 +6,7 @@ h1.index-content__index-title {
   margin-top: 10%;
   color: #121212;
   font-family: "Montserrat";
-  font-size: 10rem;
+  font-size: 6rem;
   font-weight: 700;
   letter-spacing: -1px;
 }
@@ -31,6 +31,7 @@ a.index-title__chevron:active{
 .index-title__text {
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
 }
+
 a:hover {
   .index-title__text {
     border-color: #B02B2C;

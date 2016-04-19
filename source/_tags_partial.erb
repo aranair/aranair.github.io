@@ -1,6 +1,6 @@
 <div class="tags">
   <% blog.articles.map(&:tags).flatten.uniq.each do |tag| %>
-    <%= link_to tag, tag_path(tag) %>
+    <%= link_to tag, tag_path(tag), class: 'tags-link' %>
   <% end %>
 </div>
 

@@ -17,7 +17,8 @@
     font-weight: 300;
     padding-left: 2px;
   }
-  font-size: $p-font-size * 2.3;
+
+  font-size: $p-font-size * 1.9;
   font-weight: $heading-weight;
   color: #333;
   margin-bottom: 0.2em;
@@ -79,7 +80,13 @@ h1.article__article-title {
 
 .pagination {
   display: none;
+  font-family: 'Open Sans';
+  font-weight: 300;
+  font-size: 0.9em;
+  
+  a { font-weight: 300; }
 }
+
 .pagination-mobile {
   display: block;
   margin-top: 15px;
