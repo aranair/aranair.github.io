@@ -32,6 +32,10 @@ activate :blog do |blog|
   blog.page_link = "page/{num}"
 end
 
+activate :disqus do |d|
+  d.shortname = 'homan-gh-blog' # Replace with your Disqus shortname.
+end
+
 page "/feed.xml", layout: false
 
 ###
