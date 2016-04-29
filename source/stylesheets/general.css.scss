@@ -76,6 +76,27 @@ a.navbar-icons:hover {
   color: #222;
 }
 
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover,
+a.navbar-customlinks:focus,
+a.navbar-customlinks:active,
+a.navbar-customlinks:hover {
+  border-bottom: none;
+}
+
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  color: purple;
+}
+
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  border-bottom: none;
+}
+
 .navbar {
   background: white;
   position: fixed;
