@@ -1,5 +1,9 @@
 @import "variables";
 
+p { font-size: $p-font-size; }
+ul li { font-size: $p-font-size; }
+pre code { line-height: 1.5em; }
+
 .article-list__article-summary {
   border-bottom: 1px solid;
   border-color: rgba(0,0,0,.1);
@@ -33,6 +37,7 @@
   line-height: $p-font-size * 3;
   color: $maroon;
 }
+
 a.article-summary__readmore:hover {
   color: $maroon;
   border-color: $maroon;
@@ -40,6 +45,7 @@ a.article-summary__readmore:hover {
 
 .article {
   h3 {
+    font-size: $p-font-size * 1.5;
     margin-top: 1.5em;
   }
 }
@@ -52,7 +58,7 @@ a.article-summary__readmore:hover {
   border: none;
   border-left: 2px solid rgba(176, 43, 44, 0.83);
   border-radius: 0;
-  background-color: #fff;
+  background-color: #F7F7F7;
   padding: 10px 0px 10px 20px;
   margin: 0 0 1.8em 0px;
 }
@@ -65,7 +71,7 @@ h1.article__article-title {
     font-weight: 300;
     padding-left: 3px;
   }
-  font-size: $p-font-size * 2;
+  font-size: $p-font-size * 1.9;
   font-weight: $heading-weight;
   color: #333;
 }
