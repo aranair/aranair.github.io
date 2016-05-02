@@ -122,8 +122,11 @@ a.navbar-links:hover {
 .navbar-links--name {
   padding: 10px;
   height: inherit;
-  margin: 3px 0px 0px 5px;
+  margin: 10px 0px 0px 5px;
   color: #9600FF;
+  height: 38px;
+  width: 50px;
+  background-image: url('/images/hmlogo-small.png');
 }
 
 .navbar-icons {
