@@ -5,10 +5,104 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-04-27T00:00:00+08:00</updated>
+  <updated>2016-07-27T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Capybara &amp; Waiting</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
+    <id>http://blog.url.com/posts/2016/07/27/capybara-and-waiting/</id>
+    <published>2016-07-27T00:00:00+08:00</published>
+    <updated>2016-07-29T00:27:27+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
+you’re likely to be doing feature tests with &lt;a href="https://github.com/jnicklas/capybara"&gt;Capybara&lt;/a&gt; as well.&lt;/p&gt;
+
+&lt;p&gt;I recently forgot some of these myself while adding feature specs at work at 
+&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt;. I hope this can serve as a reminder to myself in future 
+and be of help to anyone who encounters the same problems!&lt;/p&gt;
+
+&lt;h3&gt;Common Scenario&lt;/h3&gt;
+
+&lt;p&gt;Let’s look at a common scenario in a feature test: &lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Load some form&lt;/li&gt;
+&lt;li&gt;Click a random button&lt;/li&gt;
+&lt;li&gt;Check if the refreshed page (or partially re-rendered pages) matches your expected results&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If you’re just transitioning from unit tests, it might be tempting to jump right to this option:&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;visit&lt;/span&gt; &lt;span class="n"&gt;some_path&lt;/span&gt;
+&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Submit'&lt;/span&gt; &lt;span class="c1"&gt;# Does an AJAX request&lt;/span&gt;
+
+&lt;span class="c1"&gt;# -- Page refresh or re-render --&lt;/span&gt;
+
+&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;text&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;eq&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay 
+between the button click and the actual completion of the code that is run as a result of that click. &lt;/p&gt;
+
+&lt;p&gt;It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call. 
+Its hard to predict how long exactly that is going to take.&lt;/p&gt;
+
+&lt;h3&gt;Magical Built-in Matchers&lt;/h3&gt;
+
+&lt;p&gt;For this reason, Capybara provides us with some built-in matchers. They work amazingly well 
+for these scenarios where you are waiting for something to finish before checking the content for text, 
+DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements 
+to appear or disappear on the page.&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
+&lt;span class="c1"&gt;# have_css, have_selector&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can even define if the element should be visible or not after it is rendered. &lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;visible: &lt;/span&gt;&lt;span class="kp"&gt;false&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Magical. Right? &lt;/p&gt;
+
+&lt;h3&gt;Old solutions&lt;/h3&gt;
+
+&lt;p&gt;Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn&amp;rsquo;t use them.
+Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&gt;sleep(3)&lt;/code&gt; despite being clunkier solutions. 
+&lt;code&gt;wait_until&lt;/code&gt; was then deprecated in Capybara v2.0 altogether.&lt;/p&gt;
+
+&lt;h3&gt;Complications&lt;/h3&gt;
+
+&lt;p&gt;Take a look at the scenario below, is that single &lt;code&gt;have_content&lt;/code&gt; there sufficient? What do you think?&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;fill_in&lt;/span&gt; &lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;with: &lt;/span&gt;&lt;span class="s1"&gt;'Daniel'&lt;/span&gt;
+&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Link'&lt;/span&gt; &lt;span class="c1"&gt;#some AJAX call happens&lt;/span&gt;
+&lt;span class="n"&gt;reload_page&lt;/span&gt;
+&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'Linked'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nope! There&amp;rsquo;s still a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes. 
+And the tests would randomly fail since the content-check is dependant on the click event&amp;rsquo;s code execution.
+That&amp;rsquo;s not good; we all want deterministic results for our tests, right?&lt;/p&gt;
+
+&lt;h3&gt;What now?&lt;/h3&gt;
+
+&lt;p&gt;So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post 
+&lt;a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara"&gt;here&lt;/a&gt;.  Through spec 
+helpers, they introduce a &lt;code&gt;wait_for_ajax&lt;/code&gt; method that was designed to be used whenever you need 
+to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.&lt;/p&gt;
+
+&lt;h3&gt;Alternatives&lt;/h3&gt;
+
+&lt;p&gt;Alternatively, you could also use &lt;code&gt;have_selector&lt;/code&gt; infront of the reload to block the execution. But in my opinion, 
+if you don&amp;rsquo;t actually want to test the content, using &lt;code&gt;wait_for_ajax&lt;/code&gt; makes more sense. &lt;/p&gt;
+
+&lt;p&gt;So the next time you encounter similar issues, stay calm and first check to make sure that you are 
+using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;!&lt;/p&gt;
+
+&lt;p&gt;What does everyone think? Are your experiences similar?&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Dockerized Golang + Postgres on Digital Ocean</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
@@ -685,34 +779,6 @@ Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/weg
 &lt;p&gt;Simply Unmarshal it and profit! How simple is that?&lt;/p&gt;
 &lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Unmarshal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;People&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-</content>
-  </entry>
-  <entry>
-    <title>VIM Toggle Background Scheme</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2014/05/20/vim-toggle-background-scheme/"/>
-    <id>http://blog.url.com/posts/2014/05/20/vim-toggle-background-scheme/</id>
-    <published>2014-05-20T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. &lt;/p&gt;
-
-&lt;p&gt;This works well for color schemes that offer both dark and light versions, for example Solarized.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;let g:scheme_bg = "dark"
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;function! ToggleDark()
-  if g:scheme_bg == "dark"
-    set background=light
-    let g:scheme_bg = "light"
-  else
-    set background=dark
-    let g:scheme_bg = "dark"
-  endif
-endfunction
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;map &amp;lt;F3&amp;gt; :call ToggleDark()&amp;lt;CR&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
 </content>
   </entry>
 </feed>
