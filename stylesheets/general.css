@@ -1,0 +1,212 @@
+/* line 3, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+body {
+  padding-top: 40px;
+  font-weight: 400;
+  font-family: "Georgia", Arial, Helvetica, Geneva, sans-serif;
+  font-smooth: always;
+  -webkit-font-smoothing: antialiased;
+  color: #3d5867; }
+
+/* line 13, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Roboto", Arial, Helvetica, Geneva, sans-serif;
+  font-weight: 900;
+  line-height: normal;
+  margin-bottom: .5em;
+  line-height: 1.2em;
+  color: #B02B2C;
+  letter-spacing: -1px; }
+
+/* line 23, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+  border-bottom: 1px solid transparent; }
+
+/* line 27, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
+  color: rgba(0, 0, 0, 0.98);
+  border-color: rgba(0, 0, 0, 0.4); }
+
+/* line 32, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+h1.page-header {
+  font-size: 2.75em;
+  font-weight: 900;
+  color: #333; }
+
+/* line 38, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+p {
+  font-size: 1.1em;
+  line-height: 1.80em;
+  margin-bottom: 1em;
+  margin-top: 1em; }
+  /* line 44, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+  p a {
+    border-bottom: 1px dotted #333; }
+
+/* line 49, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+li a {
+  border-bottom: 1px dotted #333; }
+
+/* line 53, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a {
+  color: #444; }
+
+/* line 57, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a:active,
+a:focus,
+a:hover {
+  color: #444;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
+
+/* line 65, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.wrapper {
+  margin: 0 0.5%; }
+
+/* line 69, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.container {
+  max-width: 550px;
+  margin: auto; }
+
+/* line 74, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover {
+  color: #222; }
+
+/* line 80, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover,
+a.navbar-customlinks:focus,
+a.navbar-customlinks:active,
+a.navbar-customlinks:hover {
+  border-bottom: none; }
+
+/* line 89, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  color: purple; }
+
+/* line 95, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  border-bottom: none; }
+
+/* line 101, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar {
+  background: white;
+  position: fixed;
+  top: 0px;
+  color: #555;
+  display: block;
+  width: 100%;
+  padding: 0 15px 0 15px; }
+
+/* line 111, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar-links {
+  line-height: 27px;
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300;
+  padding: 12.5px 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 14px;
+  height: 50px; }
+
+/* line 123, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar-links--name {
+  padding: 10px;
+  height: inherit;
+  margin: 10px 0px 0px 5px;
+  color: #9600FF;
+  height: 38px;
+  width: 50px;
+  background-image: url("/images/hmlogo-small.png"); }
+
+/* line 133, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar-icons {
+  float: left;
+  padding: 12.5px 15px;
+  font-size: 23px;
+  line-height: 25px;
+  height: 50px; }
+
+/* line 141, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar-left {
+  left: 0px; }
+
+/* line 145, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.tags-link {
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300; }
+
+/* line 151, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.logo__logo-social {
+  float: right;
+  line-height: 25px;
+  height: 50px;
+  color: rgba(0, 0, 0, 0.32); }
+
+/* line 158, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.logo__logo-others {
+  font-size: 1em;
+  line-height: 27px;
+  color: rgba(0, 0, 0, 0.32); }
+
+/* line 164, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.navbar-default {
+  background-color: #fff;
+  border-color: #fff; }
+
+/* line 169, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+ul li,
+ol li {
+  line-height: 2em; }
+
+/* line 174, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.rotate-cw {
+  animation: rotate-cw linear 2s;
+  animation-iteration-count: infinite;
+  transform-origin: 50% 50%;
+  -webkit-animation: rotate-cw linear 2s;
+  -webkit-animation-iteration-count: infinite;
+  -webkit-transform-origin: 50% 50%;
+  -moz-animation: rotate-cw linear 2s;
+  -moz-animation-iteration-count: infinite;
+  -moz-transform-origin: 50% 50%;
+  -o-animation: rotate-cw linear 2s;
+  -o-animation-iteration-count: infinite;
+  -o-transform-origin: 50% 50%;
+  -ms-animation: rotate-cw linear 2s;
+  -ms-animation-iteration-count: infinite;
+  -ms-transform-origin: 50% 50%; }
+
+@keyframes rotate-cw {
+  0% {
+    transform: translate(0px, 0px) rotate(0deg); }
+  100% {
+    transform: translate(0px, 0px) rotate(360deg); } }
+@-moz-keyframes rotate-cw {
+  0% {
+    -moz-transform: translate(0px, 0px) rotate(0deg); }
+  100% {
+    -moz-transform: translate(0px, 0px) rotate(360deg); } }
+@-webkit-keyframes rotate-cw {
+  0% {
+    -webkit-transform: translate(0px, 0px) rotate(0deg); }
+  100% {
+    -webkit-transform: translate(0px, 0px) rotate(360deg); } }
+@-o-keyframes rotate-cw {
+  0% {
+    -o-transform: translate(0px, 0px) rotate(0deg); }
+  100% {
+    -o-transform: translate(0px, 0px) rotate(360deg); } }
+@-ms-keyframes rotate-cw {
+  0% {
+    -ms-transform: translate(0px, 0px) rotate(0deg); }
+  100% {
+    -ms-transform: translate(0px, 0px) rotate(360deg); } }

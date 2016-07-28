@@ -1,0 +1,9 @@
+/* line 3, /Users/homan/Projects/aranair.github.io/source/stylesheets/project_list.css.scss */
+h1.projects__header {
+  font-size: 2.75em;
+  font-weight: 900;
+  color: #333; }
+
+/* line 9, /Users/homan/Projects/aranair.github.io/source/stylesheets/project_list.css.scss */
+.projects {
+  text-align: center; }

@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>BHM</title>
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
+    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+  </head>
+  <body class="posts posts_2014 posts_2014_05 posts_2014_05_04 posts_2014_05_04_emberjs-jqueryui-date-momentjs posts_2014_05_04_emberjs-jqueryui-date-momentjs_index">
+    <nav class="navbar navbar-default">
+  <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+  </div>
+
+  <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+    <a href="/posts" class="navbar-links pull-right">
+      Posts
+    </a>
+    <a href="/projects" class="navbar-links pull-right">
+      Projects
+    </a>
+    <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
+      LinkedIn
+    </a>
+  </div>
+</nav>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      EmberJS + JQueryUI Date + Moment.js<br>
+      <span>Published on May 04, 2014</span>
+    </h1>
+    <p>When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with <code>jQuery UI&#39;s date picker</code> + <code>moment.js</code> for the parsing/display of the dates.</p>
+
+<h3>The Issues</h3>
+
+<p>There were a few things that kinda put me off guard. The first: when deserializing/serializing it seems that there is some timezone problem with moment.js. The solution wasn&rsquo;t too difficult to find with a little bit of googling. It was to simply subtract away the timezone offset when serializing the data. </p>
+<pre class="highlight javascript"><code><span class="nx">DS</span><span class="p">.</span><span class="nx">JSONTransforms</span><span class="p">.</span><span class="nx">customdate</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">deserialize</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">serialized</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">date</span><span class="p">,</span> <span class="nx">offset</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">serialized</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">date</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">serialized</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">date</span><span class="p">).</span><span class="nx">format</span><span class="p">(</span><span class="s1">'MMMM D YYYY'</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="na">serialize</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">date</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">date</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">date</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">date</span><span class="p">);</span>
+      <span class="nx">offset</span> <span class="o">=</span> <span class="o">-</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTimezoneOffset</span><span class="p">();</span>
+      <span class="nx">date</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">+</span> <span class="nx">offset</span> <span class="o">*</span> <span class="mi">60000</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">date</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+
+<p>After which, to wrap the query date picker in a ember view (so that it is easier to work with in the handlebars). There was this very nice hook that I couldn&rsquo;t find ANYWHERE except in some blog posts. </p>
+<pre class="highlight javascript"><code><span class="nx">App</span><span class="p">.</span><span class="nx">DateField</span> <span class="o">=</span> <span class="nx">Ember</span><span class="p">.</span><span class="nx">TextField</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+  <span class="na">didInsertElement</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// return this.$().fdatepicker({format: 'MM dd yyyy'});</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">$</span><span class="p">().</span><span class="nx">datepicker</span><span class="p">({</span>
+      <span class="na">dateFormat</span><span class="p">:</span> <span class="s1">'MM d yy'</span><span class="p">,</span>
+      <span class="na">numberOfMonths</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+      <span class="na">showButtonPanel</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</code></pre>
+
+<p>It basically means that when it inserts the time view (or rather kinda like a on render hook), it appends the date in that format and calls the jQuery ui&rsquo;s function on that element. this.$() is the same as this.$(&lsquo;element&rsquo;).</p>
+
+<p>So when that was done, i realized that we had a CSRF issue that seems to have popped out of nowhere. I spent quite a bit of time searching on how to perform the automatic appending of the token to all the ajax requests (e.g. from DS.RestAdapter). With usual jQuery with rails, jQuery-rails gem handles the sending of the CSRF token. However, since we are not going to use that gem and ember has nothing to do with that(lol), we had to inject some code in order to send that manually.</p>
+<pre class="highlight javascript"><code><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">foundation</span><span class="p">();</span>
+  <span class="kd">var</span> <span class="nx">token</span><span class="p">;</span>
+  <span class="nx">token</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s1">'meta[name="csrf-token"]'</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">'content'</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nx">$</span><span class="p">.</span><span class="nx">ajaxPrefilter</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">originalOptions</span><span class="p">,</span> <span class="nx">xhr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">setRequestHeader</span><span class="p">(</span><span class="s1">'X-CSRF-Token'</span><span class="p">,</span> <span class="nx">token</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</code></pre>
+
+<p>This basically just gets the csrf-meta stuff that is in the application layout file in rails and sends that token in every request.</p>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>

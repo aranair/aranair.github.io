@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>BHM</title>
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
+    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+  </head>
+  <body class="posts posts_2013 posts_2013_07 posts_2013_07_27 posts_2013_07_27_embers-handlebars-setup-problem posts_2013_07_27_embers-handlebars-setup-problem_index">
+    <nav class="navbar navbar-default">
+  <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+  </div>
+
+  <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+    <a href="/posts" class="navbar-links pull-right">
+      Posts
+    </a>
+    <a href="/projects" class="navbar-links pull-right">
+      Projects
+    </a>
+    <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
+      LinkedIn
+    </a>
+  </div>
+</nav>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      Embers Handlebars Setup Problem<br>
+      <span>Published on Jul 27, 2013</span>
+    </h1>
+    <p>Went with <code>ember-rails</code> gem&rsquo;s default setup, did a bundle install/minimum rails set up and got this error in the browser&hellip;</p>
+
+<p><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px">Assertion failed: Ember Handlebars requires Handlebars version 1.0.0, COMPILER<em>REVISION expected: 4, got: 3 - Please note: Builds of master may have other COMPILER</em>REVISION values.</span><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px"> </span></p>
+
+<div class="console-message console-debug-level" style="box-sizing: border-box; clear: right; position: relative; border-top-width: 1px; border-top-style: solid; border-top-color: rgb(240, 240, 240); padding: 1px 22px 1px 0px; margin-left: 24px; min-height: 16px; color: rgb(48, 57, 66); font-family: Menlo, monospace; font-size: 11px; line-height: normal;"><span style="color:blue">EBUG: Ember.VERSION : 1.0.0-rc.6 <a class="console-message-url webkit-html-resource-link" href="http://127.0.0.1:3000/assets/ember.js?body=1" style="box-sizing: border-box; float: right; text-align: right; max-width: 100%; margin-left: 4px; color: rgb(84, 84, 84); cursor: pointer;" title="http://127.0.0.1:3000/assets/ember.js?body=1:364">ember.js?body=1:364</a></span></div>
+
+<div class="console-message console-debug-level" style="box-sizing: border-box; clear: right; position: relative; border-top-width: 1px; border-top-style: solid; border-top-color: rgb(240, 240, 240); padding: 1px 22px 1px 0px; margin-left: 24px; min-height: 16px; color: rgb(48, 57, 66); font-family: Menlo, monospace; font-size: 11px; line-height: normal;"><span style="color:blue">DEBUG: Handlebars.VERSION : 1.0.0-rc.4 <a class="console-message-url webkit-html-resource-link" href="http://127.0.0.1:3000/assets/ember.js?body=1" style="box-sizing: border-box; float: right; text-align: right; max-width: 100%; margin-left: 4px; color: rgb(84, 84, 84); cursor: pointer;" title="http://127.0.0.1:3000/assets/ember.js?body=1:364">ember.js?body=1:364</a></span></div>
+
+<div class="console-message console-debug-level" style="box-sizing: border-box; clear: right; position: relative; border-top-width: 1px; border-top-style: solid; border-top-color: rgb(240, 240, 240); padding: 1px 22px 1px 0px; margin-left: 24px; min-height: 16px; color: rgb(48, 57, 66); font-family: Menlo, monospace; font-size: 11px; line-height: normal;"><span style="color:blue">DEBUG: jQuery.VERSION : 1.10.2</span></div>
+
+<p><br></p>
+
+<p>Turns out that ember rc.6 is not compatible with handlebars rc4 because it hardcodes it to require rc3&hellip;&hellip;. - -&rsquo;</p>
+
+<p>Short of modifying emberjs files myself, I did the <code>rails generate ember:install --head</code> again to get the latest nightly builds of ember hoping to get rc6.1 but unfortunately it didn&rsquo;t grab rc6.1 to my dismay&hellip; So I went to <a title="Ember Nightly" href="http://builds.emberjs.com/ember-1.0.0-rc.6.1.js,">http://builds.emberjs.com/ember-1.0.0-rc.6.1.js</a> and downloaded it manually into my vendor folders and finally got it to work</p>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>

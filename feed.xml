@@ -1,0 +1,772 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Blog Name</title>
+  <subtitle>Blog subtitle</subtitle>
+  <id>http://blog.url.com/posts</id>
+  <link href="http://blog.url.com/posts"/>
+  <link href="http://blog.url.com/feed.xml" rel="self"/>
+  <updated>2016-07-27T00:00:00+08:00</updated>
+  <author>
+    <name>Blog Author</name>
+  </author>
+  <entry>
+    <title>Capybara &amp; Waiting</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
+    <id>http://blog.url.com/posts/2016/07/27/capybara-and-waiting/</id>
+    <published>2016-07-27T00:00:00+08:00</published>
+    <updated>2016-07-28T23:58:54+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
+you’re likely to be doing feature tests with &lt;a href="https://github.com/jnicklas/capybara"&gt;Capybara&lt;/a&gt; as well.&lt;/p&gt;
+
+&lt;h3&gt;Common Scenario&lt;/h3&gt;
+
+&lt;p&gt;Let’s look at a common scenario in a feature test: &lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Load some form&lt;/li&gt;
+&lt;li&gt;Click a random button&lt;/li&gt;
+&lt;li&gt;Check if the refreshed page (or partially re-rendered pages) matches your expected results&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If you’re just transitioning from unit tests, it might be tempting to jump right to this option:&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;visit&lt;/span&gt; &lt;span class="n"&gt;some_path&lt;/span&gt;
+&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Submit'&lt;/span&gt; &lt;span class="c1"&gt;# Does an AJAX request&lt;/span&gt;
+
+&lt;span class="c1"&gt;# -- Page refresh or re-render --&lt;/span&gt;
+
+&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;text&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;eq&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay 
+between the button click and the actual completion of the code that is run as a result of that click. &lt;/p&gt;
+
+&lt;p&gt;It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call. 
+Its hard to predict how long exactly that is going to take.&lt;/p&gt;
+
+&lt;h3&gt;Built-in Matchers&lt;/h3&gt;
+
+&lt;p&gt;For this reason, Capybara provides us with some built-in matchers. They work amazingly well 
+for these scenarios where you are waiting for something to finish before checking the content for text, 
+DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements 
+to appear or disappear on the page.&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
+&lt;span class="c1"&gt;# have_css, have_selector&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can even define if the element should be visible or not after it is rendered. &lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;visible: &lt;/span&gt;&lt;span class="kp"&gt;false&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Magical. Right? &lt;/p&gt;
+
+&lt;h3&gt;The Story of &lt;code&gt;wait_until&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Despite the fact that the Capybara matchers were there from the start, pre-2.0, many people used &lt;code&gt;wait_until { ... }&lt;/code&gt;. 
+It was not intended. So in 2.0, it was deprecated altogether. At the same time, &lt;code&gt;wait_for_ajax&lt;/code&gt; 
+was introduced.  So why do we still need that if we have something like &lt;code&gt;have_content&lt;/code&gt;? &lt;/p&gt;
+
+&lt;p&gt;Take a look at the scenario below, is &lt;code&gt;have_content&lt;/code&gt; sufficient? What do you think?&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;fill_in&lt;/span&gt; &lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;with: &lt;/span&gt;&lt;span class="s1"&gt;'Daniel'&lt;/span&gt;
+&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Link'&lt;/span&gt; &lt;span class="c1"&gt;#some AJAX call happens&lt;/span&gt;
+&lt;span class="n"&gt;reload_page&lt;/span&gt;
+&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'Linked'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It depends. There&amp;rsquo;s a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes. 
+And the tests would randomly fail. That&amp;rsquo;s not good; we all want deterministic results for our tests, right?&lt;/p&gt;
+
+&lt;h3&gt;Enter &lt;code&gt;wait_for_ajax&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;wait_for_ajax&lt;/code&gt; was designed to be used whenever you need to make sure that all AJAX calls have completed 
+before proceeding, or in this case, before the page reload.&lt;/p&gt;
+
+&lt;p&gt;Alternatively, you could also use &lt;code&gt;have_selector&lt;/code&gt; to block the execution. But in my opinion, 
+if you don&amp;rsquo;t actually want to test the content, using &lt;code&gt;wait_for_ajax&lt;/code&gt; makes a lot more sense. &lt;/p&gt;
+
+&lt;p&gt;So the next time you encounter similar issues, check to make sure that you are using the Capybara built-in matchers!&lt;/p&gt;
+
+&lt;p&gt;What do you think? Are your experiences similar?&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Dockerized Golang + Postgres on Digital Ocean</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
+    <id>http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/</id>
+    <published>2016-04-27T00:00:00+08:00</published>
+    <updated>2016-07-28T19:23:17+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.&lt;/p&gt;
+
+&lt;p&gt;But with the rise in popularity of Docker recently, I&amp;rsquo;ve been wanting to deploy something into production with Docker but never found the right app for it until this one.&lt;/p&gt;
+
+&lt;p&gt;It was a simple Golang scraper + Api that is backed by PostgreSQL.&lt;/p&gt;
+
+&lt;h3&gt;Overview&lt;/h3&gt;
+
+&lt;p&gt;I went with a fresh Ubuntu 14.04 DigitalOcean droplet (yes again). Some boilerplate setup for a digital ocean instance is recorded here in a &lt;a href="https://aranair.github.io/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma"&gt;previous post&lt;/a&gt;:&lt;/p&gt;
+
+&lt;p&gt;The basic idea was to have 2 Dockerized components to this deployment. The first Docker container would be running the Golang app. The second one is to run Postgres via linked data.&lt;/p&gt;
+
+&lt;h3&gt;Dockerize the Postgres&lt;/h3&gt;
+
+&lt;p&gt;I chose to go with a base installation of Postgres and configure it from there, but YMMV.&lt;/p&gt;
+
+&lt;p&gt;This runs the postgres service under &lt;code&gt;db&lt;/code&gt; name and as a daemon.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it db /bin/bash
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;From there, a new user was created and granted privileges via psql CLI.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;psql -U postgres
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;CREATE USER app;
+CREATE DATABASE appdb;
+GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&amp;rsquo;t allow client authentication in connections yet. &lt;/p&gt;
+
+&lt;p&gt;In order for it to work, there were two files which I had to modify:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;hba_file&lt;/code&gt; - To enable client authentication&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;postgresql.conf&lt;/code&gt; - To enable listening of addresses other than localhost&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To find the location of the &lt;code&gt;hba_file&lt;/code&gt; simply run &lt;code&gt;show hba_file;&lt;/code&gt; in the psql interactive shell. &lt;/p&gt;
+
+&lt;p&gt;The default one should lie at this location: &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;/var/lib/postgresql/data/pg_hba.conf
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Installed my favourite text editor via:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;apt-get update &amp;amp;&amp;amp; apt-get install vim
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Changed from this:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;host  all  all  127.0.0.1/32  md5
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;To this, so that it allows connections that are from the same machine:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;host all  all  192.168.1.0/24  md5
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For &lt;code&gt;/etc/postgresql/9.3/main/postgresql.conf&lt;/code&gt;:  Changing &lt;code&gt;#listen_addresses = &amp;#39;localhost&amp;#39;&lt;/code&gt; to &lt;code&gt;listen_addresses = &amp;#39;*&amp;#39;&lt;/code&gt; would enable it to listen for incoming connection requests from all available IP addresses.&lt;/p&gt;
+
+&lt;p&gt;A restart of the postgres service was also required.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo service postgresql stop
+sudo service postgresql start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Docker Volumes&lt;/h3&gt;
+
+&lt;p&gt;The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
+In my deployment, you&amp;rsquo;ll notice that I do not specifically set this up and that is because the &lt;a href="&amp;quot;https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile&amp;quot;"&gt;Postgres Dockerfile&lt;/a&gt; already does this by default!&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
+ENV PGDATA /var/lib/postgresql/data
+VOLUME /var/lib/postgresql/data
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can find out more about it in the &lt;a href="https://docs.docker.com/engine/userguide/containers/dockervolumes/"&gt;official documentation&lt;/a&gt; if you&amp;rsquo;re interested.&lt;/p&gt;
+
+&lt;h3&gt;Dockerize the Golang App&lt;/h3&gt;
+
+&lt;p&gt;This is the simple Dockerfile that I&amp;rsquo;ve used for my Golang App.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM golang:onbuild
+
+RUN go get bitbucket.org/liamstask/goose/cmd/goose
+
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "vim"]
+
+ADD config.toml /go/bin/
+ADD dbconf.yml /go/src/app/db/
+
+EXPOSE 5000
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A quick run through of each line:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The first line runs the &amp;lsquo;onbuild&amp;rsquo; variant of the golang image that automatically copies the source, build and run it. &lt;/li&gt;
+&lt;li&gt;The second line installs &amp;#39;goose&amp;rsquo;, which is the tool I use to get (somewhat) Rails-like database migrations.&lt;/li&gt;
+&lt;li&gt;Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.&lt;/li&gt;
+&lt;li&gt;Then copy some app config files into the docker image.&lt;/li&gt;
+&lt;li&gt;Last line simply exposes port 5000 of the container to the outside world. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker built -t app
+docker run -d -p 80:5000 --name gosnap --link db:postgres app
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-d&lt;/code&gt; tells it to run it as a daemon,&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-p 80:5000&lt;/code&gt; tells it to link the host container&amp;rsquo;s port 80 to port 5000 of the docker container&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;--link db:postgres&lt;/code&gt; links our app to the postgres container that we&amp;rsquo;ve created earlier&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Via the link to the postgres container, you automatically get this environment variable &lt;code&gt;$POSTGRES_PORT_5432_TCP_ADDR&lt;/code&gt; in the app. This contains&lt;/p&gt;
+
+&lt;p&gt;If like me, you use goose, your dbconf.yml will should look something like this at the end.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;db:
+   driver: postgres
+   open: host=$POSTGRES_PORT_5432_TCP_ADDR user=app dbname=appdb sslmode=disable
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;I then ran the migrations at this point:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it gosnap goose up
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Capistrano + Postgres + Rails + RVM + Nginx + Puma on DigitalOcean</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/"/>
+    <id>http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</id>
+    <published>2016-01-22T00:00:00+08:00</published>
+    <updated>2016-07-28T19:23:17+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Recently, I&amp;rsquo;ve been working on my squash club, &lt;a href="http://www.ucsc.sg"&gt;UCSC&amp;rsquo;s new site&lt;/a&gt;. And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.&lt;/p&gt;
+
+&lt;p&gt;Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I&amp;rsquo;ve historically used Pingdom to avoid having the free instances spin down after 30 mins :P. &lt;/p&gt;
+
+&lt;h3&gt;Overview of Setup&lt;/h3&gt;
+
+&lt;p&gt;I went with a fresh Ubuntu 14.04 DigitalOcean droplet to see how long it takes for me to setup a fresh server for Rails deployment. tl;dr Its actually doesn&amp;rsquo;t take long at all :P&lt;/p&gt;
+
+&lt;p&gt;The stack I chose was nothing out of the ordinary:
+- RVM for ruby (just more used to RVM, no intention to start a war on rbenv vs rvm :P)
+- Rails for application code
+- Postgres for the database
+- Capistrano for deployment (there really isn&amp;rsquo;t other better option imo)
+- Nginx for the reverse proxy (again)
+- Puma for the webserver&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;ve kinda just compiled the steps these posts mainly:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-14-04"&gt;Initial Server Setup&lt;/a&gt;,&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-14-04"&gt;PostgreSQL&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/deploying-a-rails-app-on-ubuntu-14-04-with-capistrano-nginx-and-puma"&gt;Nginx, Puma, RVM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-a-host-name-with-digitalocean"&gt;Nameserver setup)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Devise 3, Capistrano &amp;amp; Env Vars&lt;/h3&gt;
+
+&lt;p&gt;I must admit I was stuck here for a good bit haha.&lt;/p&gt;
+
+&lt;p&gt;So, since Devise 3, a secret key has been required on production defined in the Devise initializer:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;config.secret_key = ENV[&amp;quot;SECRET_KEY_BASE&amp;quot;] if Rails.env.production?&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;There are notably 2 ways to get this working:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Symlink configs/secrets.yml with an actual key on capistrano deploy&lt;/li&gt;
+&lt;li&gt;Use &amp;ldquo;environment variables&amp;rdquo; (I assumed so after seeing ENV)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Most of the people I see fix this by using &lt;a href="https://github.com/rbenv/rbenv-vars"&gt;rbenv-var&lt;/a&gt; to manage environment variables for ruby projects but since I&amp;rsquo;m using rvm, I don&amp;rsquo;t exactly have that option.&lt;/p&gt;
+
+&lt;p&gt;So I ssh&amp;rsquo;d into the server and did this &lt;code&gt;export $SECRET_KEY_BASE=...&lt;/code&gt; and fully expected it to work after seeing the same value with &lt;code&gt;ruby -e &amp;quot;p ENV[&amp;#39;SECRET_KEY_BASE&amp;#39;]&amp;quot;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Except it didn&amp;rsquo;t.&lt;/p&gt;
+
+&lt;h3&gt;The Problem?&lt;/h3&gt;
+
+&lt;p&gt;After a little digging around, I found out that when you are using Capistrano to deploy, apparently it uses SHELL variables that exist in the lifetime of the deployment (well technically its just SSH) instead of the actual environment variables.&lt;/p&gt;
+
+&lt;p&gt;So the correct place to put the export was in &lt;code&gt;~/.bashrc&lt;/code&gt;!&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;export SECRET_KEY_BASE="xxx"
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The deployment with capistrano was relatively straightforward otherwise.&lt;/p&gt;
+
+&lt;p&gt;Below, I&amp;rsquo;ve compiled the commands I&amp;#39;ved used (most of them) for the entire process.&lt;/p&gt;
+
+&lt;h3&gt;Adding Deploy User&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;adduser deploy
+gpasswd -a deploy sudo
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Copy public key up to server&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;ssh-copy-id deploy@server_ip_address
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Install Postgres&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo -i -u postgres
+createuser --interactive
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Install Nginx&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get install curl git-core nginx -y
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Install RVM &amp;amp; Ruby&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+curl -sSL https://get.rvm.io | bash -s stable
+source ~/.rvm/scripts/rvm
+rvm requirements
+rvm install 2.2.1
+rvm use 2.2.1 --default
+gem install rails -V --no-ri --no-rdoc
+gem install bundler -V --no-ri --no-rdoc
+gem install pg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Setting up SSH (Github)&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;ssh -T git@github.com&lt;/code&gt; on the server then add the server&amp;rsquo;s public key into your github account.&lt;/p&gt;
+
+&lt;h3&gt;Gemfile&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;group :development do
+    gem 'capistrano',         require: false
+    gem 'capistrano-rvm',     require: false
+    gem 'capistrano-rails',   require: false
+    gem 'capistrano-bundler', require: false
+    gem 'capistrano3-puma',   require: false
+end
+
+gem 'puma'
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Deploy.rb&lt;/h3&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'ucsc'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:repo_url&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'git@github.com:aranair/ucsc.git'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;            &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_threads&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_workers&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="mi"&gt;1&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Don't change these unless you know what you're doing&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:pty&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;             &lt;span class="kp"&gt;true&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:use_sudo&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="kp"&gt;false&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:stage&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:production&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_via&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="ss"&gt;:remote_cache&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_to&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"/home/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/apps/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_bind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"unix://&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;-puma.sock"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.state"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_pid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.pid"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_access_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.error.log"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_error_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.access.log"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:ssh_options&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="ss"&gt;forward_agent: &lt;/span&gt;&lt;span class="kp"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;user: &lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;keys: &lt;/span&gt;&lt;span class="sx"&gt;%w(~/.ssh/id_rsa.pub)&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_preload_app&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_worker_timeout&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_init_active_record&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;  &lt;span class="c1"&gt;# Change to false when not using ActiveRecord&lt;/span&gt;
+
+&lt;span class="c1"&gt;## Defaults:&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:scm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:git&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:branch&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:master&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:format&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:pretty&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:log_level&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:debug&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:keep_releases&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;
+
+&lt;span class="c1"&gt;## Linked Files &amp;amp; Directories (Default None):&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_files&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sx"&gt;%w{config/database.yml}&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_dirs&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="sx"&gt;%w{bin log tmp/pids tmp/cache tmp/sockets vendor/bundle public/system}&lt;/span&gt;
+
+&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:puma&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Create Directories for Puma Pids and Socket'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets -p"&lt;/span&gt;
+      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids -p"&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:deploy&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s2"&gt;"Make sure local git is in sync with remote."&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:check_revision&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="k"&gt;unless&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse HEAD`&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse origin/master`&lt;/span&gt;
+        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"WARNING: HEAD is not the same as origin/master"&lt;/span&gt;
+        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"Run `git push` to sync changes."&lt;/span&gt;
+        &lt;span class="nb"&gt;exit&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Initial Deploy'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:initial&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="s1"&gt;'deploy:restart'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'puma:start'&lt;/span&gt;
+      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Restart application'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:restart&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;in: :sequence&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;wait: &lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'puma:restart'&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:starting&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:check_revision&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:compile_assets&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:cleanup&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:restart&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Capfile&lt;/h3&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/setup'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/deploy'&lt;/span&gt;
+
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rails'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/bundler'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rvm'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/puma'&lt;/span&gt;
+
+
+&lt;span class="no"&gt;Dir&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;glob&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'lib/capistrano/tasks/*.rake'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;import&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Nginx&lt;/h3&gt;
+
+&lt;p&gt;config/nginx.conf&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;upstream puma {
+  server unix:///home/deploy/apps/ucsc/shared/tmp/sockets/appname-puma.sock;
+}
+
+server {
+  listen 80 default_server deferred;
+  # server_name *.ucsc.sg;
+
+  root /home/deploy/apps/ucsc/current/public;
+  access_log /home/deploy/apps/ucsc/current/log/nginx.access.log;
+  error_log /home/deploy/apps/ucsc/current/log/nginx.error.log info;
+
+  location ^~ /assets/ {
+    gzip_static on;
+    expires max;
+    add_header Cache-Control public;
+  }
+
+  try_files $uri $uri @puma;
+  location @puma {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    proxy_pass http://puma;
+  }
+
+  error_page 500 502 503 504 /500.html;
+  client_max_body_size 10M;
+  keepalive_timeout 10;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After Capistrano deploy via &lt;code&gt;ap production deploy: initial&lt;/code&gt;&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo rm /etc/nginx/sites-enabled/default
+sudo ln -nfs "/home/deploy/apps/ucsc/current/config/nginx.conf" "/etc/nginx/sites-enabled/ucsc"
+sudo service nginx restart
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;Setting it up wasn&amp;rsquo;t too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.&lt;/p&gt;
+
+&lt;p&gt;Maybe in another post I&amp;rsquo;ll have a go at using Ansible or a bash script to automatically set the servers up.&lt;/p&gt;
+
+&lt;p&gt;Future posts:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Ansible / Bash script to set up&lt;/li&gt;
+&lt;li&gt;Docker&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Kafka + Heka to Bigquery Setup for Realtime Logs</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2015/07/04/heka-bigquery-realtime-log/"/>
+    <id>http://blog.url.com/posts/2015/07/04/heka-bigquery-realtime-log/</id>
+    <published>2015-07-04T00:00:00+08:00</published>
+    <updated>2016-07-28T19:23:17+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In &lt;a title="Golang with Protobuf" href="/posts/2015/05/05/golang-protobuf"&gt;Part 1 of this series&lt;/a&gt;, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. &lt;/p&gt;
+
+&lt;p&gt;The packages allows us to process 2 different modes of communication protocol with just one set of schema defined in proto files:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;json&lt;/code&gt; package to unmarshal json requests into the generated Go structs, &lt;/li&gt;
+&lt;li&gt;protobuf package to unmarshal incoming protobuf messages. &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;With this, we started sending test requests to the API and logged each of them into simple logfiles. However, we also needed the logs (such as clicks &amp;amp; visits data) to be displayed live on &lt;a title="Google BigQuery" href="https://cloud.google.com/bigquery/"&gt;Google BigQuery&lt;/a&gt; for our data scientist and market managers to have better perspectives of the traffic in realtime.&lt;/p&gt;
+
+&lt;h3&gt;Overview of Setup&lt;/h3&gt;
+
+&lt;p&gt;We have a number of components in our API log setup:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The API server that logs the requests into files&lt;/li&gt;
+&lt;li&gt;&lt;a title="Heka" href="https://github.com/mozilla-services/heka/"&gt;Heka&lt;/a&gt; process that monitors the files and streams it to Kafka topics&lt;/li&gt;
+&lt;li&gt;&lt;a title="Kafka" href="http://kafka.apache.org/documentation.html"&gt;Kafka&lt;/a&gt; as the messaging system to distribute the messages which are then consumed by the services that need them.&lt;/li&gt;
+&lt;li&gt;Heka server with plugin(s) that consume data from Kafka topics and upload them to:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a title="Heka-BigQuery plugin" href="https://github.com/aranair/heka-bigquery"&gt;Heka Plugin to BigQuery&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a title="Heka-S3 plugin" href="https://github.com/uohzxela/heka-s3"&gt;Heka Plugin to S3&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;(Logs + Heka) to Kafka&lt;/h3&gt;
+
+&lt;p&gt;For both sections of Heka, We used a fork of &lt;a title="chef-cookbook-heka" href="https://github.com/augieschwer/chef-cookbook-heka"&gt;this cookbook&lt;/a&gt; in our cookbook/recipes when cooking the API + Heka servers. It helps us to manage the required config files and also help with the necessary steps to create and run the Hekad daemon as a service.&lt;/p&gt;
+
+&lt;p&gt;Our cookbook that generated a require config file ended up looking like this:&lt;/p&gt;
+&lt;pre class="highlight toml"&gt;&lt;code&gt;&lt;span class="c"&gt;# This part defines the Kafka servers that the Heka plugin communicates with and also the topic that the heka plugin will consume information from. &lt;/span&gt;
+&lt;span class="nn"&gt;[&amp;lt;%=@topic%&amp;gt;-input-kafka]&lt;/span&gt;
+&lt;span class="py"&gt;type&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"KafkaInput"&lt;/span&gt;
+&lt;span class="py"&gt;topic&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@topic%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;addrs&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="err"&gt;&amp;lt;%=@kafka_hosts%&amp;gt;&lt;/span&gt;
+
+&lt;span class="c"&gt;# This defines the configs used in the Heka server for the BigQuery Plugin.&lt;/span&gt;
+&lt;span class="nn"&gt;[&amp;lt;%=@topic%&amp;gt;-output-bq]&lt;/span&gt;
+&lt;span class="py"&gt;type&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"BqOutput"&lt;/span&gt;
+&lt;span class="py"&gt;message_matcher&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"Logger == '&amp;lt;%=@topic%&amp;gt;-input-kafka'"&lt;/span&gt;
+&lt;span class="py"&gt;project_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@project_id%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;dataset_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@dataset_id%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;table_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@table_id%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;schema_file_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@schema_file_path%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;pem_file_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@pem_file_path%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;buffer_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@buffer_path%&amp;gt;"&lt;/span&gt;
+&lt;span class="py"&gt;buffer_file&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@buffer_file%&amp;gt;"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Kafka to Heka to BigQuery&lt;/h3&gt;
+
+&lt;p&gt;Plugins cannot be loaded dynamically in Heka; the only way to do it is to define it as a dependency in the cmake file and load it via the plugin_loader when building Heka. Fortunately, this can be setup via &lt;a href="https://github.com/wego/chef-cookbook-heka/blob/master/attributes/source.rb"&gt;this recipe&lt;/a&gt; in the cookbook when creating the servers. &lt;/p&gt;
+
+&lt;p&gt;A sample of the plugins we used for our hekad:&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="s2"&gt;"plugins"&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="c1"&gt;# Add items here like the following that's required for integration with kafka&lt;/span&gt;
+    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/genx7up/heka-kafka acf3ac7a3d6d6dab313510f81828fca2f9375229)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/uohzxela/heka-s3 master)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/wego/heka-bigquery master)"&lt;/span&gt;
+  &lt;span class="p"&gt;],&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This setup will get us the bare infrastructure working, treating the plugins as blackboxes for now.&lt;/p&gt;
+
+&lt;p&gt;Stay tuned for the 3rd part of this series where I will go into details and discuss how the &lt;a href="https://github.com/aranair/heka-bigquery"&gt;heka-bigquery plugin&lt;/a&gt; works!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Golang + Protobuf</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2015/05/05/golang-protobuf/"/>
+    <id>http://blog.url.com/posts/2015/05/05/golang-protobuf/</id>
+    <published>2015-05-05T00:00:00+08:00</published>
+    <updated>2016-07-28T19:23:17+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)&lt;/p&gt;
+
+&lt;p&gt;Recently, I&amp;rsquo;ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing, with one caveat: we&amp;rsquo;re using Protobuf Buffers (or otherwise just Protobuf) for our serialisation of data.&lt;/p&gt;
+
+&lt;h3&gt;What is Protobuf?&lt;/h3&gt;
+
+&lt;p&gt;Its basically a protocol that comes with a language &lt;a title="proto" href="https://developers.google.com/protocol-buffers/docs/proto"&gt;proto&lt;/a&gt; with which you define your data structure once and then you can use this source code to generate helpers/classes/models for different languages such as Golang, Python, Ruby etc .. Do note that only C++, Python and Java are officially supported right now.&lt;/p&gt;
+
+&lt;p&gt;Think of it as XML, JSON but smaller, faster, and simpler; yet at the same time pretty defined and structured as well. 
+So, Wego is set on replacing the semi-spaghetti JSON communication that we&amp;rsquo;re currently working with, with Protobuf. &lt;/p&gt;
+
+&lt;h3&gt;Context&lt;/h3&gt;
+
+&lt;p&gt;As usual, the process always have some form of a bump for us to overcome before being able to use it. Typically, I think most golang protobuf repos will have rather simple/flat structure. &lt;/p&gt;
+
+&lt;p&gt;Our repo was built in a slightly odd that worked well to define the structure for other protobuf generators (we also use Protobuf for Ruby and Java). Below is a rough idea of how it looked like before a huge round of changes:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# OLD STRUCTURE
+- protos
+  - wego-protos
+  - base.proto
+  - flights.proto
+  - hotels.proto
+  - analytics.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The 1st Hurdle&lt;/h3&gt;
+
+&lt;p&gt;Well technically it isn&amp;rsquo;t a bug, more like convention. The basic command for protoc (the tool that converts .proto files) which is shown below, is meant to be run once per package. This command will then look at the included files for a package name to compile them into. But initially, our files that were all in the root folder belong to separate packages. &lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;protoc&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;proto_path&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
+  &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;go_out&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;libs&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
+  &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;flights&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;proto&lt;/span&gt;
+
+&lt;span class="n"&gt;protoc&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;proto_path&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
+  &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;go_out&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;libs&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
+  &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;hotels&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;proto&lt;/span&gt;
+
+&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Specifying one file at a time and repeating it for the 4 files did not work either. Because it would break the name spaces inside them; they essentially become the same package instead of separate packages. &lt;/p&gt;
+
+&lt;p&gt;This issue doesn&amp;rsquo;t really exist in other languages because I think files are resolved file level in Java/Ruby but at a package level in Golang. &lt;a title="import issue" href="https://github.com/golang/protobuf/issues/8"&gt;this issue&lt;/a&gt; and &lt;a title="commit" href="https://github.com/golang/protobuf/commit/dded9133a99a3cd7c3a9d24a9f85c2b8ef76ff31"&gt;this commit&lt;/a&gt; describes it in fuller details.&lt;/p&gt;
+
+&lt;p&gt;And so to get past it, we restructured the files in this way, such that each of the packages reside in individual folders, following the convention of Golang. &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# NEW STRUCTURE
+- protos
+  - wego-protos
+   - wego
+    - base.proto
+   - flights
+      - base.proto
+   - hotels
+    - base.proto 
+   - analytics 
+    - base.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The 2nd Problem&lt;/h3&gt;
+
+&lt;p&gt;This problem is abit uglier. So in the &lt;code&gt;wego-protos&lt;/code&gt; files, we do imports that are from the other repo &lt;code&gt;wegosdk-protos&lt;/code&gt;. It is an entirely separate git repo that is included as a git submodule. &lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;package wego.flights
+import "wegosdk-protos/wegosdk/base.proto";
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The generated package name from that snippet was wrong. I had to include an undocumented option go&lt;em&gt;package in proto2 (it is available in proto3). &amp;ldquo;` option go&lt;/em&gt;package = &amp;quot;wego&amp;rdquo;; &amp;ldquo;`&lt;/p&gt;
+
+&lt;p&gt;This actually generates &lt;code&gt;import &amp;quot;wegosdk-protos/wegosdk/base&amp;quot;&lt;/code&gt; in the *.pb.go files. It was clear that we needed to customise the import paths + package names.&lt;/p&gt;
+
+&lt;p&gt;Looking at &lt;a title="protobuf code" href="https://github.com/golang/protobuf/blob/master/protoc-gen-go/plugin/Makefile#L38"&gt;this file&lt;/a&gt;, we found that the &amp;ndash;go-out has a &amp;quot;M&amp;rdquo; flag that allows us to modify the final import paths to point to the correct github.com/wego/wego-protos filepaths. We also don&amp;rsquo;t do another &lt;code&gt;go get github.com/wego/wegosdk-proto&lt;/code&gt;; basically treating it as one repo.&lt;/p&gt;
+
+&lt;h3&gt;The Solution&lt;/h3&gt;
+
+&lt;p&gt;Finally I ended up with this long &amp;ndash;go-out option to somewhat &amp;ldquo;replace&amp;rdquo; all of the default imports (that works with other languages) to use the correct $GOPATH source path.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;--go-out=Mwegosdk-protos/wegosdk_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_hotels,
+Mwegosdk-protos/wegosdk_flights/fares.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk,
+Mwego-protos/wego_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_hotels,
+Mwego-protos/wego_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_flights,
+Mwego-protos/wego_analytics/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_analytics,
+Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego,
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;On hindsight, it would probably have been alot easier if we just treated wegosdk-protos as an entirely separate project in Golang. Nevertheless I think the workaround is reasonable if we wanted to work with only 1 repo at that time.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Predefined Structs vs Type Assertion in Go</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2014/05/21/predefined-structs-vs-type-assertion-go/"/>
+    <id>http://blog.url.com/posts/2014/05/21/predefined-structs-vs-type-assertion-go/</id>
+    <published>2014-05-21T00:00:00+08:00</published>
+    <updated>2016-07-28T19:23:17+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Suppose you have a JSON of this format:&lt;/p&gt;
+&lt;pre class="highlight json"&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+  &lt;/span&gt;&lt;span class="nt"&gt;"results"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; 
+    &lt;/span&gt;&lt;span class="s2"&gt;"collection"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="nt"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;first_name:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;"Ho Man"&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;last_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Boa"&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"phone"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"123456"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="nt"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;first_name:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;"John"&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;last_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Lee"&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"phone"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"2345"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="err"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Similarities&lt;/h3&gt;
+
+&lt;p&gt;There are essentially 2 methods to do this, using pre-defined structs or using type assertion. The only similar part is where the data is converted into []bytes for later use.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ioutil&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ReadAll&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dataStream&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;!=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="no"&gt;nil&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="nb"&gt;panic&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Type Assertion&lt;/h3&gt;
+
+&lt;p&gt;I personally don&amp;rsquo;t like this method because you end up doing a lot of manipulation in the end anyways but it could be helpful if you don&amp;rsquo;t want to define the entire structure right from the beginning or if your final structure is vastly different from the format of the original JSON.&lt;/p&gt;
+
+&lt;p&gt;The general idea is to read it into a generic interface -&amp;gt; then slowly step by step cast it into moar interfaces. e.g.&lt;/p&gt;
+
+&lt;p&gt;First define the final structure you want the results to be in and &lt;code&gt;Unmarshal&lt;/code&gt; the JSON into a blank &lt;code&gt;interface{}&lt;/code&gt;&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;FullName&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Unmarshal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Type assert &lt;code&gt;results/collection&lt;/code&gt; into an array of interfaces{} and create a &lt;code&gt;slice&lt;/code&gt; to hold the final data.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"results"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})[&lt;/span&gt;&lt;span class="s"&gt;"collection"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;([]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;peopleSlices&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="nb"&gt;make&lt;/span&gt;&lt;span class="p"&gt;([]&lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Loop through the slice and further type assert the generic interface{} objects into their corresponding data types. You can also employ the type switch technique that is described here (http://golang.org/doc/effective&lt;em&gt;go.html#type&lt;/em&gt;switch) to do this instead of setting it in stone.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;range&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="n"&gt;phone&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"phone"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+
+ &lt;/span&gt;&lt;span class="n"&gt;peopleSlices&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;FullName&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"first_name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"last_name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;phone&lt;/span&gt;&lt;span class="x"&gt;
+ &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;Pre-defined Structs&lt;/h3&gt;
+
+&lt;p&gt;This method seems to be the more conventional way. The problem with this is that if your desired format is vastly different from the original JSON format, you basically have to define 2 sets of structs. On the bright side, the code is much much cleaner&lt;/p&gt;
+
+&lt;p&gt;Define the format of the &lt;em&gt;initial JSON&lt;/em&gt; into a var struct{}.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;People&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;Results&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+   &lt;/span&gt;&lt;span class="n"&gt;Collections&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+     &lt;/span&gt;&lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+       &lt;/span&gt;&lt;span class="n"&gt;First_name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+       &lt;/span&gt;&lt;span class="n"&gt;Last_name&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+     &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="x"&gt;
+     &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+   &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Simply Unmarshal it and profit! How simple is that?&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Unmarshal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;People&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+</content>
+  </entry>
+</feed>

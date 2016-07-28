@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>BHM</title>
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
+    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+  </head>
+  <body class="posts posts_2013 posts_2013_08 posts_2013_08_04 posts_2013_08_04_emberjs-model-restadapter-conventions posts_2013_08_04_emberjs-model-restadapter-conventions_index">
+    <nav class="navbar navbar-default">
+  <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+  </div>
+
+  <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+    <a href="/posts" class="navbar-links pull-right">
+      Posts
+    </a>
+    <a href="/projects" class="navbar-links pull-right">
+      Projects
+    </a>
+    <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
+      LinkedIn
+    </a>
+  </div>
+</nav>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      Emberjs Model RestAdapter Conventions<br>
+      <span>Published on Aug 04, 2013</span>
+    </h1>
+    <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
+
+<p>It was pretty simple and straightforward mostly. You basically just change the store to have &ldquo;adapter: DS.RESTAdapter&rdquo; and extend the model to have the appropriate attribute names from the server. (I&rsquo;m using ActiveModel serializers) It then automagically works. Emberjs helps to figure out all the paths it needs to get the appropriate data.  </p>
+
+<p>So for example, if you bound the index/root &ldquo;/&rdquo; to the tasks model via a task router and set a nested resource for tasks in the same route. </p>
+<pre class="highlight plaintext"><code>App.Router.map(function() {
+    this.resource(tasks, {path: /}, function() {
+       this.resource(task, {path: :task_id});
+    });
+});
+</code></pre>
+
+<p>It&rsquo;ll send a get request to /tasks when you&rsquo;re at root. It will also know that when you are at #/2, it should be sending the request to /tasks/2 as long as you provide the task_id to the router like above.</p>
+
+<p>One small thing that tripped me was the code below:</p>
+<pre class="highlight plaintext"><code>App.Task = DS.Model.extend({
+   name: DS.attr('string'),
+   task_details: DS.attr('string'),
+   isCompleted: DS.attr('boolean')
+});
+</code></pre>
+
+<p>How do you think the json data should look like? Like this?</p>
+<pre class="highlight json"><code><span class="p">{</span><span class="w"> </span><span class="err">name:</span><span class="w"> </span><span class="err">'test',</span><span class="w"> </span><span class="err">task_details:</span><span class="w"> </span><span class="err">'details',</span><span class="w"> </span><span class="err">isCompleted:</span><span class="w"> </span><span class="err">false</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>Apparently not so!  It turns out that Emberjs expects snake case in the JSON when the attribute name is camelized! So the correct format that you should be sending from the server should be like this!</p>
+<pre class="highlight json"><code><span class="p">{</span><span class="w"> </span><span class="err">name:</span><span class="w"> </span><span class="err">'test',</span><span class="w"> </span><span class="err">task_details:</span><span class="w"> </span><span class="err">'details',</span><span class="w"> </span><span class="err">is_completed:</span><span class="w"> </span><span class="err">false</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>
