@@ -14,16 +14,17 @@
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
     <id>http://blog.url.com/posts/2016/07/27/capybara-and-waiting/</id>
     <published>2016-07-27T00:00:00+08:00</published>
-    <updated>2016-07-29T00:27:27+08:00</updated>
+    <updated>2016-07-29T00:29:59+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
     <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
 you’re likely to be doing feature tests with &lt;a href="https://github.com/jnicklas/capybara"&gt;Capybara&lt;/a&gt; as well.&lt;/p&gt;
 
-&lt;p&gt;I recently forgot some of these myself while adding feature specs at work at 
-&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt;. I hope this can serve as a reminder to myself in future 
-and be of help to anyone who encounters the same problems!&lt;/p&gt;
+&lt;p&gt;Some of these slipped my mind while adding feature specs at work at 
+&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt; and I spent extra time that I shouldn&amp;rsquo;t have! 
+So I hope this post can be a reminder to myself in future and be of help to anyone who 
+encounters the same problems!&lt;/p&gt;
 
 &lt;h3&gt;Common Scenario&lt;/h3&gt;
 
