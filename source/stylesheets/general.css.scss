@@ -6,7 +6,8 @@ body {
   font-family: $body-font, Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
-  color: #566b78;
+  // color: #566b78;
+  color: #3d5867;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -35,10 +36,10 @@ h1.page-header {
 }
 
 p {
-  font-size: 1em;
-  line-height: 2em;
-  margin-bottom: 1.5em;
-  margin-top: 1.5em;
+  font-size: $p-font-size;
+  line-height: 1.60em;
+  margin-bottom: 1em;
+  margin-top: 1em;
 
   a {
     border-bottom: 1px dotted #333;
@@ -66,7 +67,7 @@ a:hover {
 }
 
 .container {
-  max-width: 650px;
+  max-width: 550px;
   margin: auto;
 }
 

@@ -15,14 +15,16 @@ code { font-size: 85%; }
 
 .article-summary__article-title {
   span { // date
-    font-family: "Lato";
+    font-family: $article-title-date-font;
     letter-spacing: 0px;
-    font-size: $p-font-size * 0.44;
+    font-size: $p-font-size * 0.5;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 2px;
+    letter-spacing: 0px;
   }
 
+  font-family: $article-page-title;
   font-size: $p-font-size * 1.9;
   font-weight: $heading-weight;
   color: #333;
@@ -47,8 +49,8 @@ a.article-summary__readmore:hover {
 .article {
   h3 {
     font-size: $p-font-size * 1.5;
-    margin-top: 1.8em;
-    margin-bottom: 0em;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
   }
 }
 
@@ -67,12 +69,15 @@ a.article-summary__readmore:hover {
 
 h1.article__article-title {
   span { // date
-    font-family: "Lato";
-    font-size: $p-font-size * 0.44;
+    font-family: $article-title-date-font;
+    font-size: $p-font-size * 0.5;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 3px;
+    letter-spacing: 0px;
   }
+
+  font-family: $article-page-title;
   font-size: $p-font-size * 1.9;
   font-weight: $heading-weight;
   color: #333;
