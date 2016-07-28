@@ -7,6 +7,10 @@ tags: capybara, rails
 All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
 you’re likely to be doing feature tests with [Capybara](https://github.com/jnicklas/capybara) as well.
 
+I recently forgot some of these myself while adding feature specs at work at 
+[pocketmath](https://www.pocketmath.com/). I hope this can serve as a reminder to myself in future 
+and be of help to anyone who encounters the same problems!
+
 ### Common Scenario
 
 Let’s look at a common scenario in a feature test: 
@@ -32,7 +36,7 @@ between the button click and the actual completion of the code that is run as a 
 It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call. 
 Its hard to predict how long exactly that is going to take.
 
-### Built-in Matchers
+### Magical Built-in Matchers
 
 For this reason, Capybara provides us with some built-in matchers. They work amazingly well 
 for these scenarios where you are waiting for something to finish before checking the content for text, 
@@ -53,13 +57,16 @@ find('#dom-id').should have_content 'something', visible: false
 
 Magical. Right? 
 
-### The Story of `wait_until`
+### Old solutions 
 
-Despite the fact that the Capybara matchers were there from the start, pre-2.0, many people used `wait_until { ... }`. 
-It was not intended. So in 2.0, it was deprecated altogether. At the same time, `wait_for_ajax` 
-was introduced.  So why do we still need that if we have something like `have_content`? 
+Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn't use them.
+Instead they used `wait_until { ... }` or even `sleep(3)` despite being clunkier solutions. 
+`wait_until` was then deprecated in Capybara v2.0 altogether.
 
-Take a look at the scenario below, is `have_content` sufficient? What do you think?
+
+### Complications
+
+Take a look at the scenario below, is that single `have_content` there sufficient? What do you think?
 
 ```ruby
 fill_in :name, with: 'Daniel'
@@ -68,17 +75,23 @@ reload_page
 expect(page).to have_content 'Linked'
 ```
 
-It depends. There's a chance that the `reload_page` would happen before the AJAX code finishes. 
-And the tests would randomly fail. That's not good; we all want deterministic results for our tests, right?
+Nope! There's still a chance that the `reload_page` would happen before the AJAX code finishes. 
+And the tests would randomly fail since the content-check is dependant on the click event's code execution.
+That's not good; we all want deterministic results for our tests, right?
 
-### Enter `wait_for_ajax`
+### What now?
 
-`wait_for_ajax` was designed to be used whenever you need to make sure that all AJAX calls have completed 
-before proceeding, or in this case, before the page reload.
+So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post 
+[here](https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara).  Through spec 
+helpers, they introduce a `wait_for_ajax` method that was designed to be used whenever you need 
+to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.
 
-Alternatively, you could also use `have_selector` to block the execution. But in my opinion, 
-if you don't actually want to test the content, using `wait_for_ajax` makes a lot more sense. 
+### Alternatives
 
-So the next time you encounter similar issues, check to make sure that you are using the Capybara built-in matchers!
+Alternatively, you could also use `have_selector` infront of the reload to block the execution. But in my opinion, 
+if you don't actually want to test the content, using `wait_for_ajax` makes more sense. 
 
-What do you think? Are your experiences similar?
+So the next time you encounter similar issues, stay calm and first check to make sure that you are 
+using the Capybara built-in matchers before using `sleep`!
+
+What does everyone think? Are your experiences similar?
