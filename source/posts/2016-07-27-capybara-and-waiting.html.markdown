@@ -7,9 +7,10 @@ tags: capybara, rails
 All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
 you’re likely to be doing feature tests with [Capybara](https://github.com/jnicklas/capybara) as well.
 
-I recently forgot some of these myself while adding feature specs at work at 
-[pocketmath](https://www.pocketmath.com/). I hope this can serve as a reminder to myself in future 
-and be of help to anyone who encounters the same problems!
+Some of these slipped my mind while adding feature specs at work at 
+[pocketmath](https://www.pocketmath.com/) and I spent extra time that I shouldn't have! 
+So I hope this post can be a reminder to myself in future and be of help to anyone who 
+encounters the same problems!
 
 ### Common Scenario
 
