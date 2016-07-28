@@ -84,12 +84,8 @@
 
   .article pre, 
   .article-list__article-summary pre {
-    font-size: $p-font-size * 0.7;
+    font-size: $p-font-size * 0.8;
     line-height: $p-font-size * 1.25;
-    border: none;
-    border-left: 2px solid rgba(176, 43, 44, 0.83);
-    border-radius: 0;
-    background-color: #fff;
     padding: 10px 0px 10px 20px;
     margin: 0 0 1.8em 0px;
   }
