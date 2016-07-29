@@ -4,8 +4,6 @@ date: 2016-07-28
 tags: rails, try
 ---
 
-Nil, Try & The Lonely Operator
-
 Recently, I left a comment on one of my colleague's PR and we had a discussion with him about 
 the use of `try` vs the lonely operator `&.` and it led to a number of conclusions personally.
 
@@ -66,4 +64,4 @@ All those `.try(..).try(..)`? I always knew I should be getting rid of those too
 so safe. [Law of Demeter](https://en.wikipedia.org/wiki/Law_of_Demeter) literally screams at me 
 every time. 
 
-After reading this, I hope it makes you think twice the next time `.try` chains comes to mind:P
+I hope this post makes you think twice the next time `.try` chains comes to mind:P
