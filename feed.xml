@@ -5,10 +5,76 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-07-27T00:00:00+08:00</updated>
+  <updated>2016-07-28T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Nil, Try &amp; The Lonely Operator</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/"/>
+    <id>http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/</id>
+    <published>2016-07-28T00:00:00+08:00</published>
+    <updated>2016-07-30T00:40:33+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Nil, Try &amp;amp; The Lonely Operator&lt;/p&gt;
+
+&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about 
+the use of &lt;code&gt;try&lt;/code&gt; vs the lonely operator &lt;code&gt;&amp;amp;.&lt;/code&gt; and it led to a number of conclusions personally.&lt;/p&gt;
+
+&lt;p&gt;I used to use lots of &lt;code&gt;.try&lt;/code&gt;. I&amp;rsquo;ve also come across codebases littered with it, be it in the 
+presentation layer or in the models. From personal experience, I&amp;rsquo;ll say it&amp;rsquo;s pretty easy to end up with 
+&lt;code&gt;.try&lt;/code&gt; littered all around.&lt;/p&gt;
+
+&lt;p&gt;I was curious about when it shouldn&amp;rsquo;t be used, and if there were better alternatives.&lt;/p&gt;
+
+&lt;h3&gt;The Obvious Scenario&lt;/h3&gt;
+
+&lt;p&gt;Before the lonely operator was introduced, I used &lt;code&gt;try&lt;/code&gt; in a 2 distinct scenarios. &lt;/p&gt;
+
+&lt;p&gt;The first obvious usecase: when I am not sure if the object that I are calling the method on 
+could be a &lt;code&gt;nil&lt;/code&gt; object or not. Obviously, calling any method on a &lt;code&gt;nil&lt;/code&gt; object 
+rightfully throws an error during runtime. Of course, I could use something like this to avoid the
+error.&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And &lt;code&gt;user.try(:name)&lt;/code&gt; yields the same result.&lt;/p&gt;
+
+&lt;h3&gt;The Not So Obvious Scenario&lt;/h3&gt;
+
+&lt;p&gt;Surprisingly, even when I don&amp;rsquo;t know what the object is and whether it even has that method defined or not,
+I still found myself using &lt;code&gt;try&lt;/code&gt;. It still returns &lt;code&gt;nil&lt;/code&gt;. It&amp;rsquo;s like this deceivingly good and 
+lazy way to sidestep &lt;code&gt;NoMethodError&lt;/code&gt;. But I find that this laziness, potentially leads to surprises 
+(which obviously isn&amp;rsquo;t good).&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Either a guest user without a name, or a registered user with a name&lt;/span&gt;
+&lt;span class="n"&gt;some_user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;try&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3&gt;The Lonely Operator&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;user&amp;amp;.name&lt;/code&gt; is equivalent to &lt;code&gt;user &amp;amp;&amp;amp; user.name&lt;/code&gt; and only this. It still throws a &lt;code&gt;NoMethodError&lt;/code&gt; 
+when the method doesn&amp;rsquo;t exist on the object. And that&amp;rsquo;s good for various reasons.&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;invalid_method&lt;/span&gt; &lt;span class="c1"&gt;# throws NoMethodError&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In the event where I have no idea what the object is, it is a &lt;em&gt;clear&lt;/em&gt; sign that I should spend 
+the time to refactor the code so that the object class is deterministic and 
+not rely on a &lt;code&gt;.try&lt;/code&gt; to squirm out of the situation.&lt;/p&gt;
+
+&lt;p&gt;Another nice side effect is that, the lonely operator really doesn&amp;rsquo;t look great when I chain it. 
+Being huge on aesthetics and coding styles, I just end up chaining less.&lt;/p&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;truncate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="c1"&gt;# this just looks clunky imo&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;All those &lt;code&gt;.try(..).try(..)&lt;/code&gt;? I always knew I should be getting rid of those too, but it was just 
+so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me 
+every time. &lt;/p&gt;
+
+&lt;p&gt;After reading this, I hope it makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Capybara &amp; Waiting</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
@@ -689,97 +755,6 @@ Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/weg
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;On hindsight, it would probably have been alot easier if we just treated wegosdk-protos as an entirely separate project in Golang. Nevertheless I think the workaround is reasonable if we wanted to work with only 1 repo at that time.&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Predefined Structs vs Type Assertion in Go</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2014/05/21/predefined-structs-vs-type-assertion-go/"/>
-    <id>http://blog.url.com/posts/2014/05/21/predefined-structs-vs-type-assertion-go/</id>
-    <published>2014-05-21T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Suppose you have a JSON of this format:&lt;/p&gt;
-&lt;pre class="highlight json"&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-  &lt;/span&gt;&lt;span class="nt"&gt;"results"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; 
-    &lt;/span&gt;&lt;span class="s2"&gt;"collection"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="nt"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;first_name:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;"Ho Man"&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;last_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Boa"&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"phone"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"123456"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="nt"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;first_name:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;"John"&lt;/span&gt;&lt;span class="err"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;last_name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Lee"&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"phone"&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"2345"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="err"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Similarities&lt;/h3&gt;
-
-&lt;p&gt;There are essentially 2 methods to do this, using pre-defined structs or using type assertion. The only similar part is where the data is converted into []bytes for later use.&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ioutil&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ReadAll&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dataStream&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;!=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="no"&gt;nil&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="nb"&gt;panic&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Type Assertion&lt;/h3&gt;
-
-&lt;p&gt;I personally don&amp;rsquo;t like this method because you end up doing a lot of manipulation in the end anyways but it could be helpful if you don&amp;rsquo;t want to define the entire structure right from the beginning or if your final structure is vastly different from the format of the original JSON.&lt;/p&gt;
-
-&lt;p&gt;The general idea is to read it into a generic interface -&amp;gt; then slowly step by step cast it into moar interfaces. e.g.&lt;/p&gt;
-
-&lt;p&gt;First define the final structure you want the results to be in and &lt;code&gt;Unmarshal&lt;/code&gt; the JSON into a blank &lt;code&gt;interface{}&lt;/code&gt;&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="n"&gt;FullName&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Unmarshal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;data&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Type assert &lt;code&gt;results/collection&lt;/code&gt; into an array of interfaces{} and create a &lt;code&gt;slice&lt;/code&gt; to hold the final data.&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"results"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})[&lt;/span&gt;&lt;span class="s"&gt;"collection"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;([]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="n"&gt;peopleSlices&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="nb"&gt;make&lt;/span&gt;&lt;span class="p"&gt;([]&lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Loop through the slice and further type assert the generic interface{} objects into their corresponding data types. You can also employ the type switch technique that is described here (http://golang.org/doc/effective&lt;em&gt;go.html#type&lt;/em&gt;switch) to do this instead of setting it in stone.&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;range&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;people&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="k"&gt;interface&lt;/span&gt;&lt;span class="p"&gt;{})&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="n"&gt;phone&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;person&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"phone"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
-
- &lt;/span&gt;&lt;span class="n"&gt;peopleSlices&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="n"&gt;FullName&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"first_name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;"last_name"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;phone&lt;/span&gt;&lt;span class="x"&gt;
- &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Pre-defined Structs&lt;/h3&gt;
-
-&lt;p&gt;This method seems to be the more conventional way. The problem with this is that if your desired format is vastly different from the original JSON format, you basically have to define 2 sets of structs. On the bright side, the code is much much cleaner&lt;/p&gt;
-
-&lt;p&gt;Define the format of the &lt;em&gt;initial JSON&lt;/em&gt; into a var struct{}.&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;People&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="n"&gt;Results&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-   &lt;/span&gt;&lt;span class="n"&gt;Collections&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-     &lt;/span&gt;&lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
-       &lt;/span&gt;&lt;span class="n"&gt;First_name&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
-       &lt;/span&gt;&lt;span class="n"&gt;Last_name&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
-     &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="x"&gt;
-     &lt;/span&gt;&lt;span class="n"&gt;Phone&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
-   &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-  &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Simply Unmarshal it and profit! How simple is that?&lt;/p&gt;
-&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Unmarshal&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;People&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 </content>
   </entry>
 </feed>

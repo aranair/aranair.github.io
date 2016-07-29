@@ -1,13 +1,12 @@
 /* line 3, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 body {
-  padding-top: 40px;
   font-weight: 400;
   font-family: "Georgia", Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
   color: #3d5867; }
 
-/* line 13, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 11, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 h1, h2, h3, h4, h5, h6 {
   font-family: "Roboto", Arial, Helvetica, Geneva, sans-serif;
   font-weight: 900;
@@ -17,40 +16,40 @@ h1, h2, h3, h4, h5, h6 {
   color: #B02B2C;
   letter-spacing: -1px; }
 
-/* line 23, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 21, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
   border-bottom: 1px solid transparent; }
 
-/* line 27, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 25, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
   color: rgba(0, 0, 0, 0.98);
   border-color: rgba(0, 0, 0, 0.4); }
 
-/* line 32, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 30, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 h1.page-header {
   font-size: 2.75em;
   font-weight: 900;
   color: #333; }
 
-/* line 38, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 36, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 p {
   font-size: 1.1em;
-  line-height: 1.80em;
+  line-height: 1.60em;
   margin-bottom: 1em;
   margin-top: 1em; }
-  /* line 44, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+  /* line 42, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
   p a {
     border-bottom: 1px dotted #333; }
 
-/* line 49, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 47, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 li a {
   border-bottom: 1px dotted #333; }
 
-/* line 53, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 51, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a {
   color: #444; }
 
-/* line 57, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 55, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a:active,
 a:focus,
 a:hover {
@@ -58,22 +57,22 @@ a:hover {
   text-decoration: none;
   border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
 
-/* line 65, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 63, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 .wrapper {
   margin: 0 0.5%; }
 
-/* line 69, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 67, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 .container {
   max-width: 550px;
   margin: auto; }
 
-/* line 74, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 72, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a.navbar-icons:focus,
 a.navbar-icons:active,
 a.navbar-icons:hover {
   color: #222; }
 
-/* line 80, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 78, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a.navbar-icons:focus,
 a.navbar-icons:active,
 a.navbar-icons:hover,
@@ -82,27 +81,29 @@ a.navbar-customlinks:active,
 a.navbar-customlinks:hover {
   border-bottom: none; }
 
-/* line 89, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 87, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a.navbar-links:focus,
 a.navbar-links:active,
 a.navbar-links:hover {
   color: purple; }
 
-/* line 95, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+/* line 93, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 a.navbar-links:focus,
 a.navbar-links:active,
 a.navbar-links:hover {
   border-bottom: none; }
 
-/* line 101, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
-.navbar {
-  background: white;
+/* line 99, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+.header--fixed {
   position: fixed;
-  top: 0px;
-  color: #555;
-  display: block;
-  width: 100%;
-  padding: 0 15px 0 15px; }
+  z-index: 10;
+  right: 0;
+  left: 0;
+  top: 0; }
+
+/* line 107, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
+header {
+  background: transparent; }
 
 /* line 111, /Users/homan/Projects/aranair.github.io/source/stylesheets/general.css.scss */
 .navbar-links {
