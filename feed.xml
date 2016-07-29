@@ -14,13 +14,11 @@
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/"/>
     <id>http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/</id>
     <published>2016-07-28T00:00:00+08:00</published>
-    <updated>2016-07-30T00:40:33+08:00</updated>
+    <updated>2016-07-30T00:55:31+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;Nil, Try &amp;amp; The Lonely Operator&lt;/p&gt;
-
-&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about 
+    <content type="html">&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about 
 the use of &lt;code&gt;try&lt;/code&gt; vs the lonely operator &lt;code&gt;&amp;amp;.&lt;/code&gt; and it led to a number of conclusions personally.&lt;/p&gt;
 
 &lt;p&gt;I used to use lots of &lt;code&gt;.try&lt;/code&gt;. I&amp;rsquo;ve also come across codebases littered with it, be it in the 
@@ -72,7 +70,7 @@ Being huge on aesthetics and coding styles, I just end up chaining less.&lt;/p&g
 so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me 
 every time. &lt;/p&gt;
 
-&lt;p&gt;After reading this, I hope it makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
+&lt;p&gt;I hope this post makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
 </content>
   </entry>
   <entry>
