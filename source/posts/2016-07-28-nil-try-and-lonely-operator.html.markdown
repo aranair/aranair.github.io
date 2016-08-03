@@ -4,11 +4,11 @@ date: 2016-07-28
 tags: rails, try
 ---
 
-Recently, I left a comment on one of my colleague's PR and we had a discussion with him about 
+Recently, I left a comment on one of my colleague's PR and we had a discussion with him about
 the use of `try` vs the lonely operator `&.` and it led to a number of conclusions personally.
 
-I used to use lots of `.try`. I've also come across codebases littered with it, be it in the 
-presentation layer or in the models. From personal experience, I'll say it's pretty easy to end up with 
+I used to use lots of `.try`. I've also come across codebases littered with it, be it in the
+presentation layer or in the models. From personal experience, I'll say it's pretty easy to end up with
 `.try` littered all around.
 
 I was curious about when it shouldn't be used, and if there were better alternatives.
