@@ -1,0 +1,68 @@
+==================================================================
+https://keybase.io/aranair
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://aranair.github.io
+  * I am aranair (https://keybase.io/aranair) on keybase.
+  * I have a public key with fingerprint AB63 5704 AEE9 3D67 88CF  1260 BFCD 4DDE 5E06 7455
+
+To do so, I am signing this object:
+
+{
+    "body": {
+        "key": {
+            "eldest_kid": "010176a36bbbbad5e43e7a93301cc1180fa13d809945441b3e0ae16547c9e356cb8e0a",
+            "fingerprint": "ab635704aee93d6788cf1260bfcd4dde5e067455",
+            "host": "keybase.io",
+            "key_id": "bfcd4dde5e067455",
+            "kid": "010176a36bbbbad5e43e7a93301cc1180fa13d809945441b3e0ae16547c9e356cb8e0a",
+            "uid": "84bb435fb8579b150e461d62908ef519",
+            "username": "aranair"
+        },
+        "service": {
+            "hostname": "aranair.github.io",
+            "protocol": "https:"
+        },
+        "type": "web_service_binding",
+        "version": 1
+    },
+    "ctime": 1475206395,
+    "expire_in": 157680000,
+    "prev": "208ad08caa129f6f815c84925b06697ae50cd3dc8a5d7ac58120acbcd7e38cf1",
+    "seqno": 3,
+    "tag": "signature"
+}
+
+which yields the signature:
+
+-----BEGIN PGP MESSAGE-----
+Version: Keybase OpenPGP v2.0.58
+Comment: https://keybase.io/crypto
+
+yMIlAnicrVJZSBVRGL6aGV7MhChoI5lCIkzOmZkzy4UepDAi2wzbqC5nm+t0deY2
+M1ctsYWCihYqSIyyRTIKemghEKLIKNrIDKLdjEwSKSPKetBbzVg9BD32vxzOf77v
+O993zn9j5LBQOG1Rsil6vCunM+1e6+FkaNmHlwO1ArHZeiFSK8T50MIrGHe9aNxk
+QkQAEEBVwZJC/MIMcVniKtYlCUBKIdSAgaHENKDrMpJlSCQOMIcKklWqcwkplGh+
+RygQDNOKcSfhmJbny2KiSEgFMuZcl5iiaho1oKgAYlAmM8YRB4oqI+QTy203YPjm
+CHZ5oWn7PX8THbL3D/x/9p0cktNkQmQJGURDqk4gAlxWIFNEHWjcQFAPgC53LFzJ
+g3QOtrDpCHUFgt+sMikP3jUI8jegMGZ65UnyK1PCsT2b2hX+cbnnJdxIQPfWJwJ8
+NSfR30pRYlrMf0ufUcUd17QtIQJ9JPXMQBrKKhKBIumoQOA1CdPhUTNAIFXRgF/B
+PbzKlxSBhhnQKMZQ1A3F0CCimqyLiABF0VXMEaBMYlTDiKmYIg2KAFNCmcql4LOE
+INs6yxYikm8Tx3xJ14xZ2Es6XKi7fm1VRigtHMocnh7MWCiclftn8mK9I1Ljspfm
+5zSebXxy7uHVwR5Yu2B7ttByfua4+lT9kpVW+la3ZOqFd5m7O5/Vz85vH2hz5hf1
+Hmt4SLdc33ewlIwpa5pbM2EwviDrlbzpYIqbO1ec+T7iLdxb3b22bXmqtCP86OWF
+0zMmla1YmDOlG7VOe9A9vbUr9+7ENX0tz+3ojg4hXJln3ur7MvzF7VJx84zLNVll
+i8d/3rUr62h8lhH/eue1yuoHTl3aJpV4zVcGmHTre8Oex4dGvS9+86z/amxy55OP
+N6/1l+zccfLMqCK36EDzlrEZXd/GG+LqVe1zlbw5qYuf5Ml8dE9m8bzs+J3ZUzac
+YEf2/zhXcWCwemNPbfnT6rr7PwETm0qh
+=sD7H
+-----END PGP MESSAGE-----
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/aranair
+
+==================================================================
