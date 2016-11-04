@@ -6,15 +6,14 @@ $font-size-base: 16px;
 @import "font-awesome-sprockets";
 @import "font-awesome";
 
-@import "pygment";
+@import "pygment.css.scss";
 
-@import "general";
-@import "blog";
-@import "index";
-@import "article_list";
-@import "project_list";
+@import "general.css.scss";
+@import "index.css.scss";
+@import "article_list.css.scss";
+@import "project_list.css.scss";
 @import "bio";
 
-@import "media_queries";
-@import "fonts";
-@import "animate";
+@import "media_queries.css.scss";
+@import "fonts.css.scss";
+@import "animate.css.scss";

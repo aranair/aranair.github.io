@@ -7,7 +7,6 @@ Time.zone = "Singapore"
 set :markdown_engine, :redcarpet
 set :markdown, :fenced_code_blocks => true, :smartypants => true
 
-
 activate :blog do |blog|
   # This will add a prefix to all links, template references and source paths
   blog.prefix = "posts"
@@ -73,9 +72,6 @@ page "/feed.xml", layout: false
 # activate :automatic_image_sizes
 
 # Reload the browser automatically whenever files change
-activate :directory_indexes
-activate :livereload
-activate :syntax
 # activate :similar
 
 # Methods defined in the helpers block are available in templates
@@ -85,18 +81,23 @@ activate :syntax
 #   end
 # end
 
-set :css_dir, 'stylesheets'
-set :js_dir, 'javascripts'
-set :images_dir, 'images'
-set :fonts_dir, 'webfonts'
+configure :development do
+  activate :directory_indexes
+  activate :livereload
+  activate :syntax
+  activate :sprockets
 
+  set :css_dir, 'stylesheets'
+  set :js_dir, 'javascripts'
+  set :images_dir, 'images'
+  set :fonts_dir, 'webfonts'
+# sprockets.append_path File.join root, 'source/fonts'
+end
 
 # Build-specific configuration
 configure :build do
   # For example, change the Compass output style for deployment
   # activate :minify_css
-
-  # Minify Javascript on build
   # activate :minify_javascript
 
   # Enable cache buster
@@ -110,9 +111,8 @@ configure :build do
 end
 
 activate :deploy do |deploy|
-  deploy.method = :git
+  deploy.deploy_method = :git
   deploy.branch = 'master'
   deploy.build_before = true
 end
 
-sprockets.append_path File.join root, 'source/fonts'
