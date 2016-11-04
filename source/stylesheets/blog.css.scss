@@ -2,6 +2,10 @@ $font-size-base: 16px;
 
 @import "bootstrap-sprockets";
 @import "bootstrap";
+
+@import "font-awesome-sprockets";
+@import "font-awesome";
+
 @import "pygment";
 
 @import "general";
@@ -9,6 +13,7 @@ $font-size-base: 16px;
 @import "index";
 @import "article_list";
 @import "project_list";
+@import "bio";
 
 @import "media_queries";
 @import "fonts";

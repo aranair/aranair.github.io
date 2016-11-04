@@ -42,6 +42,8 @@ GEM
     execjs (2.5.2)
     fast-stemmer (1.0.2)
     ffi (1.9.8)
+    font-awesome-sass (4.7.0)
+      sass (>= 3.2)
     haml (4.0.6)
       tilt
     hike (1.2.3)
@@ -165,6 +167,7 @@ PLATFORMS
 DEPENDENCIES
   bootstrap-sass
   builder (~> 3.0)
+  font-awesome-sass (~> 4.7.0)
   jquery-middleman
   middleman (~> 3.3.12)
   middleman-blog (~> 3.5.3)
@@ -178,4 +181,4 @@ DEPENDENCIES
   turbolinks
 
 BUNDLED WITH
-   1.11.2
+   1.12.5
