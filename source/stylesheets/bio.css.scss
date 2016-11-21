@@ -1,0 +1,20 @@
+@import "variables";
+
+h1.bio__header {
+  font-size: 2.75em;
+  font-weight: 900;
+  color: #333;
+}
+
+.bio {
+  text-align: center;
+}
+
+.bio__linkedin, .bio__github {
+  margin-top: 10px;
+  margin-right: 10px;
+}
+
+.bio__email {
+  border-bottom: 1px dotted #333;
+}

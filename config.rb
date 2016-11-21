@@ -96,6 +96,11 @@ end
 
 # Build-specific configuration
 configure :build do
+  set :css_dir, 'stylesheets'
+  set :js_dir, 'javascripts'
+  set :images_dir, 'images'
+  set :fonts_dir, 'webfonts'
+  activate :sprockets
   # For example, change the Compass output style for deployment
   # activate :minify_css
   # activate :minify_javascript
