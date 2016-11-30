@@ -33,26 +33,26 @@ Note that in this mode, performance is highly affected.
 
 With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on 
 indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing 
-internally to an AWS cluster is *orders of magnitudes* faster than indexing to Elastic Cloud.
+to Elastic Cloud is *orders of magnitudes* slower than indexing among Amazon web services.
 
 ### AWS ElasticSearch Service and IAM Roles
 
-With AWS, I encountered yet another problem unfortunately.
+Unfortunately, with AWS, I encountered more problems.
 
-AWS Elasticsearch Service does not allow any of the commercial plugins like Shield, Watcher, Graph 
+AWS Elasticsearch Service currently does not allow any of the commercial plugins like Shield, Watcher
 and it also lacks a good access control mechanism and/or VPC access. While there are some
 alternative mechanisms to control resource access but for my use-case, none of them were ideal.
 
-- Whitelisting of IPs:
-  - This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However 
-  for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances 
-  with random IPs. As you might imagine, whitelisting `54.0.0.0/8` isn't exactly safe :P
+**Whitelisting of IPs:**
+ This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However 
+for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances 
+with random IPs. As you might imagine, whitelisting `54.0.0.0/8` isn't exactly safe :P
   
-- IAM roles:
-  - I could restrict access via IAM roles. However, all requests have to be signed individually, 
-  and at the time of this writing, there isn't any Pig or Hive scripts available to do that yet. To
-  be honest, I don't think there are many libraries that support this right now. This has been 
-  confirmed by AWS.
+**IAM roles:**
+ I could restrict access via IAM roles. However, all requests have to be signed individually, 
+and at the time of this writing, there isn't any Pig or Hive scripts available to do that yet. To
+be honest, I don't think there are many libraries that support this right now. This has been 
+confirmed by AWS.
 
 ### Proxy Server
 
@@ -77,16 +77,17 @@ scaling issues by eliminating the single point of failure.
 
 A bootstrap action (for the EMR cluster) could be added to install this and run in the background:
 
-```
+```bash
 #!/bin/bash
 wget https://github.com/abutaha/aws-es-proxy/releases/download/v0.2/aws-es-proxy-0.2-linux-amd64
+
 chmod +x aws-es-proxy-0.2-linux-amd64
 ./aws-es-proxy-0.2-linux-amd64 -endpoint https://elasticsearch.endpoint.hostname /dev/null &
 ```
 
 With that the remote endpoint would be available via:
 
-```
+```bash
 curl -XGET 'http://localhost:9200'
 ```
 
