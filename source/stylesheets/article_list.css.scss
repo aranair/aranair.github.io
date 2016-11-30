@@ -16,6 +16,7 @@ code { font-size: 65%; }
 .article__middle-dot {
   padding-right: .45em;
   padding-left: .45em;
+  font-size: 1em;
 
   &:after {
     content: "·";
@@ -38,7 +39,6 @@ code { font-size: 65%; }
   color: #333;
   margin-bottom: 0.2em;
   margin-top: 1em;
-  letter-spacing: 0px;
 
   a {
     color: #333;
@@ -83,14 +83,12 @@ h1.article__article-title {
     color: rgba(0, 0, 0, 0.4);
     font-weight: 300;
     padding-left: 3px;
-    letter-spacing: 0px;
   }
 
   font-family: $article-page-title;
   font-size: $p-font-size * $heading-multiplication * 1.1;
   font-weight: $heading-weight;
   color: #333;
-  letter-spacing: 0px;
 }
 
 .tags {

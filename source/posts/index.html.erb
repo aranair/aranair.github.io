@@ -17,7 +17,7 @@ per_page: 10
       <%= link_to article.title, article %><br>
       <span class="article-summary__published-date">
         Published on <%= article.date.strftime("%b %d, %Y") %>
-        <span class="article-summary__middle-dot"></span>
+        <span class="article__middle-dot"></span>
         <%= reading_time article.body %> read
       </span>
     </h2>
