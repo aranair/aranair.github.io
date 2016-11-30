@@ -27,7 +27,7 @@
     font-size: 5em;
   }
 
-  $p-font-size: 1em;
+  $p-font-size: 1.1em;
 
   .logo {
     position: absolute;
@@ -51,17 +51,22 @@
     }
   }
 
+  pre code{
+    font-size: $p-font-size * 0.8;
+  }
+
   p, ul li {
     font-size: $p-font-size;
   }
 
   .article-summary__article-title {
-    span { 
+    .article-summary__published-date { 
       font-size: $p-font-size * 0.6;
       color: rgba(0, 0, 0, 0.32);
       font-weight: 300;
     }
-    font-size: $p-font-size * 1.5;
+
+    font-size: $p-font-size * $heading-multiplication;
     font-weight: $heading-weight;
     color: #333;
   }
