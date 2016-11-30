@@ -1,6 +1,6 @@
 ---
-title: Apache Pig, AWS ElasticSearch Service & Elastic Cloud
-date: 2016-11-28
+title: AWS ElasticSearch Service, Elastic Cloud and Self-Managed
+date: 2016-11-22
 tags: elasticsearch, aws, found.io, elastic-cloud
 ---
 
