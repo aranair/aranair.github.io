@@ -14,22 +14,31 @@ code { font-size: 75%; }
 }
 
 .article-summary__article-title {
-  span { // date
+  .article-summary__published-date {
     font-family: $article-title-date-font;
     letter-spacing: 0px;
     font-size: $p-font-size * 0.4;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 2px;
-    letter-spacing: 0px;
+  }
+
+  .article-summary__middle-dot {
+    padding-right: .45em;
+    padding-left: .45em;
+    
+    &:after {
+      content: "·";
+    }
   }
 
   font-family: $article-page-title;
-  font-size: $p-font-size * 1.8;
+  font-size: $p-font-size * $heading-multiplication;
   font-weight: $heading-weight;
   color: #333;
   margin-bottom: 0.2em;
   margin-top: 1em;
+  letter-spacing: 0px;
 
   a {
     color: #333;

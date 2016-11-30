@@ -2,6 +2,9 @@
 # Blog settings
 ###
 
+require 'reading_time'
+activate :reading_time
+
 Time.zone = "Singapore"
 
 set :markdown_engine, :redcarpet
