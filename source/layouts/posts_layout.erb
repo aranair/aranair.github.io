@@ -3,7 +3,7 @@
     <h1 class="page-header article__article-title">
       <%= current_article.title %><br>
       <span class="article__published-date">
-        Published on <%= current_article.date.strftime("%b %d, %Y") %>
+        <%= current_article.date.strftime("%b %d, %Y") %>
         <span class="article__middle-dot"></span>
         <%= reading_time current_article.body %> read
       </span>

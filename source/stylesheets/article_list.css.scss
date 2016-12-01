@@ -27,7 +27,7 @@ code { font-size: 65%; }
   .article-summary__published-date {
     font-family: $article-title-date-font;
     letter-spacing: 0px;
-    font-size: $p-font-size * 0.4;
+    font-size: $p-font-size * 0.5;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 2px;
@@ -79,7 +79,7 @@ a.article-summary__readmore:hover {
 h1.article__article-title {
   .article__published-date {
     font-family: $article-title-date-font;
-    font-size: $p-font-size * 0.4;
+    font-size: $p-font-size * 0.5;
     color: rgba(0, 0, 0, 0.4);
     font-weight: 300;
     padding-left: 3px;
