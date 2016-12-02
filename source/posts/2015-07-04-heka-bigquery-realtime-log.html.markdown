@@ -1,7 +1,9 @@
 ---
 title: Kafka + Heka to Bigquery Setup for Realtime Logs
 date: 2015-07-04
-tags: golang, heka, bigquery
+tags: golang, heka, bigquery, kafka
+disqus_identifier: 2015/kafka-heka-bigquery-realtime-logs
+disqus_title: Kafka, Heka, Bigquery Setup for Realtime Logs
 ---
 
 This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In [Part 1 of this series](/posts/2015/05/05/golang-protobuf "Golang with Protobuf"), I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. 

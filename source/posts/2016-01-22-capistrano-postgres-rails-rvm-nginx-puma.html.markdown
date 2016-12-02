@@ -2,6 +2,8 @@
 title: Capistrano + Postgres + Rails + RVM + Nginx + Puma on DigitalOcean
 date: 2016-01-22
 tags: capistrano, rails, devops
+disqus_identifier: 2016/capistrano-postgres-rails-nginx-puma
+disqus_title: Capistrano, Postgres, Rails, Nginx, Puma on DigitalOcean
 ---
 
 Recently, I've been working on my squash club, [UCSC's new site](http://www.ucsc.sg). And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.

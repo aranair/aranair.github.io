@@ -2,6 +2,8 @@
 title: Replicating Rails 'scopes' in Emberjs
 date: 2013-07-28 00:00 SGT
 tags: emberjs
+disqus_identifier: 2013/replicating-rails-scopes-emberjs
+disqus_title: Replicating Rails scopes in Emberjs
 ---
 After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. 
 

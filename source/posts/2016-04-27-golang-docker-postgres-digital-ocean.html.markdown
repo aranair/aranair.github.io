@@ -2,6 +2,8 @@
 title: Dockerized Golang + Postgres on Digital Ocean
 date: 2016-04-27
 tags: golang, docker, devops
+disqus_identifier: 2016/docker-golang-postgres-digital-ocean
+disqus_title: Dockerized Golang with Postgres on Digital Ocean
 ---
 
 My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.

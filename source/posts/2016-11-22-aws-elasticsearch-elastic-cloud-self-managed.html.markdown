@@ -2,6 +2,8 @@
 title: AWS ElasticSearch Service, Elastic Cloud and Self-Managed
 date: 2016-11-22
 tags: elasticsearch, aws, found.io, elastic-cloud
+disqus_identifier: 2016/aws-es-elastic-cloud-self-manage
+disqus_title: AWS ElasticSearch Service vs Elastic Cloud vs Self-Manage
 ---
 
 From past experience, I found the maintenance and tuning of a Elastisearch cluster to be 

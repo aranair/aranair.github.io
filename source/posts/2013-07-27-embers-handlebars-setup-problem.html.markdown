@@ -2,6 +2,8 @@
 title: Embers Handlebars Setup Problem
 date: 2013-07-27 00:00 SGT
 tags: emberjs
+disqus_identifier: /2013/embers-handlebars-setup
+disqus_title: Ember Handlebar Setup
 ---
 Went with ```ember-rails``` gem's default setup, did a bundle install/minimum rails set up and got this error in the browser...
 

@@ -2,6 +2,8 @@
 title: Golang + Protobuf
 date: 2015-05-05
 tags: golang, protobuf
+disqus_identifier: 2015/golang-and-protobuf
+disqus_title: Golang and Protobuf
 ---
 
 (This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)

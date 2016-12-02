@@ -17,6 +17,7 @@ gem "bootstrap-sass", require: false
 gem "jquery-middleman"
 gem "turbolinks", require: false
 gem 'font-awesome-sass', '~> 4.7.0'
+gem "middleman-disqus"
 
 # For feed.xml.builder
 gem "builder", "~> 3.0"

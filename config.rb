@@ -103,7 +103,12 @@ configure :build do
   set :js_dir, 'javascripts'
   set :images_dir, 'images'
   set :fonts_dir, 'webfonts'
+  activate :directory_indexes
   activate :sprockets
+
+  activate :disqus do |d|
+    d.shortname = "homan-gh-blog"
+  end
   # For example, change the Compass output style for deployment
   # activate :minify_css
   # activate :minify_javascript
@@ -122,5 +127,9 @@ activate :deploy do |deploy|
   deploy.deploy_method = :git
   deploy.branch = 'master'
   deploy.build_before = true
+end
+
+activate :disqus do |d|
+  d.shortname = 'homan-gh-blog-test'
 end
 
