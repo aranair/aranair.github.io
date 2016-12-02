@@ -12,9 +12,9 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
-    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
-    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script>
@@ -49,8 +49,8 @@
       <a href="/projects" class="navbar-links pull-right">
         Projects
       </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
-        LinkedIn
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
       </a>
     </div>
   </nav>
@@ -61,7 +61,11 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       Replicating Rails 'scopes' in Emberjs<br>
-      <span>Published on Jul 28, 2013</span>
+      <span class="article__published-date">
+        Jul 28, 2013
+        <span class="article__middle-dot"></span>
+        2  minutes read
+      </span>
     </h1>
     <p>After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. </p>
 
@@ -72,7 +76,6 @@
 {{ taskCompleted }}
 &lt;/script&gt;
 </code></pre>
-
 <p>If you called a custom attribute like the one shown above, it first goes to the corresponding controller (in this case the TasksController) and tries to find this attribute before trying to find it in any models. What this means is that I can now define some specific logic in this controller like this:</p>
 <pre class="highlight plaintext"><code>App.TasksController = Ember.ArrayController.extend({
    completedTasks: function() {
@@ -80,8 +83,36 @@
    }.property('@each.isCompleted')
 });
 </code></pre>
-
 <p>To pull the data from the model in whatever way I want, it is fed to the template, good ol&rsquo; Rails fasion! I suppose this is what Emberjs pros meant when they said the controllers were something like a proxy to the underlying data models. </p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2013/replicating-rails-scopes-emberjs';
+                        var disqus_title = 'Replicating Rails scopes in Emberjs';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
 
   </div>
 

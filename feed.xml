@@ -5,24 +5,131 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-07-28T00:00:00+08:00</updated>
+  <updated>2016-11-28T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Indexing Elasticsearch via Apache Pig</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/11/28/apache-pig-index-elasticsearch/"/>
+    <id>http://blog.url.com/posts/2016/11/28/apache-pig-index-elasticsearch/</id>
+    <published>2016-11-28T00:00:00+08:00</published>
+    <updated>2016-12-02T22:45:28+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Coming soon!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>AWS ElasticSearch Service, Elastic Cloud and Self-Managed</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"/>
+    <id>http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</id>
+    <published>2016-11-22T00:00:00+08:00</published>
+    <updated>2016-12-02T23:01:16+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;From past experience, I found the maintenance and tuning of a Elastisearch cluster to be 
+a little troublesome overtime. So it isn&amp;rsquo;t surprising to see hosted Elasticsearch services pop up 
+one after another. Ok, to be fair, there are hosted services for nearly everything nowadays, from 
+Kafka to Wordpress lol. There is really no shortage of them. Most of them provides hassle-free launching
+of entire clusters within minutes and promises to offload management of the clusters along popular 
+plugins pre-installed.&lt;/p&gt;
+
+&lt;p&gt;Quite frankly, they&amp;rsquo;re welcomed services, but they do come with some caveats and I found these the hard way
+when I was evaluating the services when setting up a Elasticsearch cluster at Pocketmath.&lt;/p&gt;
+
+&lt;h3&gt;Cluster Node Discovery&lt;/h3&gt;
+
+&lt;p&gt;With both Elastic cloud and Amazon Elasticsearch Service, and quite possibly others too, one of the problems 
+I quickly ran into is that they hide all nodes in the cluster except for the publicly accessible gateway.&lt;/p&gt;
+
+&lt;p&gt;What this means is that, you&amp;rsquo;ll need to disable discovery and only connect through the declared 
+&lt;code&gt;es.nodes.wan.only&lt;/code&gt; mode, as described below in the Elasticsearch documentation.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;es.nodes.wan.only (default false)
+Whether the connector is used against an Elasticsearch instance in a cloud/restricted environment 
+over the WAN, such as Amazon Web Services. In this mode, the connector disables discovery and 
+only connects through the declared es.nodes during all operations, including reads and writes. 
+
+Note that in this mode, performance is highly affected.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on 
+indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing 
+to Elastic Cloud is &lt;em&gt;orders of magnitudes&lt;/em&gt; slower than indexing among Amazon web services.&lt;/p&gt;
+
+&lt;h3&gt;AWS ElasticSearch Service and IAM Roles&lt;/h3&gt;
+
+&lt;p&gt;Unfortunately, with AWS, I encountered more problems.&lt;/p&gt;
+
+&lt;p&gt;AWS Elasticsearch Service currently does not allow any of the commercial plugins like Shield, Watcher
+and it also lacks a good access control mechanism and/or VPC access. While there are some
+alternative mechanisms to control resource access but for my use-case, none of them were ideal.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Whitelisting of IPs:&lt;/strong&gt;
+ This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However 
+for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances 
+with random IPs. As you might imagine, whitelisting &lt;code&gt;54.0.0.0/8&lt;/code&gt; isn&amp;rsquo;t exactly safe :P&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;IAM roles:&lt;/strong&gt;
+ I could restrict access via IAM roles. However, all requests have to be signed individually, 
+and at the time of this writing, there isn&amp;rsquo;t any Pig or Hive scripts available to do that yet. To
+be honest, I don&amp;rsquo;t think there are many libraries that support this right now. This has been 
+confirmed by AWS.&lt;/p&gt;
+
+&lt;h3&gt;Proxy Server&lt;/h3&gt;
+
+&lt;p&gt;To work around this, one way is to set up a reverse proxy, which is then whitelisted via its IP
+in Access Policies in AWS ElasticSearch Service. This instance will then proxy all requests from the 
+indexing instance, in my case- Amazon Elastic MapReduce (EMR) cluster, to the AWS ElasticSearch Service.
+It would also require an Elastic IP, so that the IP in the whitelist does not need to be constantly changed.&lt;/p&gt;
+
+&lt;p&gt;The upside to this is that it requires relatively few changes in the code, but the problem is, 
+there is a single point of weakness &amp;amp; failure- the proxy server. It does not scale well and would 
+also require constant monitoring to ensure that it is not the bottleneck in performance.&lt;/p&gt;
+
+&lt;p&gt;This method is well explained and walked-through in this &lt;a href="https://eladnava.com/secure-aws-elasticsearch-service-behind-vpc/#theworkaround"&gt;blog post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Application or Local Proxy&lt;/h3&gt;
+
+&lt;p&gt;This &lt;a href="https://github.com/abutaha/aws-es-proxy"&gt;github repo&lt;/a&gt; allows you to setup a small web application
+layer that sits between your code and Elasticsearch. It exposes &lt;code&gt;localhost:9200&lt;/code&gt; to your app
+on every instance it is running on and signs every request (based on IAM roles) before relaying 
+it to Elasticsearch. This removes the need for IP-based access control and helps with the 
+scaling issues by eliminating the single point of failure.&lt;/p&gt;
+
+&lt;p&gt;A bootstrap action (for the EMR cluster) could be added to install this and run in the background:&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
+wget https://github.com/abutaha/aws-es-proxy/releases/download/v0.2/aws-es-proxy-0.2-linux-amd64
+
+chmod +x aws-es-proxy-0.2-linux-amd64
+./aws-es-proxy-0.2-linux-amd64 -endpoint https://elasticsearch.endpoint.hostname /dev/null &amp;amp;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;With that the remote endpoint would be available via:&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XGET &lt;span class="s1"&gt;'http://localhost:9200'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Choices&lt;/h3&gt;
+
+&lt;p&gt;While the second method is definitely feasible, in the end, in view of the issues (and workarounds) 
+and the cost of equivalent instances in AWS vs AWS ElasticSearch Service and the lack of support for
+plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would 
+probably be much more flexible for us in future than a hosted service with a bunch of restrictions.&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Nil, Try &amp; The Lonely Operator</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/"/>
     <id>http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/</id>
     <published>2016-07-28T00:00:00+08:00</published>
-    <updated>2016-07-30T00:55:31+08:00</updated>
+    <updated>2016-12-02T22:39:02+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about 
+    <content type="html">&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about
 the use of &lt;code&gt;try&lt;/code&gt; vs the lonely operator &lt;code&gt;&amp;amp;.&lt;/code&gt; and it led to a number of conclusions personally.&lt;/p&gt;
 
-&lt;p&gt;I used to use lots of &lt;code&gt;.try&lt;/code&gt;. I&amp;rsquo;ve also come across codebases littered with it, be it in the 
-presentation layer or in the models. From personal experience, I&amp;rsquo;ll say it&amp;rsquo;s pretty easy to end up with 
+&lt;p&gt;I used to use lots of &lt;code&gt;.try&lt;/code&gt;. I&amp;rsquo;ve also come across codebases littered with it, be it in the
+presentation layer or in the models. From personal experience, I&amp;rsquo;ll say it&amp;rsquo;s pretty easy to end up with
 &lt;code&gt;.try&lt;/code&gt; littered all around.&lt;/p&gt;
 
 &lt;p&gt;I was curious about when it shouldn&amp;rsquo;t be used, and if there were better alternatives.&lt;/p&gt;
@@ -37,7 +144,6 @@ rightfully throws an error during runtime. Of course, I could use something like
 error.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;And &lt;code&gt;user.try(:name)&lt;/code&gt; yields the same result.&lt;/p&gt;
 
 &lt;h3&gt;The Not So Obvious Scenario&lt;/h3&gt;
@@ -49,14 +155,12 @@ lazy way to sidestep &lt;code&gt;NoMethodError&lt;/code&gt;. But I find that thi
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Either a guest user without a name, or a registered user with a name&lt;/span&gt;
 &lt;span class="n"&gt;some_user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;try&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;The Lonely Operator&lt;/h3&gt;
 
 &lt;p&gt;&lt;code&gt;user&amp;amp;.name&lt;/code&gt; is equivalent to &lt;code&gt;user &amp;amp;&amp;amp; user.name&lt;/code&gt; and only this. It still throws a &lt;code&gt;NoMethodError&lt;/code&gt; 
 when the method doesn&amp;rsquo;t exist on the object. And that&amp;rsquo;s good for various reasons.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;invalid_method&lt;/span&gt; &lt;span class="c1"&gt;# throws NoMethodError&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;In the event where I have no idea what the object is, it is a &lt;em&gt;clear&lt;/em&gt; sign that I should spend 
 the time to refactor the code so that the object class is deterministic and 
 not rely on a &lt;code&gt;.try&lt;/code&gt; to squirm out of the situation.&lt;/p&gt;
@@ -65,7 +169,6 @@ not rely on a &lt;code&gt;.try&lt;/code&gt; to squirm out of the situation.&lt;/
 Being huge on aesthetics and coding styles, I just end up chaining less.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;truncate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="c1"&gt;# this just looks clunky imo&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;All those &lt;code&gt;.try(..).try(..)&lt;/code&gt;? I always knew I should be getting rid of those too, but it was just 
 so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me 
 every time. &lt;/p&gt;
@@ -108,7 +211,6 @@ encounters the same problems!&lt;/p&gt;
 
 &lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;text&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;eq&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay 
 between the button click and the actual completion of the code that is run as a result of that click. &lt;/p&gt;
 
@@ -124,11 +226,9 @@ to appear or disappear on the page.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
 &lt;span class="c1"&gt;# have_css, have_selector&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;You can even define if the element should be visible or not after it is rendered. &lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;visible: &lt;/span&gt;&lt;span class="kp"&gt;false&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;Magical. Right? &lt;/p&gt;
 
 &lt;h3&gt;Old solutions&lt;/h3&gt;
@@ -145,7 +245,6 @@ Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&g
 &lt;span class="n"&gt;reload_page&lt;/span&gt;
 &lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'Linked'&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;Nope! There&amp;rsquo;s still a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes. 
 And the tests would randomly fail since the content-check is dependant on the click event&amp;rsquo;s code execution.
 That&amp;rsquo;s not good; we all want deterministic results for our tests, right?&lt;/p&gt;
@@ -173,7 +272,7 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
     <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
     <id>http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/</id>
     <published>2016-04-27T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
+    <updated>2016-12-02T22:58:59+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -196,19 +295,15 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
 &lt;p&gt;This runs the postgres service under &lt;code&gt;db&lt;/code&gt; name and as a daemon.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: &lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it db /bin/bash
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;From there, a new user was created and granted privileges via psql CLI.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;psql -U postgres
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;CREATE USER app;
+&lt;/code&gt;&lt;/pre&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;CREATE USER app;
 CREATE DATABASE appdb;
 GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&amp;rsquo;t allow client authentication in connections yet. &lt;/p&gt;
 
 &lt;p&gt;In order for it to work, there were two files which I had to modify:&lt;/p&gt;
@@ -223,26 +318,21 @@ GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 &lt;p&gt;The default one should lie at this location: &lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;/var/lib/postgresql/data/pg_hba.conf
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;Installed my favourite text editor via:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;apt-get update &amp;amp;&amp;amp; apt-get install vim
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;Changed from this:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;host  all  all  127.0.0.1/32  md5
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;To this, so that it allows connections that are from the same machine:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;host all  all  192.168.1.0/24  md5
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;For &lt;code&gt;/etc/postgresql/9.3/main/postgresql.conf&lt;/code&gt;:  Changing &lt;code&gt;#listen_addresses = &amp;#39;localhost&amp;#39;&lt;/code&gt; to &lt;code&gt;listen_addresses = &amp;#39;*&amp;#39;&lt;/code&gt; would enable it to listen for incoming connection requests from all available IP addresses.&lt;/p&gt;
 
 &lt;p&gt;A restart of the postgres service was also required.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo service postgresql stop
 sudo service postgresql start
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Docker Volumes&lt;/h3&gt;
 
 &lt;p&gt;The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
@@ -251,7 +341,6 @@ In my deployment, you&amp;rsquo;ll notice that I do not specifically set this up
 ENV PGDATA /var/lib/postgresql/data
 VOLUME /var/lib/postgresql/data
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;You can find out more about it in the &lt;a href="https://docs.docker.com/engine/userguide/containers/dockervolumes/"&gt;official documentation&lt;/a&gt; if you&amp;rsquo;re interested.&lt;/p&gt;
 
 &lt;h3&gt;Dockerize the Golang App&lt;/h3&gt;
@@ -269,7 +358,6 @@ ADD dbconf.yml /go/src/app/db/
 
 EXPOSE 5000
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;A quick run through of each line:&lt;/p&gt;
 
 &lt;ul&gt;
@@ -282,7 +370,6 @@ EXPOSE 5000
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker built -t app
 docker run -d -p 80:5000 --name gosnap --link db:postgres app
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;-d&lt;/code&gt; tells it to run it as a daemon,&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;-p 80:5000&lt;/code&gt; tells it to link the host container&amp;rsquo;s port 80 to port 5000 of the docker container&lt;/li&gt;
@@ -296,18 +383,16 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
    driver: postgres
    open: host=$POSTGRES_PORT_5432_TCP_ADDR user=app dbname=appdb sslmode=disable
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;I then ran the migrations at this point:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it gosnap goose up
-&lt;/code&gt;&lt;/pre&gt;
-</content>
+&lt;/code&gt;&lt;/pre&gt;</content>
   </entry>
   <entry>
     <title>Capistrano + Postgres + Rails + RVM + Nginx + Puma on DigitalOcean</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/"/>
     <id>http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</id>
     <published>2016-01-22T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
+    <updated>2016-12-02T22:58:28+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -364,7 +449,6 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
 &lt;p&gt;So the correct place to put the export was in &lt;code&gt;~/.bashrc&lt;/code&gt;!&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;export SECRET_KEY_BASE="xxx"
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;The deployment with capistrano was relatively straightforward otherwise.&lt;/p&gt;
 
 &lt;p&gt;Below, I&amp;rsquo;ve compiled the commands I&amp;#39;ved used (most of them) for the entire process.&lt;/p&gt;
@@ -373,22 +457,18 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;adduser deploy
 gpasswd -a deploy sudo
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;Copy public key up to server&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;ssh-copy-id deploy@server_ip_address
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Install Postgres&lt;/h3&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get update
 sudo apt-get install postgresql postgresql-contrib
 sudo -i -u postgres
 createuser --interactive
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Install Nginx&lt;/h3&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get install curl git-core nginx -y
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Install RVM &amp;amp; Ruby&lt;/h3&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
 curl -sSL https://get.rvm.io | bash -s stable
@@ -400,7 +480,6 @@ gem install rails -V --no-ri --no-rdoc
 gem install bundler -V --no-ri --no-rdoc
 gem install pg
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Setting up SSH (Github)&lt;/h3&gt;
 
 &lt;p&gt;&lt;code&gt;ssh -T git@github.com&lt;/code&gt; on the server then add the server&amp;rsquo;s public key into your github account.&lt;/p&gt;
@@ -416,7 +495,6 @@ end
 
 gem 'puma'
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Deploy.rb&lt;/h3&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'ucsc'&lt;/span&gt;
 &lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:repo_url&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'git@github.com:aranair/ucsc.git'&lt;/span&gt;
@@ -497,7 +575,6 @@ gem 'puma'
 &lt;span class="k"&gt;end&lt;/span&gt;
 
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Capfile&lt;/h3&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/setup'&lt;/span&gt;
 &lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/deploy'&lt;/span&gt;
@@ -511,7 +588,6 @@ gem 'puma'
 &lt;span class="no"&gt;Dir&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;glob&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'lib/capistrano/tasks/*.rake'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;import&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
 
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Nginx&lt;/h3&gt;
 
 &lt;p&gt;config/nginx.conf&lt;/p&gt;
@@ -547,13 +623,11 @@ server {
   keepalive_timeout 10;
 }
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;p&gt;After Capistrano deploy via &lt;code&gt;ap production deploy: initial&lt;/code&gt;&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo rm /etc/nginx/sites-enabled/default
 sudo ln -nfs "/home/deploy/apps/ucsc/current/config/nginx.conf" "/etc/nginx/sites-enabled/ucsc"
 sudo service nginx restart
 &lt;/code&gt;&lt;/pre&gt;
-
 &lt;h3&gt;Conclusion&lt;/h3&gt;
 
 &lt;p&gt;Setting it up wasn&amp;rsquo;t too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.&lt;/p&gt;
@@ -566,193 +640,6 @@ sudo service nginx restart
 &lt;li&gt;Ansible / Bash script to set up&lt;/li&gt;
 &lt;li&gt;Docker&lt;/li&gt;
 &lt;/ul&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Kafka + Heka to Bigquery Setup for Realtime Logs</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2015/07/04/heka-bigquery-realtime-log/"/>
-    <id>http://blog.url.com/posts/2015/07/04/heka-bigquery-realtime-log/</id>
-    <published>2015-07-04T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In &lt;a title="Golang with Protobuf" href="/posts/2015/05/05/golang-protobuf"&gt;Part 1 of this series&lt;/a&gt;, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. &lt;/p&gt;
-
-&lt;p&gt;The packages allows us to process 2 different modes of communication protocol with just one set of schema defined in proto files:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;json&lt;/code&gt; package to unmarshal json requests into the generated Go structs, &lt;/li&gt;
-&lt;li&gt;protobuf package to unmarshal incoming protobuf messages. &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;With this, we started sending test requests to the API and logged each of them into simple logfiles. However, we also needed the logs (such as clicks &amp;amp; visits data) to be displayed live on &lt;a title="Google BigQuery" href="https://cloud.google.com/bigquery/"&gt;Google BigQuery&lt;/a&gt; for our data scientist and market managers to have better perspectives of the traffic in realtime.&lt;/p&gt;
-
-&lt;h3&gt;Overview of Setup&lt;/h3&gt;
-
-&lt;p&gt;We have a number of components in our API log setup:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;The API server that logs the requests into files&lt;/li&gt;
-&lt;li&gt;&lt;a title="Heka" href="https://github.com/mozilla-services/heka/"&gt;Heka&lt;/a&gt; process that monitors the files and streams it to Kafka topics&lt;/li&gt;
-&lt;li&gt;&lt;a title="Kafka" href="http://kafka.apache.org/documentation.html"&gt;Kafka&lt;/a&gt; as the messaging system to distribute the messages which are then consumed by the services that need them.&lt;/li&gt;
-&lt;li&gt;Heka server with plugin(s) that consume data from Kafka topics and upload them to:
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a title="Heka-BigQuery plugin" href="https://github.com/aranair/heka-bigquery"&gt;Heka Plugin to BigQuery&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a title="Heka-S3 plugin" href="https://github.com/uohzxela/heka-s3"&gt;Heka Plugin to S3&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3&gt;(Logs + Heka) to Kafka&lt;/h3&gt;
-
-&lt;p&gt;For both sections of Heka, We used a fork of &lt;a title="chef-cookbook-heka" href="https://github.com/augieschwer/chef-cookbook-heka"&gt;this cookbook&lt;/a&gt; in our cookbook/recipes when cooking the API + Heka servers. It helps us to manage the required config files and also help with the necessary steps to create and run the Hekad daemon as a service.&lt;/p&gt;
-
-&lt;p&gt;Our cookbook that generated a require config file ended up looking like this:&lt;/p&gt;
-&lt;pre class="highlight toml"&gt;&lt;code&gt;&lt;span class="c"&gt;# This part defines the Kafka servers that the Heka plugin communicates with and also the topic that the heka plugin will consume information from. &lt;/span&gt;
-&lt;span class="nn"&gt;[&amp;lt;%=@topic%&amp;gt;-input-kafka]&lt;/span&gt;
-&lt;span class="py"&gt;type&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"KafkaInput"&lt;/span&gt;
-&lt;span class="py"&gt;topic&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@topic%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;addrs&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="err"&gt;&amp;lt;%=@kafka_hosts%&amp;gt;&lt;/span&gt;
-
-&lt;span class="c"&gt;# This defines the configs used in the Heka server for the BigQuery Plugin.&lt;/span&gt;
-&lt;span class="nn"&gt;[&amp;lt;%=@topic%&amp;gt;-output-bq]&lt;/span&gt;
-&lt;span class="py"&gt;type&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"BqOutput"&lt;/span&gt;
-&lt;span class="py"&gt;message_matcher&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"Logger == '&amp;lt;%=@topic%&amp;gt;-input-kafka'"&lt;/span&gt;
-&lt;span class="py"&gt;project_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@project_id%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;dataset_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@dataset_id%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;table_id&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@table_id%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;schema_file_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@schema_file_path%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;pem_file_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@pem_file_path%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;buffer_path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@buffer_path%&amp;gt;"&lt;/span&gt;
-&lt;span class="py"&gt;buffer_file&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s"&gt;"&amp;lt;%=@buffer_file%&amp;gt;"&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;Kafka to Heka to BigQuery&lt;/h3&gt;
-
-&lt;p&gt;Plugins cannot be loaded dynamically in Heka; the only way to do it is to define it as a dependency in the cmake file and load it via the plugin_loader when building Heka. Fortunately, this can be setup via &lt;a href="https://github.com/wego/chef-cookbook-heka/blob/master/attributes/source.rb"&gt;this recipe&lt;/a&gt; in the cookbook when creating the servers. &lt;/p&gt;
-
-&lt;p&gt;A sample of the plugins we used for our hekad:&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="s2"&gt;"plugins"&lt;/span&gt; &lt;span class="o"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
-    &lt;span class="c1"&gt;# Add items here like the following that's required for integration with kafka&lt;/span&gt;
-    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/genx7up/heka-kafka acf3ac7a3d6d6dab313510f81828fca2f9375229)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/uohzxela/heka-s3 master)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="s2"&gt;"add_external_plugin(git https://github.com/wego/heka-bigquery master)"&lt;/span&gt;
-  &lt;span class="p"&gt;],&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;This setup will get us the bare infrastructure working, treating the plugins as blackboxes for now.&lt;/p&gt;
-
-&lt;p&gt;Stay tuned for the 3rd part of this series where I will go into details and discuss how the &lt;a href="https://github.com/aranair/heka-bigquery"&gt;heka-bigquery plugin&lt;/a&gt; works!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Golang + Protobuf</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2015/05/05/golang-protobuf/"/>
-    <id>http://blog.url.com/posts/2015/05/05/golang-protobuf/</id>
-    <published>2015-05-05T00:00:00+08:00</published>
-    <updated>2016-07-28T19:23:17+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)&lt;/p&gt;
-
-&lt;p&gt;Recently, I&amp;rsquo;ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing, with one caveat: we&amp;rsquo;re using Protobuf Buffers (or otherwise just Protobuf) for our serialisation of data.&lt;/p&gt;
-
-&lt;h3&gt;What is Protobuf?&lt;/h3&gt;
-
-&lt;p&gt;Its basically a protocol that comes with a language &lt;a title="proto" href="https://developers.google.com/protocol-buffers/docs/proto"&gt;proto&lt;/a&gt; with which you define your data structure once and then you can use this source code to generate helpers/classes/models for different languages such as Golang, Python, Ruby etc .. Do note that only C++, Python and Java are officially supported right now.&lt;/p&gt;
-
-&lt;p&gt;Think of it as XML, JSON but smaller, faster, and simpler; yet at the same time pretty defined and structured as well. 
-So, Wego is set on replacing the semi-spaghetti JSON communication that we&amp;rsquo;re currently working with, with Protobuf. &lt;/p&gt;
-
-&lt;h3&gt;Context&lt;/h3&gt;
-
-&lt;p&gt;As usual, the process always have some form of a bump for us to overcome before being able to use it. Typically, I think most golang protobuf repos will have rather simple/flat structure. &lt;/p&gt;
-
-&lt;p&gt;Our repo was built in a slightly odd that worked well to define the structure for other protobuf generators (we also use Protobuf for Ruby and Java). Below is a rough idea of how it looked like before a huge round of changes:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# OLD STRUCTURE
-- protos
-  - wego-protos
-  - base.proto
-  - flights.proto
-  - hotels.proto
-  - analytics.proto
-
-  - wegosdk-protos (actually a symlink to ANOTHER repo)
-  - flights
-  - base.proto
-  - hotels
-  - base.proto
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;The 1st Hurdle&lt;/h3&gt;
-
-&lt;p&gt;Well technically it isn&amp;rsquo;t a bug, more like convention. The basic command for protoc (the tool that converts .proto files) which is shown below, is meant to be run once per package. This command will then look at the included files for a package name to compile them into. But initially, our files that were all in the root folder belong to separate packages. &lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;protoc&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;proto_path&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
-  &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;go_out&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;libs&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
-  &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;flights&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;proto&lt;/span&gt;
-
-&lt;span class="n"&gt;protoc&lt;/span&gt; &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;proto_path&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
-  &lt;span class="o"&gt;--&lt;/span&gt;&lt;span class="n"&gt;go_out&lt;/span&gt; &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;libs&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;go&lt;/span&gt; &lt;span class="p"&gt;\&lt;/span&gt;
-  &lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;/&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;wego&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;protos&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;hotels&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;proto&lt;/span&gt;
-
-&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
-&lt;span class="nf"&gt;.&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;.&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Specifying one file at a time and repeating it for the 4 files did not work either. Because it would break the name spaces inside them; they essentially become the same package instead of separate packages. &lt;/p&gt;
-
-&lt;p&gt;This issue doesn&amp;rsquo;t really exist in other languages because I think files are resolved file level in Java/Ruby but at a package level in Golang. &lt;a title="import issue" href="https://github.com/golang/protobuf/issues/8"&gt;this issue&lt;/a&gt; and &lt;a title="commit" href="https://github.com/golang/protobuf/commit/dded9133a99a3cd7c3a9d24a9f85c2b8ef76ff31"&gt;this commit&lt;/a&gt; describes it in fuller details.&lt;/p&gt;
-
-&lt;p&gt;And so to get past it, we restructured the files in this way, such that each of the packages reside in individual folders, following the convention of Golang. &lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# NEW STRUCTURE
-- protos
-  - wego-protos
-   - wego
-    - base.proto
-   - flights
-      - base.proto
-   - hotels
-    - base.proto 
-   - analytics 
-    - base.proto
-
-  - wegosdk-protos (actually a symlink to ANOTHER repo)
-  - flights
-  - base.proto
-  - hotels
-  - base.proto
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3&gt;The 2nd Problem&lt;/h3&gt;
-
-&lt;p&gt;This problem is abit uglier. So in the &lt;code&gt;wego-protos&lt;/code&gt; files, we do imports that are from the other repo &lt;code&gt;wegosdk-protos&lt;/code&gt;. It is an entirely separate git repo that is included as a git submodule. &lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;package wego.flights
-import "wegosdk-protos/wegosdk/base.proto";
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;The generated package name from that snippet was wrong. I had to include an undocumented option go&lt;em&gt;package in proto2 (it is available in proto3). &amp;ldquo;` option go&lt;/em&gt;package = &amp;quot;wego&amp;rdquo;; &amp;ldquo;`&lt;/p&gt;
-
-&lt;p&gt;This actually generates &lt;code&gt;import &amp;quot;wegosdk-protos/wegosdk/base&amp;quot;&lt;/code&gt; in the *.pb.go files. It was clear that we needed to customise the import paths + package names.&lt;/p&gt;
-
-&lt;p&gt;Looking at &lt;a title="protobuf code" href="https://github.com/golang/protobuf/blob/master/protoc-gen-go/plugin/Makefile#L38"&gt;this file&lt;/a&gt;, we found that the &amp;ndash;go-out has a &amp;quot;M&amp;rdquo; flag that allows us to modify the final import paths to point to the correct github.com/wego/wego-protos filepaths. We also don&amp;rsquo;t do another &lt;code&gt;go get github.com/wego/wegosdk-proto&lt;/code&gt;; basically treating it as one repo.&lt;/p&gt;
-
-&lt;h3&gt;The Solution&lt;/h3&gt;
-
-&lt;p&gt;Finally I ended up with this long &amp;ndash;go-out option to somewhat &amp;ldquo;replace&amp;rdquo; all of the default imports (that works with other languages) to use the correct $GOPATH source path.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;--go-out=Mwegosdk-protos/wegosdk_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_hotels,
-Mwegosdk-protos/wegosdk_flights/fares.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
-Mwegosdk-protos/wegosdk_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
-Mwegosdk-protos/wegosdk/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk,
-Mwego-protos/wego_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_hotels,
-Mwego-protos/wego_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_flights,
-Mwego-protos/wego_analytics/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_analytics,
-Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego,
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;On hindsight, it would probably have been alot easier if we just treated wegosdk-protos as an entirely separate project in Golang. Nevertheless I think the workaround is reasonable if we wanted to work with only 1 repo at that time.&lt;/p&gt;
 </content>
   </entry>
 </feed>

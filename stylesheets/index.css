@@ -1,8 +1,6 @@
-/* line 1, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 .index-content {
   text-align: center; }
 
-/* line 5, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 h1.index-content__index-title {
   margin-top: 10%;
   color: #121212;
@@ -11,32 +9,26 @@ h1.index-content__index-title {
   font-weight: 700;
   letter-spacing: -1px; }
 
-/* line 14, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 a.index-title__chevron:hover,
 a.index-title__chevron:focus,
 a.index-title__chevron:active {
   border: none; }
-  /* line 18, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
   a.index-title__chevron:hover .glyphicon-chevron-down,
   a.index-title__chevron:focus .glyphicon-chevron-down,
   a.index-title__chevron:active .glyphicon-chevron-down {
     color: #121212; }
 
-/* line 24, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 .index-title__chevron .glyphicon-chevron-down {
   font-weight: 300;
   font-size: 0.5em;
   color: rgba(0, 0, 0, 0.32); }
 
-/* line 31, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 .index-title__text {
   border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
 
-/* line 36, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 a:hover .index-title__text {
   border-color: #B02B2C; }
 
-/* line 41, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
 .index-content__moustache {
   width: 100%;
   margin: auto;
@@ -44,11 +36,9 @@ a:hover .index-title__text {
   background: url("/images/moustache.png") 5px 0 no-repeat;
   height: 135px;
   background-size: contain; }
-  /* line 49, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
   .index-content__moustache .moustache__action-text {
     width: 100px;
     margin: auto; }
-    /* line 52, /Users/homan/Projects/aranair.github.io/source/stylesheets/index.css.scss */
     .index-content__moustache .moustache__action-text h2 {
       border: 1px solid white;
       font-family: "Open Sans";

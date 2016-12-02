@@ -12,9 +12,9 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
-    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
-    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script>
@@ -49,8 +49,8 @@
       <a href="/projects" class="navbar-links pull-right">
         Projects
       </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
-        LinkedIn
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
       </a>
     </div>
   </nav>
@@ -61,14 +61,17 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       VIM Toggle Background Scheme<br>
-      <span>Published on May 20, 2014</span>
+      <span class="article__published-date">
+        May 20, 2014
+        <span class="article__middle-dot"></span>
+        less than a minute read
+      </span>
     </h1>
     <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
 
 <p>This works well for color schemes that offer both dark and light versions, for example Solarized.</p>
 <pre class="highlight plaintext"><code>let g:scheme_bg = "dark"
-</code></pre>
-<pre class="highlight plaintext"><code>function! ToggleDark()
+</code></pre><pre class="highlight plaintext"><code>function! ToggleDark()
   if g:scheme_bg == "dark"
     set background=light
     let g:scheme_bg = "light"
@@ -77,9 +80,34 @@
     let g:scheme_bg = "dark"
   endif
 endfunction
+</code></pre><pre class="highlight plaintext"><code>map &lt;F3&gt; :call ToggleDark()&lt;CR&gt;
 </code></pre>
-<pre class="highlight plaintext"><code>map &lt;F3&gt; :call ToggleDark()&lt;CR&gt;
-</code></pre>
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
 
   </div>
 

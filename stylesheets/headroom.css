@@ -1,14 +1,11 @@
-/* line 1, /Users/homan/Projects/aranair.github.io/source/stylesheets/headroom.css.scss */
 .headroom--pinned {
   display: block;
   transform: translateY(0%); }
 
-/* line 6, /Users/homan/Projects/aranair.github.io/source/stylesheets/headroom.css.scss */
 .headroom--unpinned {
   display: none;
   transform: translateY(-100%); }
 
-/* line 11, /Users/homan/Projects/aranair.github.io/source/stylesheets/headroom.css.scss */
 .headroom {
   will-change: transform;
   transition: transform 200ms linear; }

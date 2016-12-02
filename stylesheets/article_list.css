@@ -1,62 +1,56 @@
-/* line 3, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
-p {
-  font-size: 1.1em; }
-
-/* line 4, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
+@charset "UTF-8";
 ul li {
   font-size: 1.1em; }
 
-/* line 5, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 pre code {
   line-height: 1.5em; }
 
-/* line 6, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 code {
-  font-size: 75%; }
+  font-size: 65%; }
 
-/* line 8, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .article-list__article-summary {
   border-bottom: 1px solid;
   border-color: rgba(0, 0, 0, 0.1); }
 
-/* line 16, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
+.article__middle-dot {
+  padding-right: .45em;
+  padding-left: .45em;
+  font-size: 1em; }
+  .article__middle-dot:after {
+    content: "·"; }
+
 .article-summary__article-title {
   font-family: "Montserrat";
-  font-size: 2.09em;
+  font-size: 1.54em;
   font-weight: 900;
   color: #333;
   margin-bottom: 0.2em;
   margin-top: 1em; }
-  /* line 17, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
-  .article-summary__article-title span {
+  .article-summary__article-title .article-summary__published-date {
     font-family: "Lato";
     letter-spacing: 0px;
     font-size: 0.55em;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
-    padding-left: 2px;
-    letter-spacing: 0px; }
-  /* line 34, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
+    padding-left: 2px; }
   .article-summary__article-title a {
     color: #333; }
 
-/* line 39, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .article-summary__readmore {
   line-height: 3.3em;
-  color: #B02B2C; }
+  color: rgba(0, 0, 0, 0.6);
+  font-family: 'Lato', san-serif;
+  font-weight: 300; }
 
-/* line 44, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 a.article-summary__readmore:hover {
-  color: #B02B2C;
-  border-color: #B02B2C; }
+  color: #333;
+  border: none; }
 
-/* line 50, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .article h3 {
   font-size: 1.43em;
   margin-top: 1.2em;
   margin-bottom: 0.5em; }
 
-/* line 57, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .article pre,
 .article-list__article-summary pre {
   word-break: break-word;
@@ -69,22 +63,18 @@ a.article-summary__readmore:hover {
   padding: 10px 0px 10px 20px;
   margin: 0 0 1.8em 0px; }
 
-/* line 70, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 h1.article__article-title {
   font-family: "Montserrat";
-  font-size: 2.09em;
+  font-size: 1.694em;
   font-weight: 900;
   color: #333; }
-  /* line 71, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
-  h1.article__article-title span {
+  h1.article__article-title .article__published-date {
     font-family: "Lato";
     font-size: 0.55em;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(0, 0, 0, 0.4);
     font-weight: 300;
-    padding-left: 3px;
-    letter-spacing: 0px; }
+    padding-left: 3px; }
 
-/* line 86, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .tags {
   display: none;
   font-size: 0.8em;
@@ -92,17 +82,14 @@ h1.article__article-title {
   font-size: 0.9em;
   text-align: right; }
 
-/* line 94, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .pagination {
   display: none;
   font-family: 'Open Sans';
   font-weight: 300;
   font-size: 0.9em; }
-  /* line 100, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
   .pagination a {
     font-weight: 300; }
 
-/* line 103, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .pagination-mobile {
   font-family: 'Open Sans';
   font-weight: 300;
@@ -110,7 +97,6 @@ h1.article__article-title {
   display: block;
   margin-top: 15px; }
 
-/* line 111, /Users/homan/Projects/aranair.github.io/source/stylesheets/article_list.css.scss */
 .blockquote {
   font-size: 1em;
   color: #333; }

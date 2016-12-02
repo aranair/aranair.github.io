@@ -1,99 +1,78 @@
 @media (min-width: 1200px) {
-  /* line 4, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .tags {
     display: block;
     position: fixed;
     top: 100px;
     right: 25px; } }
 @media (min-width: 1020px) {
-  /* line 13, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .pagination {
     display: block;
     position: fixed;
     bottom: 0px;
     right: 25px; }
 
-  /* line 19, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .pagination-mobile {
     display: none; } }
 /* Landscape phone to portrait tablet */
 @media (max-width: 1020px) {
-  /* line 26, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   h1.index-content__index-title {
     font-size: 5em; }
 
-  /* line 32, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .logo {
     position: absolute; }
 
-  /* line 35, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .navbar-right {
     right: 10px; }
 
-  /* line 38, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .page-links {
     position: absolute; }
 
-  /* line 41, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .container {
     padding-left: 30px;
     padding-right: 30px; }
 
-  /* line 46, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .article-list__article-summary {
     border-bottom: 1px solid;
     border-color: rgba(0, 0, 0, 0.1); }
-    /* line 49, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
     .article-list__article-summary p {
-      font-size: 0.95em; }
+      font-size: 1em; }
 
-  /* line 54, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
+  pre code {
+    font-size: 0.8em; }
+
   p, ul li {
-    font-size: 0.95em; }
+    font-size: 1em; }
 
-  /* line 58, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .article-summary__article-title {
-    font-size: 1.425em;
+    font-size: 1.4em;
     font-weight: 900;
     color: #333; }
-    /* line 59, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
-    .article-summary__article-title span {
-      font-size: 0.57em;
+    .article-summary__article-title .article-summary__published-date {
+      font-size: 0.6em;
       color: rgba(0, 0, 0, 0.32);
       font-weight: 300; }
 
-  /* line 69, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .article-summary__readmore {
-    line-height: 2.85em;
-    color: #B02B2C; }
+    line-height: 3em; }
 
-  /* line 73, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
-  a.article-summary__readmore:hover {
-    color: #B02B2C;
-    border-color: #B02B2C; }
-
-  /* line 79, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .article h3 {
-    font-size: 1.425em;
+    font-size: 1.5em;
     margin-top: 1.4em; }
 
-  /* line 85, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   .article pre,
   .article-list__article-summary pre {
-    font-size: 0.76em;
-    line-height: 1.1875em;
+    font-size: 0.8em;
+    line-height: 1.25em;
     padding: 10px 0px 10px 20px;
     margin: 0 0 1.8em 0px; }
 
-  /* line 93, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   h1.article__article-title {
-    font-size: 1.805em;
-    margin-bottom: 1.045em;
+    font-size: 1.9em;
+    margin-bottom: 1.1em;
     font-weight: 900;
     color: #333; } }
 /* Landscape phones and down */
 @media (max-width: 480px) {
-  /* line 103, /Users/homan/Projects/aranair.github.io/source/stylesheets/media_queries.css.scss */
   h1.index-content__index-title {
     font-size: 2em;
     margin-left: 10px;

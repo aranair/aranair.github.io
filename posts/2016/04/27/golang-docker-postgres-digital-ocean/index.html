@@ -12,9 +12,9 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
-    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
-    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script>
@@ -49,8 +49,8 @@
       <a href="/projects" class="navbar-links pull-right">
         Projects
       </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
-        LinkedIn
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
       </a>
     </div>
   </nav>
@@ -61,7 +61,11 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       Dockerized Golang + Postgres on Digital Ocean<br>
-      <span>Published on Apr 27, 2016</span>
+      <span class="article__published-date">
+        Apr 27, 2016
+        <span class="article__middle-dot"></span>
+        5  minutes read
+      </span>
     </h1>
     <p>My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.</p>
 
@@ -82,19 +86,15 @@
 <p>This runs the postgres service under <code>db</code> name and as a daemon.</p>
 <pre class="highlight plaintext"><code>docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
 </code></pre>
-
 <p>To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: </p>
 <pre class="highlight plaintext"><code>docker exec -it db /bin/bash
 </code></pre>
-
 <p>From there, a new user was created and granted privileges via psql CLI.</p>
 <pre class="highlight plaintext"><code>psql -U postgres
-</code></pre>
-<pre class="highlight plaintext"><code>CREATE USER app;
+</code></pre><pre class="highlight plaintext"><code>CREATE USER app;
 CREATE DATABASE appdb;
 GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 </code></pre>
-
 <p>If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&rsquo;t allow client authentication in connections yet. </p>
 
 <p>In order for it to work, there were two files which I had to modify:</p>
@@ -109,26 +109,21 @@ GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 <p>The default one should lie at this location: </p>
 <pre class="highlight plaintext"><code>/var/lib/postgresql/data/pg_hba.conf
 </code></pre>
-
 <p>Installed my favourite text editor via:</p>
 <pre class="highlight plaintext"><code>apt-get update &amp;&amp; apt-get install vim
 </code></pre>
-
 <p>Changed from this:</p>
 <pre class="highlight plaintext"><code>host  all  all  127.0.0.1/32  md5
 </code></pre>
-
 <p>To this, so that it allows connections that are from the same machine:</p>
 <pre class="highlight plaintext"><code>host all  all  192.168.1.0/24  md5
 </code></pre>
-
 <p>For <code>/etc/postgresql/9.3/main/postgresql.conf</code>:  Changing <code>#listen_addresses = &#39;localhost&#39;</code> to <code>listen_addresses = &#39;*&#39;</code> would enable it to listen for incoming connection requests from all available IP addresses.</p>
 
 <p>A restart of the postgres service was also required.</p>
 <pre class="highlight plaintext"><code>sudo service postgresql stop
 sudo service postgresql start
 </code></pre>
-
 <h3>Docker Volumes</h3>
 
 <p>The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
@@ -137,7 +132,6 @@ In my deployment, you&rsquo;ll notice that I do not specifically set this up and
 ENV PGDATA /var/lib/postgresql/data
 VOLUME /var/lib/postgresql/data
 </code></pre>
-
 <p>You can find out more about it in the <a href="https://docs.docker.com/engine/userguide/containers/dockervolumes/">official documentation</a> if you&rsquo;re interested.</p>
 
 <h3>Dockerize the Golang App</h3>
@@ -155,7 +149,6 @@ ADD dbconf.yml /go/src/app/db/
 
 EXPOSE 5000
 </code></pre>
-
 <p>A quick run through of each line:</p>
 
 <ul>
@@ -168,7 +161,6 @@ EXPOSE 5000
 <pre class="highlight plaintext"><code>docker built -t app
 docker run -d -p 80:5000 --name gosnap --link db:postgres app
 </code></pre>
-
 <ul>
 <li><code>-d</code> tells it to run it as a daemon,</li>
 <li><code>-p 80:5000</code> tells it to link the host container&rsquo;s port 80 to port 5000 of the docker container</li>
@@ -182,10 +174,37 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
    driver: postgres
    open: host=$POSTGRES_PORT_5432_TCP_ADDR user=app dbname=appdb sslmode=disable
 </code></pre>
-
 <p>I then ran the migrations at this point:</p>
 <pre class="highlight plaintext"><code>docker exec -it gosnap goose up
 </code></pre>
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/docker-golang-postgres-digital-ocean';
+                        var disqus_title = 'Dockerized Golang with Postgres on Digital Ocean';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
 
   </div>
 

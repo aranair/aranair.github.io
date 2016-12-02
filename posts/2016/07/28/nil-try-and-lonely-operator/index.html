@@ -12,9 +12,9 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
-    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
-    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script>
@@ -49,8 +49,8 @@
       <a href="/projects" class="navbar-links pull-right">
         Projects
       </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
-        LinkedIn
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
       </a>
     </div>
   </nav>
@@ -61,13 +61,17 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       Nil, Try & The Lonely Operator<br>
-      <span>Published on Jul 28, 2016</span>
+      <span class="article__published-date">
+        Jul 28, 2016
+        <span class="article__middle-dot"></span>
+        3  minutes read
+      </span>
     </h1>
-    <p>Recently, I left a comment on one of my colleague&rsquo;s PR and we had a discussion with him about 
+    <p>Recently, I left a comment on one of my colleague&rsquo;s PR and we had a discussion with him about
 the use of <code>try</code> vs the lonely operator <code>&amp;.</code> and it led to a number of conclusions personally.</p>
 
-<p>I used to use lots of <code>.try</code>. I&rsquo;ve also come across codebases littered with it, be it in the 
-presentation layer or in the models. From personal experience, I&rsquo;ll say it&rsquo;s pretty easy to end up with 
+<p>I used to use lots of <code>.try</code>. I&rsquo;ve also come across codebases littered with it, be it in the
+presentation layer or in the models. From personal experience, I&rsquo;ll say it&rsquo;s pretty easy to end up with
 <code>.try</code> littered all around.</p>
 
 <p>I was curious about when it shouldn&rsquo;t be used, and if there were better alternatives.</p>
@@ -82,7 +86,6 @@ rightfully throws an error during runtime. Of course, I could use something like
 error.</p>
 <pre class="highlight ruby"><code><span class="n">user</span> <span class="o">&amp;&amp;</span> <span class="n">user</span><span class="p">.</span><span class="nf">name</span>
 </code></pre>
-
 <p>And <code>user.try(:name)</code> yields the same result.</p>
 
 <h3>The Not So Obvious Scenario</h3>
@@ -94,14 +97,12 @@ lazy way to sidestep <code>NoMethodError</code>. But I find that this laziness, 
 <pre class="highlight ruby"><code><span class="c1"># Either a guest user without a name, or a registered user with a name</span>
 <span class="n">some_user</span><span class="p">.</span><span class="nf">try</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span>
 </code></pre>
-
 <h3>The Lonely Operator</h3>
 
 <p><code>user&amp;.name</code> is equivalent to <code>user &amp;&amp; user.name</code> and only this. It still throws a <code>NoMethodError</code> 
 when the method doesn&rsquo;t exist on the object. And that&rsquo;s good for various reasons.</p>
 <pre class="highlight ruby"><code><span class="p">[]</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">invalid_method</span> <span class="c1"># throws NoMethodError</span>
 </code></pre>
-
 <p>In the event where I have no idea what the object is, it is a <em>clear</em> sign that I should spend 
 the time to refactor the code so that the object class is deterministic and 
 not rely on a <code>.try</code> to squirm out of the situation.</p>
@@ -110,12 +111,38 @@ not rely on a <code>.try</code> to squirm out of the situation.</p>
 Being huge on aesthetics and coding styles, I just end up chaining less.</p>
 <pre class="highlight ruby"><code><span class="n">user</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">name</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">truncate</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># this just looks clunky imo</span>
 </code></pre>
-
 <p>All those <code>.try(..).try(..)</code>? I always knew I should be getting rid of those too, but it was just 
 so safe. <a href="https://en.wikipedia.org/wiki/Law_of_Demeter">Law of Demeter</a> literally screams at me 
 every time. </p>
 
 <p>I hope this post makes you think twice the next time <code>.try</code> chains comes to mind:P</p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
 
   </div>
 

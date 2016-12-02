@@ -12,9 +12,9 @@
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <link href="/stylesheets/normalize.css" rel="stylesheet" type="text/css" />
-    <link href="/stylesheets/blog.css" rel="stylesheet" type="text/css" />
-    <script src="/javascripts/all.js" type="text/javascript"></script>
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script>
@@ -49,8 +49,8 @@
       <a href="/projects" class="navbar-links pull-right">
         Projects
       </a>
-      <a href="https://sg.linkedin.com/in/boahoman" class="navbar-links pull-right" target="_blank">
-        LinkedIn
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
       </a>
     </div>
   </nav>
@@ -61,7 +61,11 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       Capybara & Waiting<br>
-      <span>Published on Jul 27, 2016</span>
+      <span class="article__published-date">
+        Jul 27, 2016
+        <span class="article__middle-dot"></span>
+        4  minutes read
+      </span>
     </h1>
     <p>All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
 you’re likely to be doing feature tests with <a href="https://github.com/jnicklas/capybara">Capybara</a> as well.</p>
@@ -89,7 +93,6 @@ encounters the same problems!</p>
 
 <span class="n">expect</span><span class="p">(</span><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">text</span><span class="p">).</span><span class="nf">to</span> <span class="n">eq</span> <span class="s1">'something'</span>
 </code></pre>
-
 <p>You&rsquo;ll find that it doesn&rsquo;t work too well (not at all actually). This is because there is a delay 
 between the button click and the actual completion of the code that is run as a result of that click. </p>
 
@@ -105,11 +108,9 @@ to appear or disappear on the page.</p>
 <pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span>
 <span class="c1"># have_css, have_selector</span>
 </code></pre>
-
 <p>You can even define if the element should be visible or not after it is rendered. </p>
 <pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span><span class="p">,</span> <span class="ss">visible: </span><span class="kp">false</span>
 </code></pre>
-
 <p>Magical. Right? </p>
 
 <h3>Old solutions</h3>
@@ -126,7 +127,6 @@ Instead they used <code>wait_until { ... }</code> or even <code>sleep(3)</code> 
 <span class="n">reload_page</span>
 <span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">).</span><span class="nf">to</span> <span class="n">have_content</span> <span class="s1">'Linked'</span>
 </code></pre>
-
 <p>Nope! There&rsquo;s still a chance that the <code>reload_page</code> would happen before the AJAX code finishes. 
 And the tests would randomly fail since the content-check is dependant on the click event&rsquo;s code execution.
 That&rsquo;s not good; we all want deterministic results for our tests, right?</p>
@@ -147,6 +147,33 @@ if you don&rsquo;t actually want to test the content, using <code>wait_for_ajax<
 using the Capybara built-in matchers before using <code>sleep</code>!</p>
 
 <p>What does everyone think? Are your experiences similar?</p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
 
   </div>
 
