@@ -94,6 +94,11 @@ configure :development do
   set :js_dir, 'javascripts'
   set :images_dir, 'images'
   set :fonts_dir, 'webfonts'
+
+  activate :disqus do |d|
+    d.shortname = 'homan-gh-blog-test'
+  end
+
 # sprockets.append_path File.join root, 'source/fonts'
 end
 
@@ -128,8 +133,3 @@ activate :deploy do |deploy|
   deploy.branch = 'master'
   deploy.build_before = true
 end
-
-activate :disqus do |d|
-  d.shortname = 'homan-gh-blog-test'
-end
-
