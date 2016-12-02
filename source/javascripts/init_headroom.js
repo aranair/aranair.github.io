@@ -1,7 +1,10 @@
 $(document).ready(function() {
   $("#header").headroom({
     "offset": 205,
-    "tolerance": 5,
+    "tolerance": {
+      "up": 5,
+      "down": 0
+    },
     "classes": {
       "initial": "animated",
       "pinned": "slideInDown",
