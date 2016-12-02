@@ -2,6 +2,8 @@
 title: Nil, Try & The Lonely Operator
 date: 2016-07-28
 tags: rails, try
+disqus_identifier: 2016/nil-try-lonely-operator
+disqus_title: Nil, Try and the Lonely Operator
 ---
 
 Recently, I left a comment on one of my colleague's PR and we had a discussion with him about

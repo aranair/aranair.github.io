@@ -2,6 +2,8 @@
 title: Capybara & Waiting
 date: 2016-07-27
 tags: capybara, rails
+disqus_identifier: 2016/capybara-and-waiting
+disqus_title: Capybara and Waiting
 ---
 
 All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
