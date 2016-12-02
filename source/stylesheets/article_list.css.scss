@@ -47,12 +47,14 @@ code { font-size: 65%; }
 
 .article-summary__readmore {
   line-height: $p-font-size * 3;
-  color: $maroon;
+  color: $lightgrey;
+  font-family: 'Lato', san-serif;
+  font-weight: 300;
 }
 
 a.article-summary__readmore:hover {
-  color: $maroon;
-  border-color: $maroon;
+  color: $darkgrey;
+  border: none;
 }
 
 .article {
