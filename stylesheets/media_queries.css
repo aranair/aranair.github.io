@@ -15,9 +15,6 @@
     display: none; } }
 /* Landscape phone to portrait tablet */
 @media (max-width: 1020px) {
-  h1.index-content__index-title {
-    font-size: 5em; }
-
   .logo {
     position: absolute; }
 
@@ -72,9 +69,3 @@
     font-weight: 900;
     color: #333; } }
 /* Landscape phones and down */
-@media (max-width: 480px) {
-  h1.index-content__index-title {
-    font-size: 2em;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-top: 20%; } }

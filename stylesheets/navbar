@@ -1,0 +1,82 @@
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover {
+  color: #222; }
+
+a.navbar-icons:focus,
+a.navbar-icons:active,
+a.navbar-icons:hover,
+a.navbar-customlinks:focus,
+a.navbar-customlinks:active,
+a.navbar-customlinks:hover {
+  border-bottom: none; }
+
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  color: purple; }
+
+a.navbar-links:focus,
+a.navbar-links:active,
+a.navbar-links:hover {
+  border-bottom: none; }
+
+.header--fixed {
+  position: fixed;
+  z-index: 10;
+  right: 0;
+  left: 0;
+  top: 0; }
+
+header {
+  background: transparent; }
+
+.navbar-links {
+  line-height: 27px;
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300;
+  padding: 12.5px 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 14px;
+  height: 50px; }
+
+.navbar-links--name {
+  padding: 10px;
+  height: inherit;
+  margin: 10px 0px 0px 5px;
+  color: #9600FF;
+  height: 38px;
+  width: 50px;
+  background-image: url("/images/hmlogo-small.png"); }
+
+.navbar-icons {
+  float: left;
+  padding: 12.5px 15px;
+  font-size: 23px;
+  line-height: 25px;
+  height: 50px; }
+
+.navbar-left {
+  left: 0px; }
+
+.tags-link {
+  color: rgba(0, 0, 0, 0.8);
+  font-family: 'Open Sans', serif;
+  font-weight: 300; }
+
+.logo__logo-social {
+  float: right;
+  line-height: 25px;
+  height: 50px;
+  color: rgba(0, 0, 0, 0.32); }
+
+.logo__logo-others {
+  font-size: 1em;
+  line-height: 27px;
+  color: rgba(0, 0, 0, 0.32); }
+
+.navbar-default {
+  background-color: #fff;
+  border-color: #fff; }
