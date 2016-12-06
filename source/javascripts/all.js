@@ -1,4 +1,3 @@
-//= require turbolinks
 //= require jquery
 //= require headroom.min
 //= require jQuery.headroom

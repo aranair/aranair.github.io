@@ -1,16 +1,68 @@
+$font-size-base: 16px;
+
+@import "bootstrap-sprockets";
+@import "bootstrap";
 @import "variables";
+@import "general";
+@import "fonts.css.scss";
+@import "animate.css.scss";
+@import "headroom.css.scss";
+@import "navbar";
+
+html {
+  background: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3)), url("/images/bg-small.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  padding-top: 0px !important;
+  height: 100vh;
+}
+
+body {
+  background: none;
+}
+
+.index__grab-coffee {
+  color: black;
+  background: rgba(255, 255, 255, 0.2);
+  display: block;
+  position: relative;
+  width: 300px;;
+  padding: 11px 24px;
+  border-radius: 3px;
+  border: 2px solid black;
+  font-weight: 700;
+  line-height: 22px;
+  text-decoration: none;
+  font-family: 'Montserrat';
+  margin: 0 auto auto auto;
+}
+
+a.index__grab-coffee:hover {
+  color: black;
+  text-decoration: none;
+  border: 2px solid black;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.navbar-default {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-bottom: none;
+}
 
 .index-content {
+  width: 100%;
   text-align: center;
 }
 
 h1.index-content__index-title {
-  margin-top: 10%;
-  color: #121212;
+  font-size: 2em;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 40%;
   font-family: $heading-font;
-  font-size: 6rem;
   font-weight: 700;
   letter-spacing: -1px;
+  color: #121212;
 }
 
 a.index-title__chevron:hover,
@@ -56,5 +108,29 @@ a:hover {
       font-family: "Open Sans";
       color: white;
     }
+  }
+}
+
+@media (min-width: 800px) {
+  html {
+    background: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3)), url("/images/bg.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    padding-top: 0px !important;
+  }
+
+  h1.index-content__index-title {
+    margin-top: 200px;
+    margin-left: 50px;
+    color: #121212;
+    font-family: $heading-font;
+    font-size: 6rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .index-content {
+    width: 750px;
+    text-align: center;
   }
 }

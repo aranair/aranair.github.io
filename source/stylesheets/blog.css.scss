@@ -8,14 +8,14 @@ $font-size-base: 16px;
 
 @import "pygment.css.scss";
 @import "variables";
+@import "navbar";
 
-@import "general.css.scss";
-@import "index.css.scss";
+@import "general.scss";
 @import "article_list.css.scss";
 @import "project_list.css.scss";
 @import "bio";
 
-@import "media_queries.css.scss";
 @import "fonts.css.scss";
 @import "animate.css.scss";
 @import "headroom.css.scss";
+@import "media_queries.css.scss";
