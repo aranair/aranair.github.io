@@ -93,7 +93,6 @@ configure :development do
   set :css_dir, 'stylesheets'
   set :js_dir, 'javascripts'
   set :images_dir, 'images'
-  set :fonts_dir, 'webfonts'
 
   activate :disqus do |d|
     d.shortname = 'homan-gh-blog-test'
@@ -107,7 +106,6 @@ configure :build do
   set :css_dir, 'stylesheets'
   set :js_dir, 'javascripts'
   set :images_dir, 'images'
-  set :fonts_dir, 'webfonts'
   activate :directory_indexes
   activate :sprockets
 
