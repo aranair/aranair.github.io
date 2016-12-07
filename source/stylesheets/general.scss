@@ -16,7 +16,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: normal;
   margin-bottom: .5em;
   line-height: 1.2em;
-  color: $maroon;
+  color: rgba(0, 0, 0, 0.88);
   letter-spacing: $heading-letter-spacing;
 }
 
@@ -71,7 +71,7 @@ a:hover {
 }
 
 .container {
-  max-width: 630px;
+  max-width: 640px;
   margin: auto;
 }
 
