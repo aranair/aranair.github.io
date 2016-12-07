@@ -8730,12 +8730,14 @@ h1.bio__header {
 .bio {
   text-align: center; }
 
-.bio__linkedin, .bio__github {
-  margin-top: 10px;
+.social-media {
   margin-right: 10px; }
 
-.bio__email {
+.social-media__email {
   border-bottom: 1px dotted #333; }
+
+a.social-media:hover {
+  color: black; }
 
 /*!
  * animate.css -http://daneden.me/animate
@@ -10993,6 +10995,33 @@ h1.bio__header {
     opacity: 1; }
   100% {
     opacity: 0; } }
+.typed-cursor {
+  opacity: 1;
+  -webkit-animation: blink 0.7s infinite;
+  -moz-animation: blink 0.7s infinite;
+  animation: blink 0.7s infinite; }
+
+@keyframes blink {
+  0% {
+    opacity: 1; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@-webkit-keyframes blink {
+  0% {
+    opacity: 1; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+@-moz-keyframes blink {
+  0% {
+    opacity: 1; }
+  50% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
 .headroom--pinned {
   display: block;
   transform: translateY(0%); }
