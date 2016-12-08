@@ -23,7 +23,7 @@ code { font-size: 80%; }
   font-family: $article-summary-title-font;
   font-size: $p-font-size * $heading-multiplication;
   font-weight: $heading-weight;
-  color: #333;
+  color: $midnightblue;
   margin-bottom: 0.2em;
   margin-top: 1em;
   letter-spacing: 0px;
@@ -38,7 +38,7 @@ code { font-size: 80%; }
   }
 
   a {
-    color: #333;
+    color: $midnightblue;
   }
 }
 
@@ -47,11 +47,11 @@ code { font-size: 80%; }
 }
 
 a.article-summary__readmore:hover {
-  color: #333;
+  color: $midnightblue;
 }
 
 .article h3 {
-  font-size: $p-font-size * 1.4;
+  font-size: $p-font-size * 1.28;
   margin-top: 1.7em;
   margin-bottom: 0.8em;
   padding-bottom: 0.5em;

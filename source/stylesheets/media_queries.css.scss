@@ -63,9 +63,8 @@
       font-weight: 300;
     }
 
-    font-size: $p-font-size * $heading-multiplication;
+    font-size: $p-font-size * $heading-multiplication * 0.9;
     font-weight: $heading-weight;
-    color: #333;
   }
 
   .article-summary__readmore {
