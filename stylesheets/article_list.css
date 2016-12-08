@@ -1,12 +1,12 @@
 @charset "UTF-8";
 ul li {
-  font-size: 1.1em; }
+  font-size: 1.05em; }
 
 pre code {
   line-height: 1.5em; }
 
 code {
-  font-size: 65%; }
+  font-size: 80%; }
 
 .article-list__article-summary {
   border-bottom: 1px solid;
@@ -20,42 +20,41 @@ code {
     content: "·"; }
 
 .article-summary__article-title {
-  font-family: "Montserrat";
-  font-size: 1.54em;
-  font-weight: 900;
-  color: #333;
+  font-family: "Source Sans Pro";
+  font-size: 1.68em;
+  font-weight: 600;
+  color: #2c3e50;
   margin-bottom: 0.2em;
-  margin-top: 1em; }
+  margin-top: 1em;
+  letter-spacing: 0px; }
   .article-summary__article-title .article-summary__published-date {
     font-family: "Lato";
     letter-spacing: 0px;
-    font-size: 0.55em;
+    font-size: 0.525em;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 2px; }
   .article-summary__article-title a {
-    color: #333; }
+    color: #2c3e50; }
 
 .article-summary__readmore {
-  line-height: 3.3em;
-  color: rgba(0, 0, 0, 0.6);
-  font-family: 'Lato', san-serif;
-  font-weight: 300; }
+  line-height: 3.15em; }
 
 a.article-summary__readmore:hover {
-  color: #333;
-  border: none; }
+  color: #2c3e50; }
 
 .article h3 {
-  font-size: 1.43em;
-  margin-top: 1.2em;
-  margin-bottom: 0.5em; }
+  font-size: 1.344em;
+  margin-top: 1.7em;
+  margin-bottom: 0.8em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #ddd; }
 
 .article pre,
 .article-list__article-summary pre {
   word-break: break-word;
-  font-size: 0.77em;
-  line-height: 1.375em;
+  font-size: 0.735em;
+  line-height: 1.3125em;
   border: none;
   border-left: 2px solid rgba(176, 43, 44, 0.83);
   border-radius: 0;
@@ -64,39 +63,12 @@ a.article-summary__readmore:hover {
   margin: 0 0 1.8em 0px; }
 
 h1.article__article-title {
-  font-family: "Montserrat";
-  font-size: 1.694em;
-  font-weight: 900;
-  color: #333; }
+  font-family: "Source Sans Pro";
+  font-size: 1.848em;
+  font-weight: 600; }
   h1.article__article-title .article__published-date {
     font-family: "Lato";
-    font-size: 0.55em;
+    font-size: 0.525em;
     color: rgba(0, 0, 0, 0.4);
     font-weight: 300;
     padding-left: 3px; }
-
-.tags {
-  display: none;
-  font-size: 0.8em;
-  max-width: 200px;
-  font-size: 0.9em;
-  text-align: right; }
-
-.pagination {
-  display: none;
-  font-family: 'Open Sans';
-  font-weight: 300;
-  font-size: 0.9em; }
-  .pagination a {
-    font-weight: 300; }
-
-.pagination-mobile {
-  font-family: 'Open Sans';
-  font-weight: 300;
-  font-size: 0.9em;
-  display: block;
-  margin-top: 15px; }
-
-.blockquote {
-  font-size: 1em;
-  color: #333; }
