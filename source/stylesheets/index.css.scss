@@ -60,7 +60,7 @@ h1.index-content__index-title {
   margin-left: 10px;
   margin-right: 10px;
   margin-top: 40%;
-  font-family: $heading-font;
+  font-family: $index-heading-font;
   font-weight: 700;
   letter-spacing: -1px;
   color: #121212;
@@ -93,25 +93,6 @@ a:hover {
   }
 }
 
-.index-content__moustache {
-  width: 100%;
-  margin: auto;
-  display: block;
-  background: url("/images/moustache.png") 5px 0 no-repeat;
-  height: 135px;
-  background-size: contain;
-
-  .moustache__action-text {
-    width: 100px;
-    margin: auto;
-    h2 {
-      border: 1px solid white;
-      font-family: "Open Sans";
-      color: white;
-    }
-  }
-}
-
 @media (min-width: 800px) {
   html {
     background: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3)), url("/images/bg.jpg");
@@ -124,7 +105,7 @@ a:hover {
     margin-top: 200px;
     margin-left: 50px;
     color: #121212;
-    font-family: $heading-font;
+    font-family: $index-heading-font;
     font-size: 6rem;
     font-weight: 700;
     letter-spacing: -1px;
