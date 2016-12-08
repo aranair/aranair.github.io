@@ -5,7 +5,7 @@ body {
   font-family: $body-font, Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
-  color: rgba(0, 0, 0, 0.8);
+  color: rgba(0, 0, 0, 0.7);
   padding-top: 40px;
   background: none;
 }
@@ -18,9 +18,11 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2em;
   color: rgba(0, 0, 0, 0.88);
   letter-spacing: $heading-letter-spacing;
+  color: $maroon;
 }
 
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+  color: rgba(0, 0, 0, 0.88);
   border-bottom: 1px solid transparent;
 }
 
@@ -71,7 +73,7 @@ a:hover {
 }
 
 .container {
-  max-width: 640px;
+  max-width: $container-width;
   margin: auto;
 }
 
@@ -80,65 +82,42 @@ ol li {
   line-height: 2em;
 }
 
-.rotate-cw {
-  animation: rotate-cw linear 2s;
-  animation-iteration-count: infinite;
-  transform-origin: 50% 50%;
-  -webkit-animation: rotate-cw linear 2s;
-  -webkit-animation-iteration-count: infinite;
-  -webkit-transform-origin: 50% 50%;
-  -moz-animation: rotate-cw linear 2s;
-  -moz-animation-iteration-count: infinite;
-  -moz-transform-origin: 50% 50%;
-  -o-animation: rotate-cw linear 2s;
-  -o-animation-iteration-count: infinite;
-  -o-transform-origin: 50% 50%;
-  -ms-animation: rotate-cw linear 2s;
-  -ms-animation-iteration-count: infinite;
-  -ms-transform-origin: 50% 50%;
+.tags {
+  display: none;
+  font-size: 0.8em;
+  max-width: 200px;
+  font-size: 0.9em;
+  text-align: right;
 }
 
-@keyframes rotate-cw {
-  0% {
-    transform:  translate(0px, 0px)  rotate(0deg) ;
-  }
-  100% {
-    transform:  translate(0px, 0px)  rotate(360deg) ;
-  }
+.tags-link {
+  color: rgba(0, 0, 0, 0.5)
 }
 
-@-moz-keyframes rotate-cw{
-  0% {
-    -moz-transform:  translate(0px, 0px)  rotate(0deg) ;
-  }
-  100% {
-    -moz-transform:  translate(0px, 0px)  rotate(360deg) ;
-  }
+.tags-link:focus,
+.tags-link:hover,
+.tags-link:active {
+  color: rgba(0, 0, 0, 0.7);
 }
 
-@-webkit-keyframes rotate-cw {
-  0% {
-    -webkit-transform:  translate(0px, 0px)  rotate(0deg) ;
-  }
-  100% {
-    -webkit-transform:  translate(0px, 0px)  rotate(360deg) ;
-  }
+.pagination {
+  display: none;
+  font-family: 'Open Sans';
+  font-weight: 300;
+  font-size: 0.9em;
+  
+  a { font-weight: 300; }
 }
 
-@-o-keyframes rotate-cw {
-  0% {
-    -o-transform:  translate(0px, 0px)  rotate(0deg) ;
-  }
-  100% {
-    -o-transform:  translate(0px, 0px)  rotate(360deg) ;
-  }
+.pagination-mobile {
+  font-family: 'Open Sans';
+  font-weight: 300;
+  font-size: 0.9em;
+  display: block;
+  margin-top: 15px;
 }
 
-@-ms-keyframes rotate-cw {
-  0% {
-    -ms-transform:  translate(0px, 0px)  rotate(0deg) ;
-  }
-  100% {
-    -ms-transform:  translate(0px, 0px)  rotate(360deg) ;
-  }
+.blockquote {
+  font-size: 1em;
+  color: #333;
 }

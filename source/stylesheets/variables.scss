@@ -1,15 +1,23 @@
-$p-font-size: 1.05em;
-$p-line-height: 1.5em;
+$p-font-size: 1em;
+$p-line-height: 1.6em;
+$p-date-font-multiplication: 0.6;
+
 $maroon: #B02B2C;
 $lightgrey: rgba(0, 0, 0, 0.6);
 $darkgrey: #333;
+
 $body-font: 'Roboto';
 $body-letter-spacing: -1px;
-$heading-font: 'Montserrat';
-$heading-multiplication: 1.4;
-$heading-letter-spacing: -1px;
-$heading-weight: 900;
-$sub-heading-weight: 900;
-$article-page-title: 'Montserrat';
+
+$heading-font: 'Open Sans';
+$heading-multiplication: 1.6;
+$heading-letter-spacing: 0px;
+$heading-weight: 500;
+
+$sub-heading-weight: normal;
+
+$article-page-title: 'Roboto Slab';
 $article-title-date-font: 'Lato';
-$article-summary-title-font: 'Open Sans'
+$article-summary-title-font: 'Roboto Slab';
+
+$container-width: 685px;
