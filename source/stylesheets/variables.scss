@@ -1,23 +1,28 @@
-$p-font-size: 1em;
+$p-font-size: 1.05em;
 $p-line-height: 1.6em;
 $p-date-font-multiplication: 0.6;
 
 $maroon: #B02B2C;
 $lightgrey: rgba(0, 0, 0, 0.6);
 $darkgrey: #333;
+$midnightblue: rgb(44, 62, 80);
+$darkblue: rgb(52, 73, 94);
 
-$body-font: 'Roboto';
+$body-font: 'Source Sans Pro';
 $body-letter-spacing: -1px;
 
-$heading-font: 'Open Sans';
+$heading-font: 'Source Sans Pro';
 $heading-multiplication: 1.6;
 $heading-letter-spacing: 0px;
-$heading-weight: 500;
+$heading-weight: 600;
 
-$sub-heading-weight: normal;
-
-$article-page-title: 'Roboto Slab';
+$sub-heading-weight: 600;
+$article-page-title-font: 'Source Sans Pro';
 $article-title-date-font: 'Lato';
-$article-summary-title-font: 'Roboto Slab';
+$article-title-date-multiplication: 0.5;
+
+$article-summary-title-date-font: 'Lato';
+$article-summary-title-date-multiplication: 0.5;
+$article-summary-title-font: 'Source Sans Pro';
 
 $container-width: 685px;

@@ -7,10 +7,6 @@ code { font-size: 80%; }
 .article-list__article-summary {
   border-bottom: 1px solid;
   border-color: rgba(0, 0, 0, 0.1);
-
-  p { 
-    // font-size: $p-font-size * 0.95; 
-  }
 }
 
 .article__middle-dot {
@@ -33,9 +29,9 @@ code { font-size: 80%; }
   letter-spacing: 0px;
 
   .article-summary__published-date {
-    font-family: $article-title-date-font;
+    font-family: $article-summary-title-date-font;
     letter-spacing: 0px;
-    font-size: $p-font-size * $p-date-font-multiplication;
+    font-size: $p-font-size * $article-summary-title-date-multiplication;
     color: rgba(0, 0, 0, 0.5);
     font-weight: 300;
     padding-left: 2px;
@@ -56,8 +52,10 @@ a.article-summary__readmore:hover {
 
 .article h3 {
   font-size: $p-font-size * 1.4;
-  margin-top: 1.8em;
-  margin-bottom: 1.1em;
+  margin-top: 1.7em;
+  margin-bottom: 0.8em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #ddd;
 }
 
 .article pre, 
@@ -76,14 +74,13 @@ a.article-summary__readmore:hover {
 h1.article__article-title {
   .article__published-date {
     font-family: $article-title-date-font;
-    font-size: $p-font-size * $p-date-font-multiplication;
+    font-size: $p-font-size * $article-title-date-multiplication;
     color: rgba(0, 0, 0, 0.4);
     font-weight: 300;
     padding-left: 3px;
   }
 
-  font-family: $article-page-title;
+  font-family: $article-page-title-font;
   font-size: $p-font-size * $heading-multiplication * 1.1;
   font-weight: $heading-weight;
-  color: #333;
 }
