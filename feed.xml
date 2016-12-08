@@ -183,18 +183,6 @@ quickly the whole process of deployment.&lt;/p&gt;
 </content>
   </entry>
   <entry>
-    <title>Indexing Elasticsearch via Apache Pig</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/11/28/apache-pig-index-elasticsearch/"/>
-    <id>http://blog.url.com/posts/2016/11/28/apache-pig-index-elasticsearch/</id>
-    <published>2016-11-28T00:00:00+08:00</published>
-    <updated>2016-12-02T22:45:28+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Coming soon!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
     <title>AWS Elasticsearch, Elastic Cloud vs Self-managed</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"/>
     <id>http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</id>
@@ -559,5 +547,260 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
 &lt;p&gt;I then ran the migrations at this point:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it gosnap goose up
 &lt;/code&gt;&lt;/pre&gt;</content>
+  </entry>
+  <entry>
+    <title>Capistrano, Postgres, Rails, Nginx &amp; Puma on DigitalOcean</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/"/>
+    <id>http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</id>
+    <published>2016-01-22T00:00:00+08:00</published>
+    <updated>2016-12-08T22:06:24+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Recently, I&amp;rsquo;ve been working on my squash club, &lt;a href="http://www.ucsc.sg"&gt;UCSC&amp;rsquo;s new site&lt;/a&gt;. And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.&lt;/p&gt;
+
+&lt;p&gt;Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I&amp;rsquo;ve historically used Pingdom to avoid having the free instances spin down after 30 mins :P. &lt;/p&gt;
+
+&lt;h3&gt;Overview of Setup&lt;/h3&gt;
+
+&lt;p&gt;I went with a fresh Ubuntu 14.04 DigitalOcean droplet to see how long it takes for me to setup a fresh server for Rails deployment. tl;dr Its actually doesn&amp;rsquo;t take long at all :P&lt;/p&gt;
+
+&lt;p&gt;The stack I chose was nothing out of the ordinary:
+- RVM for ruby (just more used to RVM, no intention to start a war on rbenv vs rvm :P)
+- Rails for application code
+- Postgres for the database
+- Capistrano for deployment (there really isn&amp;rsquo;t other better option imo)
+- Nginx for the reverse proxy (again)
+- Puma for the webserver&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;ve kinda just compiled the steps these posts mainly:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-14-04"&gt;Initial Server Setup&lt;/a&gt;,&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-14-04"&gt;PostgreSQL&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/deploying-a-rails-app-on-ubuntu-14-04-with-capistrano-nginx-and-puma"&gt;Nginx, Puma, RVM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-a-host-name-with-digitalocean"&gt;Nameserver setup)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Devise 3, Capistrano &amp;amp; Env Vars&lt;/h3&gt;
+
+&lt;p&gt;I must admit I was stuck here for a good bit haha.&lt;/p&gt;
+
+&lt;p&gt;So, since Devise 3, a secret key has been required on production defined in the Devise initializer:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;config.secret_key = ENV[&amp;quot;SECRET_KEY_BASE&amp;quot;] if Rails.env.production?&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;There are notably 2 ways to get this working:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Symlink configs/secrets.yml with an actual key on capistrano deploy&lt;/li&gt;
+&lt;li&gt;Use &amp;ldquo;environment variables&amp;rdquo; (I assumed so after seeing ENV)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Most of the people I see fix this by using &lt;a href="https://github.com/rbenv/rbenv-vars"&gt;rbenv-var&lt;/a&gt; to manage environment variables for ruby projects but since I&amp;rsquo;m using rvm, I don&amp;rsquo;t exactly have that option.&lt;/p&gt;
+
+&lt;p&gt;So I ssh&amp;rsquo;d into the server and did this &lt;code&gt;export $SECRET_KEY_BASE=...&lt;/code&gt; and fully expected it to work after seeing the same value with &lt;code&gt;ruby -e &amp;quot;p ENV[&amp;#39;SECRET_KEY_BASE&amp;#39;]&amp;quot;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Except it didn&amp;rsquo;t.&lt;/p&gt;
+
+&lt;h3&gt;The Problem?&lt;/h3&gt;
+
+&lt;p&gt;After a little digging around, I found out that when you are using Capistrano to deploy, apparently it uses SHELL variables that exist in the lifetime of the deployment (well technically its just SSH) instead of the actual environment variables.&lt;/p&gt;
+
+&lt;p&gt;So the correct place to put the export was in &lt;code&gt;~/.bashrc&lt;/code&gt;!&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;export SECRET_KEY_BASE="xxx"
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The deployment with capistrano was relatively straightforward otherwise.&lt;/p&gt;
+
+&lt;p&gt;Below, I&amp;rsquo;ve compiled the commands I&amp;#39;ved used (most of them) for the entire process.&lt;/p&gt;
+
+&lt;h3&gt;Adding Deploy User&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;adduser deploy
+gpasswd -a deploy sudo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Copy public key up to server&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;ssh-copy-id deploy@server_ip_address
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Install Postgres&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo -i -u postgres
+createuser --interactive
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Install Nginx&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get install curl git-core nginx -y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Install RVM &amp;amp; Ruby&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+curl -sSL https://get.rvm.io | bash -s stable
+source ~/.rvm/scripts/rvm
+rvm requirements
+rvm install 2.2.1
+rvm use 2.2.1 --default
+gem install rails -V --no-ri --no-rdoc
+gem install bundler -V --no-ri --no-rdoc
+gem install pg
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Setting up SSH (Github)&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;ssh -T git@github.com&lt;/code&gt; on the server then add the server&amp;rsquo;s public key into your github account.&lt;/p&gt;
+
+&lt;h3&gt;Gemfile&lt;/h3&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;group :development do
+    gem 'capistrano',         require: false
+    gem 'capistrano-rvm',     require: false
+    gem 'capistrano-rails',   require: false
+    gem 'capistrano-bundler', require: false
+    gem 'capistrano3-puma',   require: false
+end
+
+gem 'puma'
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Deploy.rb&lt;/h3&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'ucsc'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:repo_url&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'git@github.com:aranair/ucsc.git'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;            &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_threads&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_workers&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="mi"&gt;1&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Don't change these unless you know what you're doing&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:pty&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;             &lt;span class="kp"&gt;true&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:use_sudo&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="kp"&gt;false&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:stage&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:production&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_via&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="ss"&gt;:remote_cache&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_to&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"/home/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/apps/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_bind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"unix://&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;-puma.sock"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.state"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_pid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.pid"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_access_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.error.log"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_error_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.access.log"&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:ssh_options&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="ss"&gt;forward_agent: &lt;/span&gt;&lt;span class="kp"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;user: &lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;keys: &lt;/span&gt;&lt;span class="sx"&gt;%w(~/.ssh/id_rsa.pub)&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_preload_app&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_worker_timeout&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_init_active_record&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;  &lt;span class="c1"&gt;# Change to false when not using ActiveRecord&lt;/span&gt;
+
+&lt;span class="c1"&gt;## Defaults:&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:scm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:git&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:branch&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:master&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:format&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:pretty&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:log_level&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:debug&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:keep_releases&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;
+
+&lt;span class="c1"&gt;## Linked Files &amp;amp; Directories (Default None):&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_files&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sx"&gt;%w{config/database.yml}&lt;/span&gt;
+&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_dirs&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="sx"&gt;%w{bin log tmp/pids tmp/cache tmp/sockets vendor/bundle public/system}&lt;/span&gt;
+
+&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:puma&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Create Directories for Puma Pids and Socket'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets -p"&lt;/span&gt;
+      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids -p"&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:deploy&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s2"&gt;"Make sure local git is in sync with remote."&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:check_revision&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="k"&gt;unless&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse HEAD`&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse origin/master`&lt;/span&gt;
+        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"WARNING: HEAD is not the same as origin/master"&lt;/span&gt;
+        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"Run `git push` to sync changes."&lt;/span&gt;
+        &lt;span class="nb"&gt;exit&lt;/span&gt;
+      &lt;span class="k"&gt;end&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Initial Deploy'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:initial&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="s1"&gt;'deploy:restart'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'puma:start'&lt;/span&gt;
+      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Restart application'&lt;/span&gt;
+  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:restart&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;in: :sequence&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;wait: &lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
+      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'puma:restart'&lt;/span&gt;
+    &lt;span class="k"&gt;end&lt;/span&gt;
+  &lt;span class="k"&gt;end&lt;/span&gt;
+
+  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:starting&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:check_revision&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:compile_assets&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:cleanup&lt;/span&gt;
+  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:restart&lt;/span&gt;
+&lt;span class="k"&gt;end&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Capfile&lt;/h3&gt;
+&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/setup'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/deploy'&lt;/span&gt;
+
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rails'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/bundler'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rvm'&lt;/span&gt;
+&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/puma'&lt;/span&gt;
+
+
+&lt;span class="no"&gt;Dir&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;glob&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'lib/capistrano/tasks/*.rake'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;import&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Nginx&lt;/h3&gt;
+
+&lt;p&gt;config/nginx.conf&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;upstream puma {
+  server unix:///home/deploy/apps/ucsc/shared/tmp/sockets/appname-puma.sock;
+}
+
+server {
+  listen 80 default_server deferred;
+  # server_name *.ucsc.sg;
+
+  root /home/deploy/apps/ucsc/current/public;
+  access_log /home/deploy/apps/ucsc/current/log/nginx.access.log;
+  error_log /home/deploy/apps/ucsc/current/log/nginx.error.log info;
+
+  location ^~ /assets/ {
+    gzip_static on;
+    expires max;
+    add_header Cache-Control public;
+  }
+
+  try_files $uri $uri @puma;
+  location @puma {
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    proxy_pass http://puma;
+  }
+
+  error_page 500 502 503 504 /500.html;
+  client_max_body_size 10M;
+  keepalive_timeout 10;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;After Capistrano deploy via &lt;code&gt;ap production deploy: initial&lt;/code&gt;&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo rm /etc/nginx/sites-enabled/default
+sudo ln -nfs "/home/deploy/apps/ucsc/current/config/nginx.conf" "/etc/nginx/sites-enabled/ucsc"
+sudo service nginx restart
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;Setting it up wasn&amp;rsquo;t too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.&lt;/p&gt;
+
+&lt;p&gt;Maybe in another post I&amp;rsquo;ll have a go at using Ansible or a bash script to automatically set the servers up.&lt;/p&gt;
+
+&lt;p&gt;Future posts:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Ansible / Bash script to set up&lt;/li&gt;
+&lt;li&gt;Docker&lt;/li&gt;
+&lt;/ul&gt;
+</content>
   </entry>
 </feed>
