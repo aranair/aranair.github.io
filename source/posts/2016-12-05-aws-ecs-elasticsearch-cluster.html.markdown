@@ -1,5 +1,5 @@
 ---
-title: Elasticsearch Cluster in Amazon ECS
+title: Setting up Elasticsearch in Amazon ECS
 date: 2016-12-05
 tags: elasticsearch, aws, ecs
 disqus_identifier: 2016/aws-ecs-elasticsearch
