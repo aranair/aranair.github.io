@@ -10,22 +10,20 @@
     <name>Blog Author</name>
   </author>
   <entry>
-    <title>Elasticsearch Cluster in Amazon ECS</title>
+    <title>Setting up Elasticsearch in Amazon ECS</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/"/>
     <id>http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/</id>
     <published>2016-12-05T00:00:00+08:00</published>
-    <updated>2016-12-08T22:06:24+08:00</updated>
+    <updated>2016-12-13T22:44:15+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a big portion of our applications. It
-provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to &lt;code&gt;2.3.5&lt;/code&gt; 
-for our clusters so I thought it was a good idea to just jot down some of the things I had to do or was already 
+    <content type="html">&lt;p&gt;At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to &lt;code&gt;2.3.5&lt;/code&gt; for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already 
 there for it to function properly.&lt;/p&gt;
 
 &lt;h3&gt;Dockerfile&lt;/h3&gt;
 
-&lt;p&gt;First things first: locations for the installs were changed so a quick update for them was required.&lt;/p&gt;
+&lt;p&gt;First things first, I had to change the destination as well as the syntax for the plugin installs.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM elasticsearch:2.3
 
 WORKDIR /usr/share/elasticsearch
@@ -40,9 +38,9 @@ COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Docker &amp;amp; Elasticsearch Setup&lt;/h3&gt;
 
-&lt;p&gt;Do take note that the &lt;code&gt;network.host&lt;/code&gt; line is absolutely required for &lt;strong&gt;Zen Discovery&lt;/strong&gt; to work in ECS.&lt;/p&gt;
+&lt;p&gt;Do take note that the &lt;code&gt;network.host&lt;/code&gt; is required for &lt;strong&gt;Zen Discovery&lt;/strong&gt; to work in ECS.&lt;/p&gt;
 
-&lt;p&gt;Its a simple dockerized container setup with mounted volumes in a separate data container and exposed ports for
+&lt;p&gt;It&amp;rsquo;s a simple dockerized container setup with mounted volumes in a separate data container and exposed ports for
 elasticsearch communication.&lt;/p&gt;
 
 &lt;p&gt;&lt;code&gt;docker-compose.yml&lt;/code&gt; sample:&lt;/p&gt;
@@ -71,26 +69,23 @@ elasticsearch communication.&lt;/p&gt;
 &lt;span class="s"&gt;discovery.ec2.groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;xx-xxxxx&lt;/span&gt;
 &lt;span class="s"&gt;discovery.zen.ping.multicast.enabled&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;false&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The first 2 lines are fairly standard so I&amp;rsquo;ll skip them; you can find these around in the official docs. Its the last
-few lines that I had to meddle around with abit for it to work.&lt;/p&gt;
+&lt;p&gt;The first two lines are fairly standard, so I&amp;rsquo;ll skip them; you can find these around in the official docs. It&amp;rsquo;s the last
+few lines that I had to meddle around with a bit for it to work.&lt;/p&gt;
 
 &lt;h3&gt;Discovery&lt;/h3&gt;
 
-&lt;p&gt;So, the default node discovery module for Elasticsearch is &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.x/modules-discovery-zen.html"&gt;Zen Discovery&lt;/a&gt; and it supports both multicast and unicast.
+&lt;p&gt;So, the default node discovery module for Elasticsearch is &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.x/modules-discovery-zen.html"&gt;Zen Discovery&lt;/a&gt;, and it supports both multicast and unicast.
 Although, since EC2 &lt;a href="https://aws.amazon.com/vpc/faqs/"&gt;doesn&amp;rsquo;t support multicast&lt;/a&gt;, I disabled multicast and used only unicast. There are some 
-notable things that was in that docs though: &lt;strong&gt;the ping (discovery)&lt;/strong&gt; and &lt;strong&gt;the master election&lt;/strong&gt;.&lt;/p&gt;
+notable things that were in that docs, though: &lt;strong&gt;the ping (discovery)&lt;/strong&gt; and &lt;strong&gt;the master election&lt;/strong&gt;.&lt;/p&gt;
 
-&lt;p&gt;During the &lt;code&gt;ping phase&lt;/code&gt;, each node uses the discovery mechanism to find other nodes in the cluster. That process however, 
-won&amp;rsquo;t really work out-of-the-box for a cloud environments like Elastic cloud or AWS EC2. There is a plugin that 
-fixes this- &lt;code&gt;cloud-aws&lt;/code&gt;. So I installed it via the Dockerfile above, for each container that runs inside
+&lt;p&gt;During the &lt;code&gt;ping phase&lt;/code&gt;, each node uses the discovery mechanism to find other nodes in the cluster. That process, however, 
+won&amp;rsquo;t work out-of-the-box for cloud environments like Elastic Cloud or AWS EC2. There is a plugin that fixes this- &lt;code&gt;cloud-aws&lt;/code&gt;. So I installed it via the Dockerfile above, for each container that runs inside
 the cluster. One issue is that the plugin was built for EC2 where each instance naturally publishes their own instance&amp;rsquo;s IP
 for the discovery process. Inside ECS, that discovery mechanism will fail since it just publishes its container&amp;rsquo;s IP address.&lt;/p&gt;
 
 &lt;h3&gt;Running it in ECS&lt;/h3&gt;
 
-&lt;p&gt;Back in Elasticsearch V1, I think the following was the de-facto solution as an entrypoint for docker. It basically 
-pings Amazon&amp;rsquo;s &lt;code&gt;169.254.169.254&lt;/code&gt; instance information endpoint for the private IP. The service would then be started 
-with its container&amp;rsquo;s Ip as the published address for other nodes to connect to. A fairly updated 
+&lt;p&gt;Back in Elasticsearch V1, I think the code below was the de-facto solution as an entry point for Docker. It pings Amazon&amp;rsquo;s &lt;code&gt;169.254.169.254&lt;/code&gt; instance information endpoint for the private IP. You could then start the service with its container&amp;rsquo;s IP as the published address; this address allows for other nodes to connect to it.  A reasonably updated 
 &lt;a href="https://github.com/daptiv/elasticsearch-ecs"&gt;github repo&lt;/a&gt; still uses this method. &lt;strong&gt;And it still works.&lt;/strong&gt; But there is a cleaner way now.&lt;/p&gt;
 &lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
 
@@ -108,20 +103,20 @@ with its container&amp;rsquo;s Ip as the published address for other nodes to co
     &lt;span class="nb"&gt;exec &lt;/span&gt;gosu elasticsearch &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$@&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
 &lt;span class="k"&gt;fi&lt;/span&gt;
 
-&lt;span class="c"&gt;# ECS will report the docker interface without help, so we override that with host's private ip&lt;/span&gt;
+&lt;span class="c"&gt;# ECS will report the docker interface without help, so we override that with host's private IP&lt;/span&gt;
 &lt;span class="nv"&gt;AWS_PRIVATE_IP&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="sb"&gt;`&lt;/span&gt;curl http://169.254.169.254/latest/meta-data/local-ipv4&lt;span class="sb"&gt;`&lt;/span&gt;
 &lt;span class="nb"&gt;set&lt;/span&gt; -- &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$@&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; --network.publish_host&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;$AWS_PRIVATE_IP&lt;/span&gt;
 
 &lt;span class="c"&gt;# As argument is not related to elasticsearch,&lt;/span&gt;
-&lt;span class="c"&gt;# then assume that user wants to run his own process,&lt;/span&gt;
-&lt;span class="c"&gt;# for example a `bash` shell to explore this image&lt;/span&gt;
+&lt;span class="c"&gt;# then assume that user wants to run his process.&lt;/span&gt;
+&lt;span class="c"&gt;# For example, a `bash` shell to explore this image&lt;/span&gt;
 &lt;span class="nb"&gt;exec&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt;$@&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Now, just open up port 9200/9300 for communication within the security groups and that&amp;rsquo;s it!&lt;/p&gt;
+&lt;p&gt;Now, just open up port 9200/9300 for communication within the security groups, and that&amp;rsquo;s it!&lt;/p&gt;
 
 &lt;h3&gt;Cleaner, you say?&lt;/h3&gt;
 
-&lt;p&gt;In later versions, (along with later cloud-aws plugin versions), you can now &lt;code&gt;_ec2:privateIp_&lt;/code&gt; in the elasticsearch.yml file.&lt;/p&gt;
+&lt;p&gt;In later versions, (along with t cloud-aws plugin versions), you can now &lt;code&gt;_ec2:privateIp_&lt;/code&gt; in the elasticsearch.yml file.&lt;/p&gt;
 &lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="s"&gt;network.host&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;0.0.0.0&lt;/span&gt;
 &lt;span class="s"&gt;plugin.mandatory&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;cloud-aws&lt;/span&gt;
 &lt;span class="s"&gt;network.publish_host&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;_ec2:privateIp_&lt;/span&gt;
@@ -131,17 +126,16 @@ with its container&amp;rsquo;s Ip as the published address for other nodes to co
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Master Election, and why it is important&lt;/h3&gt;
 
-&lt;p&gt;Next we go on to the master election part of the cluster.&lt;/p&gt;
+&lt;p&gt;Next, we go on to the master election part of the cluster.&lt;/p&gt;
 
 &lt;p&gt;Like all distributed systems, the master/leader election is an important process that allows a cluster to choose its &lt;code&gt;brain&lt;/code&gt;,
-for the purpose of handling allocations, state maintenance, index creations etc. It is vital to the health of the cluster. 
-Elastic.co has a comphrehensive &lt;a href="https://www.elastic.co/blog/found-leader-election-in-general"&gt;blog post&lt;/a&gt; and you can read a quick intro there. &lt;/p&gt;
+for the purpose of handling allocations, state maintenance, index creations, etc. It is vital to the health of the cluster. 
+Elastic.co has a comprehensive &lt;a href="https://www.elastic.co/blog/found-leader-election-in-general"&gt;blog post&lt;/a&gt;, and you can read a quick intro there. &lt;/p&gt;
 
 &lt;p&gt;In this context, I could set a minimum number of master nodes. &lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;The discovery.zen.minimum_master_nodes sets the minimum number of master eligible nodes that need to join a newly 
-elected master in order for an election to complete and for the elected node to accept its mastership.
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;The discovery.zen.minimum_master_nodes sets the minimum number of master eligible nodes that need to join a newly elected master for an election to complete and for the elected node to accept its mastership.
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The minimum number should be set to a quorum (a majority wins situation) otherwise the cluster is inoperable.
+&lt;p&gt;We need to set the minimum number to a quorum (a majority wins situation) otherwise, the cluster is inoperable.
 You can read more about the split-brain scenario &lt;a href="http://blog.trifork.com/2013/10/24/how-to-avoid-the-split-brain-problem-in-elasticsearch/"&gt;here&lt;/a&gt;. For automatic election, having only 2 
 master-eligible nodes should be avoided, since a quorum of 2 is 2 and a loss of either master-eligible nodes 
 will result in the split-brain state.&lt;/p&gt;
@@ -159,25 +153,25 @@ your cluster.&lt;/p&gt;
 
 &lt;p&gt;Next, this is something that gets tricky if you deploy to ECS and use the default settings. &lt;/p&gt;
 
-&lt;p&gt;In my case, my task definitions were set to 1gb and the Elasticsearch service was running with a default of 1gb heap size.
-After deploying to ECS, I noticed my docker container was just repeatedly getting stopped and restarted by the ECS agent.
-For the love of my life, I couldn&amp;rsquo;t figure it out why for a long time. There were no errors; and elasticsearch logs 
-just announced that it was shutting itself down, gracefully.&lt;/p&gt;
+&lt;p&gt;In my case, my task definitions were set to 1 GB, and the Elasticsearch service was running with a default of 1gb heap size.
+After deploying to ECS, I noticed my docker container was just repeatedly getting stopped and restarted by the ECS agent.&lt;/p&gt;
 
-&lt;p&gt;And then I tweaked the container hard limits on ECS and the restarts stopped. Then I realised, it was a combination 
-of the heap size that the Elasticsearch service was using and the hard memory limit of the container that shut it down.&lt;/p&gt;
+&lt;p&gt;There were no errors; and elasticsearch logs just announced that it was shutting itself down, gracefully.&lt;/p&gt;
 
-&lt;p&gt;So if you deploy these docker containers to ECS, its good practice to set a hard memory limit to the ECS task definition!&lt;/p&gt;
+&lt;p&gt;At that point, I tweaked the memory hard limits via the task definitions in ECS and the restarts stopped.
+The heap size that the Elasticsearch service was using was hitting beyond the hard memory limit of the container; 
+so the containers was repeatedly asked to restart.&lt;/p&gt;
 
-&lt;p&gt;Ontop of that, you should also run the containers with the environment variable &lt;code&gt;ES_HEAP_SIZE=2g&lt;/code&gt;. The value there should be
+&lt;p&gt;So if you&amp;rsquo;re deploying these docker containers to ECS, &lt;strong&gt;its good practice to set a hard memory limit to the ECS task definition!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;On top of that, you should also run the containers with the environment variable &lt;code&gt;ES_HEAP_SIZE=2g&lt;/code&gt;. The value there should be
 roughly half the size of the hard memory limit in ECS to prevent the above scenario from happening.&lt;/p&gt;
 
-&lt;h3&gt;Round up&lt;/h3&gt;
+&lt;h3&gt;Roundup&lt;/h3&gt;
 
-&lt;p&gt;That&amp;rsquo;s it! I hope this post has helped you get your own cluster setup in the ECS.&lt;/p&gt;
+&lt;p&gt;That&amp;rsquo;s it! I hope this post has helped you get your cluster setup in the ECS.&lt;/p&gt;
 
-&lt;p&gt;I will be putting together a proper Docker compose file that deals with everything I&amp;rsquo;ve discussed above and run through
-quickly the whole process of deployment.&lt;/p&gt;
+&lt;p&gt;Feel free to checkout &lt;a href="https://github.com/aranair/docker-elasticsearch-ecs"&gt;this github repository&lt;/a&gt; that I&amp;rsquo;ve put together the code I&amp;rsquo;ve talked about!&lt;/p&gt;
 
 &lt;p&gt;Do check back in a week or two!&lt;/p&gt;
 </content>

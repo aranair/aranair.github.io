@@ -8346,6 +8346,37 @@ html {
 body {
   background: none; }
 
+.navbar-default {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-bottom: none; }
+
+.index-content {
+  width: 100%;
+  text-align: center; }
+
+h1.index-content__index-title {
+  font-size: 2em;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 40%;
+  font-family: "Montserrat";
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: #121212; }
+  h1.index-content__index-title a {
+    border-bottom: 1px dotted #333; }
+  h1.index-content__index-title a:hover, h1.index-content__index-title a:focus, h1.index-content__index-title a:active {
+    border-bottom: 1px solid #333; }
+
+a.index-title__chevron:hover,
+a.index-title__chevron:focus,
+a.index-title__chevron:active {
+  border: none; }
+  a.index-title__chevron:hover .glyphicon-chevron-down,
+  a.index-title__chevron:focus .glyphicon-chevron-down,
+  a.index-title__chevron:active .glyphicon-chevron-down {
+    color: #121212; }
+
 .index__grab-coffee {
   color: black;
   background: rgba(255, 255, 255, 0.2);
@@ -8366,33 +8397,6 @@ a.index__grab-coffee:hover {
   text-decoration: none;
   border: 2px solid black;
   background: rgba(255, 255, 255, 0.4); }
-
-.navbar-default {
-  background-color: rgba(255, 255, 255, 0.5);
-  border-bottom: none; }
-
-.index-content {
-  width: 100%;
-  text-align: center; }
-
-h1.index-content__index-title {
-  font-size: 2em;
-  margin-left: 10px;
-  margin-right: 10px;
-  margin-top: 40%;
-  font-family: "Montserrat";
-  font-weight: 700;
-  letter-spacing: -1px;
-  color: #121212; }
-
-a.index-title__chevron:hover,
-a.index-title__chevron:focus,
-a.index-title__chevron:active {
-  border: none; }
-  a.index-title__chevron:hover .glyphicon-chevron-down,
-  a.index-title__chevron:focus .glyphicon-chevron-down,
-  a.index-title__chevron:active .glyphicon-chevron-down {
-    color: #121212; }
 
 .index-title__chevron .glyphicon-chevron-down {
   font-weight: 300;
