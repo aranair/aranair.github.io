@@ -171,13 +171,14 @@ Next, this is something that gets tricky if you deploy to ECS and use the defaul
 
 In my case, my task definitions were set to 1gb and the Elasticsearch service was running with a default of 1gb heap size.
 After deploying to ECS, I noticed my docker container was just repeatedly getting stopped and restarted by the ECS agent.
-For the love of my life, I couldn't figure it out why for a long time. There were no errors; and elasticsearch logs 
-just announced that it was shutting itself down, gracefully.
 
-And then I tweaked the container hard limits on ECS and the restarts stopped. Then I realised, it was a combination 
-of the heap size that the Elasticsearch service was using and the hard memory limit of the container that shut it down.
+There were no errors; and elasticsearch logs just announced that it was shutting itself down, gracefully.
 
-So if you deploy these docker containers to ECS, its good practice to set a hard memory limit to the ECS task definition!
+At that point, I tweaked the memory hard limits via the task definitions in ECS and the restarts stopped.
+The heap size that the Elasticsearch service was using was hitting beyond the hard memory limit of the container; 
+so the containers was repeatedly asked to restart.
+
+So if you're deploying these docker containers to ECS, **its good practice to set a hard memory limit to the ECS task definition!**
 
 Ontop of that, you should also run the containers with the environment variable `ES_HEAP_SIZE=2g`. The value there should be
 roughly half the size of the hard memory limit in ECS to prevent the above scenario from happening.
@@ -186,8 +187,7 @@ roughly half the size of the hard memory limit in ECS to prevent the above scena
 
 That's it! I hope this post has helped you get your own cluster setup in the ECS.
 
-I will be putting together a proper Docker compose file that deals with everything I've discussed above and run through
-quickly the whole process of deployment.
+Feel free to checkout [this github repository][my gh es ecs] that I've put together the code I've talked about!
 
 Do check back in a week or two!
 
@@ -196,3 +196,4 @@ Do check back in a week or two!
 [split-brain]: http://blog.trifork.com/2013/10/24/how-to-avoid-the-split-brain-problem-in-elasticsearch/
 [master election]: https://www.elastic.co/blog/found-leader-election-in-general
 [github es ecs]: https://github.com/daptiv/elasticsearch-ecs
+[my gh es ecs]: https://github.com/aranair/docker-elasticsearch-ecs
