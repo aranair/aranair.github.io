@@ -2,12 +2,12 @@
   <div class="article row">
     <h1 class="page-header article__article-title">
       <%= current_article.title %><br>
-      <span class="article__published-date">
-        <%= current_article.date.strftime("%b %d, %Y") %>
-        <span class="article__middle-dot"></span>
-        <%= reading_time current_article.body %> read
-      </span>
     </h1>
+    <div class="article__published-date">
+      <%= current_article.date.strftime("%b %d, %Y") %>
+      <span class="article__middle-dot"></span>
+      <%= reading_time current_article.body %> read
+    </div>
     <%= yield %>
     <%= disqus %>
     <%= disqus_count %>

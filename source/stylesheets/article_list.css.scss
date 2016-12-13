@@ -72,15 +72,17 @@ a.article-summary__readmore:hover {
 }
 
 h1.article__article-title {
-  .article__published-date {
-    font-family: $article-title-date-font;
-    font-size: $p-font-size * $article-title-date-multiplication;
-    color: rgba(0, 0, 0, 0.4);
-    font-weight: 300;
-    padding-left: 3px;
-  }
-
   font-family: $article-page-title-font;
   font-size: $p-font-size * $heading-multiplication * 1.1;
   font-weight: $heading-weight;
+  margin-bottom: 0px;
+}
+
+.article__published-date {
+  font-family: $article-title-date-font;
+  font-size: $p-font-size * 0.9;
+  color: rgba(0, 0, 0, 0.4);
+  font-weight: 300;
+  padding-left: 3px;
+  margin-bottom: 35px;
 }
