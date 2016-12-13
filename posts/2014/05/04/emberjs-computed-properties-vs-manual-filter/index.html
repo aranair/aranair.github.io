@@ -61,12 +61,12 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       EmberJS Computed Properties vs Manual Filter<br>
-      <span class="article__published-date">
-        May 04, 2014
-        <span class="article__middle-dot"></span>
-        2  minutes read
-      </span>
     </h1>
+    <div class="article__published-date">
+      May 04, 2014
+      <span class="article__middle-dot"></span>
+      2  minutes read
+    </div>
     <p>The problem begins when one of my &lsquo;filter functions&rsquo; for the my model (delayed/active tasks lists from all tasks) wasn&rsquo;t getting reactively updated when the store gets new entries or updates. When I found out why, I thought to myself that this is actually a pretty easy scenario to fall into IMHO.</p>
 
 <p>I realised that I wasn&rsquo;t actually utilising ember-data but manually creating the filter. In that manner, the activeTasks will only be evaluated on the first run and that subsequent changes to the <code>taskStatus</code>, <code>endDate</code> and <code>startDate</code> were not observed. I basically had to manually manage the lists myself, which is obviously pretty stupid given the powerful capabilities of the reactive-model-updates. The below code was placed in my task controller. </p>

@@ -65,10 +65,13 @@ a.article-summary__readmore:hover {
 h1.article__article-title {
   font-family: "Source Sans Pro";
   font-size: 1.848em;
-  font-weight: 600; }
-  h1.article__article-title .article__published-date {
-    font-family: "Lato";
-    font-size: 0.525em;
-    color: rgba(0, 0, 0, 0.4);
-    font-weight: 300;
-    padding-left: 3px; }
+  font-weight: 600;
+  margin-bottom: 0px; }
+
+.article__published-date {
+  font-family: "Lato";
+  font-size: 0.945em;
+  color: rgba(0, 0, 0, 0.4);
+  font-weight: 300;
+  padding-left: 3px;
+  margin-bottom: 35px; }

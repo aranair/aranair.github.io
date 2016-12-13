@@ -61,12 +61,12 @@
           <div class="article row">
     <h1 class="page-header article__article-title">
       Emberjs Model RestAdapter Conventions<br>
-      <span class="article__published-date">
-        Aug 04, 2013
-        <span class="article__middle-dot"></span>
-        2  minutes read
-      </span>
     </h1>
+    <div class="article__published-date">
+      Aug 04, 2013
+      <span class="article__middle-dot"></span>
+      2  minutes read
+    </div>
     <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
 
 <p>It was pretty simple and straightforward mostly. You basically just change the store to have &ldquo;adapter: DS.RESTAdapter&rdquo; and extend the model to have the appropriate attribute names from the server. (I&rsquo;m using ActiveModel serializers) It then automagically works. Emberjs helps to figure out all the paths it needs to get the appropriate data.  </p>
