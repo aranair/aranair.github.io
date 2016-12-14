@@ -1,7 +1,7 @@
 ---
-title: Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch
-description: 'In this post, I quickly run through the DevOps aspects and steps I took, plus the code that
-was required to get a full production stack of datapipeline, amazon emr hadoop and elasticsearch cluster to work.'
+title: How to set up Amazon EMR Hadoop with Pig to index to Elasticsearch
+description: 'In this post, I quickly run through some steps I took, and the infrastructure plus some DevOps and application code that
+was required to get a full production stack of jenkins, Datapipeline, Amazon emr hadoop, pig script and elasticsearch cluster to work together.'
 date: 2016-12-14
 tags: elasticsearch, aws, emr, apache pig, hadoop, datapipeline
 disqus_identifier: 2016/aws-emr-pig-elasticsearch
