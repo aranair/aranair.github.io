@@ -1,6 +1,6 @@
 ---
 title: Capistrano, Postgres, Rails, Nginx & Puma on DigitalOcean
-description 'A walk-through of how to set up a running instance of Rails on Digital Ocean. The components that were used were
+description: 'A walk-through of how to set up a running instance of Rails on Digital Ocean. The components that were used were
 Capistrano, PostgreSQL, Rails, Nginx and Puma'
 date: 2016-01-22
 tags: capistrano, rails, devops
