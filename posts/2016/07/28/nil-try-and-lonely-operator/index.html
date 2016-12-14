@@ -7,7 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>BHM</title>
+    <title>Nil, Try & The Lonely Operator</title>
+
+    <meta name="description" content="A small discussion about nil, try and lonely operator in ruby code" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Nil, Try &amp; The Lonely Operator" />
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
@@ -78,10 +82,10 @@ presentation layer or in the models. From personal experience, I&rsquo;ll say it
 
 <h3>The Obvious Scenario</h3>
 
-<p>Before the lonely operator was introduced, I used <code>try</code> in a 2 distinct scenarios. </p>
+<p>Before the lonely operator was introduced, I used <code>try</code> in a 2 distinct scenarios.</p>
 
-<p>The first obvious usecase: when I am not sure if the object that I are calling the method on 
-could be a <code>nil</code> object or not. Obviously, calling any method on a <code>nil</code> object 
+<p>The first obvious usecase: when I am not sure if the object that I are calling the method on
+could be a <code>nil</code> object or not. Obviously, calling any method on a <code>nil</code> object
 rightfully throws an error during runtime. Of course, I could use something like this to avoid the
 error.</p>
 <pre class="highlight ruby"><code><span class="n">user</span> <span class="o">&amp;&amp;</span> <span class="n">user</span><span class="p">.</span><span class="nf">name</span>
@@ -91,29 +95,29 @@ error.</p>
 <h3>The Not So Obvious Scenario</h3>
 
 <p>Surprisingly, even when I don&rsquo;t know what the object is and whether it even has that method defined or not,
-I still found myself using <code>try</code>. It still returns <code>nil</code>. It&rsquo;s like this deceivingly good and 
-lazy way to sidestep <code>NoMethodError</code>. But I find that this laziness, potentially leads to surprises 
+I still found myself using <code>try</code>. It still returns <code>nil</code>. It&rsquo;s like this deceivingly good and
+lazy way to sidestep <code>NoMethodError</code>. But I find that this laziness, potentially leads to surprises
 (which obviously isn&rsquo;t good).</p>
 <pre class="highlight ruby"><code><span class="c1"># Either a guest user without a name, or a registered user with a name</span>
 <span class="n">some_user</span><span class="p">.</span><span class="nf">try</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span>
 </code></pre>
 <h3>The Lonely Operator</h3>
 
-<p><code>user&amp;.name</code> is equivalent to <code>user &amp;&amp; user.name</code> and only this. It still throws a <code>NoMethodError</code> 
+<p><code>user&amp;.name</code> is equivalent to <code>user &amp;&amp; user.name</code> and only this. It still throws a <code>NoMethodError</code>
 when the method doesn&rsquo;t exist on the object. And that&rsquo;s good for various reasons.</p>
 <pre class="highlight ruby"><code><span class="p">[]</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">invalid_method</span> <span class="c1"># throws NoMethodError</span>
 </code></pre>
-<p>In the event where I have no idea what the object is, it is a <em>clear</em> sign that I should spend 
-the time to refactor the code so that the object class is deterministic and 
+<p>In the event where I have no idea what the object is, it is a <em>clear</em> sign that I should spend
+the time to refactor the code so that the object class is deterministic and
 not rely on a <code>.try</code> to squirm out of the situation.</p>
 
-<p>Another nice side effect is that, the lonely operator really doesn&rsquo;t look great when I chain it. 
+<p>Another nice side effect is that, the lonely operator really doesn&rsquo;t look great when I chain it.
 Being huge on aesthetics and coding styles, I just end up chaining less.</p>
 <pre class="highlight ruby"><code><span class="n">user</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">name</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">truncate</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># this just looks clunky imo</span>
 </code></pre>
-<p>All those <code>.try(..).try(..)</code>? I always knew I should be getting rid of those too, but it was just 
-so safe. <a href="https://en.wikipedia.org/wiki/Law_of_Demeter">Law of Demeter</a> literally screams at me 
-every time. </p>
+<p>All those <code>.try(..).try(..)</code>? I always knew I should be getting rid of those too, but it was just
+so safe. <a href="https://en.wikipedia.org/wiki/Law_of_Demeter">Law of Demeter</a> literally screams at me
+every time.</p>
 
 <p>I hope this post makes you think twice the next time <code>.try</code> chains comes to mind:P</p>
 

@@ -7,7 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>BHM</title>
+    <title>Setting up Dockerized Golang + Postgres on Digital Ocean</title>
+
+    <meta name="description" content="This is a walk-through of the steps that you need to set up a dockerized Go container with a dockerized database on Digital Ocean" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Setting up Dockerized Golang + Postgres on Digital Ocean" />
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
@@ -60,7 +64,7 @@
       <div class="container">
           <div class="article row">
     <h1 class="page-header article__article-title">
-      Dockerized Golang + Postgres on Digital Ocean<br>
+      Setting up Dockerized Golang + Postgres on Digital Ocean<br>
     </h1>
     <div class="article__published-date">
       Apr 27, 2016
@@ -86,7 +90,7 @@
 <p>This runs the postgres service under <code>db</code> name and as a daemon.</p>
 <pre class="highlight plaintext"><code>docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
 </code></pre>
-<p>To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: </p>
+<p>To setup a dedicated user for the app and create the database, I opened the bash shell into the container via:</p>
 <pre class="highlight plaintext"><code>docker exec -it db /bin/bash
 </code></pre>
 <p>From there, a new user was created and granted privileges via psql CLI.</p>
@@ -95,7 +99,7 @@
 CREATE DATABASE appdb;
 GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 </code></pre>
-<p>If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&rsquo;t allow client authentication in connections yet. </p>
+<p>If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&rsquo;t allow client authentication in connections yet.</p>
 
 <p>In order for it to work, there were two files which I had to modify:</p>
 
@@ -104,9 +108,9 @@ GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 <li><code>postgresql.conf</code> - To enable listening of addresses other than localhost</li>
 </ul>
 
-<p>To find the location of the <code>hba_file</code> simply run <code>show hba_file;</code> in the psql interactive shell. </p>
+<p>To find the location of the <code>hba_file</code> simply run <code>show hba_file;</code> in the psql interactive shell.</p>
 
-<p>The default one should lie at this location: </p>
+<p>The default one should lie at this location:</p>
 <pre class="highlight plaintext"><code>/var/lib/postgresql/data/pg_hba.conf
 </code></pre>
 <p>Installed my favourite text editor via:</p>
@@ -126,8 +130,8 @@ sudo service postgresql start
 </code></pre>
 <h3>Docker Volumes</h3>
 
-<p>The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
-In my deployment, you&rsquo;ll notice that I do not specifically set this up and that is because the <a href="&quot;https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile&quot;">Postgres Dockerfile</a> already does this by default!</p>
+<p>The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
+In my deployment, you&rsquo;ll notice that I do not specifically set this up and that is because the <a href="https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile">Postgres Dockerfile</a> already does this by default!</p>
 <pre class="highlight plaintext"><code>ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
 ENV PGDATA /var/lib/postgresql/data
 VOLUME /var/lib/postgresql/data
@@ -152,11 +156,11 @@ EXPOSE 5000
 <p>A quick run through of each line:</p>
 
 <ul>
-<li>The first line runs the &lsquo;onbuild&rsquo; variant of the golang image that automatically copies the source, build and run it. </li>
+<li>The first line runs the &lsquo;onbuild&rsquo; variant of the golang image that automatically copies the source, build and run it.</li>
 <li>The second line installs &#39;goose&rsquo;, which is the tool I use to get (somewhat) Rails-like database migrations.</li>
 <li>Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.</li>
 <li>Then copy some app config files into the docker image.</li>
-<li>Last line simply exposes port 5000 of the container to the outside world. </li>
+<li>Last line simply exposes port 5000 of the container to the outside world.</li>
 </ul>
 <pre class="highlight plaintext"><code>docker built -t app
 docker run -d -p 80:5000 --name gosnap --link db:postgres app

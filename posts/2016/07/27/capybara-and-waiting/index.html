@@ -7,7 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>BHM</title>
+    <title>Capybara & Waiting</title>
+
+    <meta name="description" content="A discussion about the best way to avoid ajax issues in Capybara." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Capybara &amp; Waiting" />
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
@@ -67,17 +71,17 @@
       <span class="article__middle-dot"></span>
       4  minutes read
     </div>
-    <p>All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
+    <p>All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails,
 you’re likely to be doing feature tests with <a href="https://github.com/jnicklas/capybara">Capybara</a> as well.</p>
 
-<p>Some of these slipped my mind while adding feature specs at work at 
-<a href="https://www.pocketmath.com/">pocketmath</a> and I spent extra time that I shouldn&rsquo;t have! 
-So I hope this post can be a reminder to myself in future and be of help to anyone who 
+<p>Some of these slipped my mind while adding feature specs at work at
+<a href="https://www.pocketmath.com/">pocketmath</a> and I spent extra time that I shouldn&rsquo;t have!
+So I hope this post can be a reminder to myself in future and be of help to anyone who
 encounters the same problems!</p>
 
 <h3>Common Scenario</h3>
 
-<p>Let’s look at a common scenario in a feature test: </p>
+<p>Let’s look at a common scenario in a feature test:</p>
 
 <ul>
 <li>Load some form</li>
@@ -93,30 +97,30 @@ encounters the same problems!</p>
 
 <span class="n">expect</span><span class="p">(</span><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">text</span><span class="p">).</span><span class="nf">to</span> <span class="n">eq</span> <span class="s1">'something'</span>
 </code></pre>
-<p>You&rsquo;ll find that it doesn&rsquo;t work too well (not at all actually). This is because there is a delay 
-between the button click and the actual completion of the code that is run as a result of that click. </p>
+<p>You&rsquo;ll find that it doesn&rsquo;t work too well (not at all actually). This is because there is a delay
+between the button click and the actual completion of the code that is run as a result of that click.</p>
 
-<p>It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call. 
+<p>It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call.
 Its hard to predict how long exactly that is going to take.</p>
 
 <h3>Magical Built-in Matchers</h3>
 
-<p>For this reason, Capybara provides us with some built-in matchers. They work amazingly well 
-for these scenarios where you are waiting for something to finish before checking the content for text, 
-DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements 
+<p>For this reason, Capybara provides us with some built-in matchers. They work amazingly well
+for these scenarios where you are waiting for something to finish before checking the content for text,
+DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements
 to appear or disappear on the page.</p>
 <pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span>
 <span class="c1"># have_css, have_selector</span>
 </code></pre>
-<p>You can even define if the element should be visible or not after it is rendered. </p>
+<p>You can even define if the element should be visible or not after it is rendered.</p>
 <pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span><span class="p">,</span> <span class="ss">visible: </span><span class="kp">false</span>
 </code></pre>
-<p>Magical. Right? </p>
+<p>Magical. Right?</p>
 
 <h3>Old solutions</h3>
 
 <p>Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn&rsquo;t use them.
-Instead they used <code>wait_until { ... }</code> or even <code>sleep(3)</code> despite being clunkier solutions. 
+Instead they used <code>wait_until { ... }</code> or even <code>sleep(3)</code> despite being clunkier solutions.
 <code>wait_until</code> was then deprecated in Capybara v2.0 altogether.</p>
 
 <h3>Complications</h3>
@@ -127,23 +131,23 @@ Instead they used <code>wait_until { ... }</code> or even <code>sleep(3)</code> 
 <span class="n">reload_page</span>
 <span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">).</span><span class="nf">to</span> <span class="n">have_content</span> <span class="s1">'Linked'</span>
 </code></pre>
-<p>Nope! There&rsquo;s still a chance that the <code>reload_page</code> would happen before the AJAX code finishes. 
+<p>Nope! There&rsquo;s still a chance that the <code>reload_page</code> would happen before the AJAX code finishes.
 And the tests would randomly fail since the content-check is dependant on the click event&rsquo;s code execution.
 That&rsquo;s not good; we all want deterministic results for our tests, right?</p>
 
 <h3>What now?</h3>
 
-<p>So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post 
-<a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara">here</a>.  Through spec 
-helpers, they introduce a <code>wait_for_ajax</code> method that was designed to be used whenever you need 
+<p>So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post
+<a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara">here</a>.  Through spec
+helpers, they introduce a <code>wait_for_ajax</code> method that was designed to be used whenever you need
 to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.</p>
 
 <h3>Alternatives</h3>
 
-<p>Alternatively, you could also use <code>have_selector</code> infront of the reload to block the execution. But in my opinion, 
-if you don&rsquo;t actually want to test the content, using <code>wait_for_ajax</code> makes more sense. </p>
+<p>Alternatively, you could also use <code>have_selector</code> infront of the reload to block the execution. But in my opinion,
+if you don&rsquo;t actually want to test the content, using <code>wait_for_ajax</code> makes more sense.</p>
 
-<p>So the next time you encounter similar issues, stay calm and first check to make sure that you are 
+<p>So the next time you encounter similar issues, stay calm and first check to make sure that you are
 using the Capybara built-in matchers before using <code>sleep</code>!</p>
 
 <p>What does everyone think? Are your experiences similar?</p>

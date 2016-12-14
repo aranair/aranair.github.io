@@ -1,0 +1,311 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch</title>
+
+    <meta name="description" content="In this post, I quickly run through the DevOps aspects and steps I took, plus the code that was required to get a full production stack of datapipeline, amazon emr hadoop and elasticsearch cluster ..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_12 posts_2016_12_14 posts_2016_12_14_aws-emr-pig-index-into-elasticsearch posts_2016_12_14_aws-emr-pig-index-into-elasticsearch_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch<br>
+    </h1>
+    <div class="article__published-date">
+      Dec 14, 2016
+      <span class="article__middle-dot"></span>
+      10  minutes read
+    </div>
+    <p>In one of my <a href="https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/">recent posts</a>, I briefly talked about using <code>Apache Pig</code>, to index an
+Elasticsearch cluster. In this post, I do a walkthrough of the DevOps configurations and steps I took, along with the code
+that was required to get it work at the start (barring some issues that I&rsquo;ll talk about in the next post).</p>
+
+<h3>Production Setup</h3>
+
+<p>The process starts with <code>Jenkins</code>; it uses <code>aws-cli</code> to build an <code>AWS DataPipeLine</code> with config variables. This DataPipeline,
+with the loaded <code>JSON</code> configurations, would then provision an Amazon EMR Hadoop cluster for the actual task.</p>
+
+<p>While <code>Jenkins</code> could probably be entirely removed and a build be just triggered via DataPipeline or even EMR directly,
+I feel that, this way, other devs don&rsquo;t have to know about certain services in AWS?</p>
+
+<p>Most importantly, this abstraction takes some cognitive load off them.</p>
+
+<h3>Jenkins</h3>
+
+<p>This line in <code>Jenkins</code> creates a <code>DataPipeLine</code> using json config files in the code.</p>
+<pre class="highlight shell"><code>aws datapipeline put-pipeline-definition <span class="se">\</span>
+  --region <span class="s2">"</span><span class="k">${</span><span class="nv">AWS_REGION</span><span class="k">}</span><span class="s2">"</span> <span class="se">\</span>
+  --pipeline-id <span class="s2">"</span><span class="k">${</span><span class="nv">PIPELINE_ID</span><span class="k">}</span><span class="s2">"</span> <span class="se">\</span>
+  --pipeline-definition file://pipeline/emr_cluster_pipeline.json <span class="se">\</span>
+  --parameter-values-uri <span class="s1">'file://'</span><span class="k">${</span><span class="nv">PROPS_FILE</span><span class="k">}</span>
+</code></pre>
+<p>You can read more about <code>pipeline-definition</code> and <code>--parameter-values-uri</code> in the <a href="http://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-custom-templates.html">AWS documentation</a>.</p>
+
+<h3>DataPipeLine</h3>
+
+<p>Let&rsquo;s move on to the pipeline definition files. I used something similar to this (obviously stripping away the sensitive data):</p>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"objects"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Default"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Default"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"failureAndRerunMode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CASCADE"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DefaultSchedule"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="s2">"resourceRole"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DataPipelineDefaultResourceRole"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DataPipelineDefaultRole"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"scheduleType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cron"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"pipelineLogUri"</span><span class="p">:</span><span class="s2">"#{myLogsFolder}"</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RunJobs"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Run the Jobs"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ShellCommandActivity"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"command"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"runsOn"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EMR_Cluster"</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DefaultSchedule"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EMR_Cluster"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EMR Cluster"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EmrCluster"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"masterInstanceType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m3.xlarge"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"coreInstanceType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m3.xlarge"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"coreInstanceCount"</span><span class="p">:</span><span class="w"> </span><span class="s2">"5"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"taskInstanceType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"r3.2xlarge"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"taskInstanceCount"</span><span class="p">:</span><span class="w"> </span><span class="s2">"5"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"taskInstanceBidPrice"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-east-1"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"subnetId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"subnet-xxxxx"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"keyPair"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some-keypair "</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"emrManagedMasterSecurityGroupId"</span><span class="p">:</span><span class="s2">"sg-xxxxxx"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"emrManagedSlaveSecurityGroupId"</span><span class="p">:</span><span class="s2">"sg-xxxxxx"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"terminateAfter"</span><span class="p">:</span><span class="s2">"6 HOURS"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"enableDebugging"</span><span class="p">:</span><span class="s2">"true"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"actionOnTaskFailure"</span><span class="p">:</span><span class="s2">"terminate"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"actionOnResourceFailure"</span><span class="p">:</span><span class="s2">"retrynone"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DefaultSchedule"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="err">...</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>The config above tells <code>DataPipeLine</code> to launch the EMR cluster with the id <code>EMR_Cluster</code> that contains one <code>m3.xlarge</code> master instance
+and five <code>m3.xlarge</code> core instances.</p>
+
+<h4>Task Instances</h4>
+
+<p>For the task instances, it bids for up to 5 <code>r3.2xlarge</code> spot instances with a cost of <code>$0.30</code>
+per instance hour. That&rsquo;s a discount of approximately <code>$0.088</code>?</p>
+
+<p><strong>Do note that, not all instances are available as task instances</strong></p>
+
+<p>The EMR pipeline will eventually execute the command below; it first copies essential libraries like 
+maven jar files that into S3. As you&rsquo;ll see later, these libraries will be used in the task instances later.</p>
+<pre class="highlight plaintext"><code>aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}
+</code></pre>
+<h3>The Bash Script</h3>
+
+<p>It also executes <code>init-script.sh</code>. I had a bunch of other variable preparation in there but most importantly,
+I pre-created the Elasticsearch index because the index that is automatically created by Pig Script
+doesn&rsquo;t match what I want.</p>
+<pre class="highlight shell"><code>curl -XPUT <span class="s2">"</span><span class="k">${</span><span class="nv">ES_ENDPOINT</span><span class="k">}</span><span class="s2">/data_</span><span class="k">${</span><span class="nv">DAY_EPOCH</span><span class="k">}</span><span class="s2">/"</span> -d <span class="s1">'{
+  "mappings":{
+     "publisher":{
+        "properties":{
+           "country":{ "type":"string" },
+           ...
+        }
+     }
+   }
+}'</span>
+</code></pre>
+<p>It also handles some miscellaneous tasks like swapping of the Elasticsearch aliases and deleting old ones.</p>
+<pre class="highlight shell"><code>curl -XPOST <span class="s2">"</span><span class="k">${</span><span class="nv">ES_ENDPOINT</span><span class="k">}</span><span class="s2">/_aliases"</span> -d <span class="s1">'
+{
+  "actions" : [
+    { "remove" : { "index" : "data_*", "alias" : "data_latest" } },
+    { "add" : { "index" : "data_'</span><span class="k">${</span><span class="nv">DAY_EPOCH</span><span class="k">}</span><span class="s1">'", "alias" : "data_latest" } }
+  ]
+}'</span>
+
+</code></pre>
+<h3>Running the Pig Script</h3>
+<pre class="highlight shell"><code>pig -F -param <span class="nv">ES_ENDPOINT</span><span class="o">=</span><span class="k">${</span><span class="nv">ES_ENDPOINT</span><span class="k">}</span> <span class="se">\</span>
+       -param <span class="nv">INPUT</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">INPUT</span><span class="k">}</span><span class="s2">"</span> <span class="se">\</span>
+       -param <span class="nv">DAY_EPOCH</span><span class="o">=</span><span class="s2">"</span><span class="k">${</span><span class="nv">DAY_EPOCH</span><span class="k">}</span><span class="s2">"</span> -f <span class="s2">"</span><span class="k">${</span><span class="nv">PHYS_DIR</span><span class="k">}</span><span class="s2">/index-data.q"</span>
+</code></pre>
+<p>These would automatically run in the spot instances for non-group operations. One thing to note, is that the <code>INPUT</code> variable
+is where I define the S3 path to the Hadoop hdfs files to be ingested and indexed.</p>
+
+<p>This <strong>should not</strong> be a local folder because the spot instances do not have access to them at runtime and will fail.</p>
+
+<h3>Inside the Pig Script</h3>
+
+<p>Next, I register the required jar files; these are actually just maven files.</p>
+<pre class="highlight plaintext"><code>REGISTER piggybank.jar;
+REGISTER s3://S3_BUCKET_NAME/software/libs/elasticsearch-hadoop-pig-2.3.4.jar;
+</code></pre>
+<p>Set the parallelism for this pig script to run in (given the right resources via the EMR cluster).</p>
+
+<p>To be fair, in this particular example, this parallelism is not used.
+It is only really taken into consideration for group, co-group and join operations.</p>
+<pre class="highlight plaintext"><code>SET default_parallel 20;
+</code></pre>
+<p>Initialize the libraries and start the ingesting of the data.</p>
+<pre class="highlight plaintext"><code>DEFINE CsvLoader org.apache.pig.piggybank.storage.CSVExcelStorage(',');
+DEFINE EsStorage org.elasticsearch.hadoop.pig.EsStorage('es.nodes=$ES_ENDPOINT','es.http.timeout=5m');
+</code></pre>
+<p>The <code>$ES_ENDPOINT</code> variable is a comma delimited variable that has the ports included as well, e.g. <code>52.167.183.192:9200</code></p>
+
+<p>There are other variables that you can define here such as <code>es.mapping.id</code> that defines the id for the Elasticsearch for example,
+instead of automatically letting Elasticsearch generate one.</p>
+<pre class="highlight plaintext"><code>raw_data = LOAD '$INPUT'
+           USING CsvLoader AS (
+             bundle_id:chararray,
+             publisher:chararray,
+             exchange_id:int,
+             country:chararray,
+             categories:chararray,
+             ad_size:chararray,
+             interstitial:int,
+             apis:chararray,
+             platform_id:int,
+             device_os_id:int,
+             video_type:int,
+             ad_type:int,
+             app_id:chararray,
+             publisher_id:chararray,
+             assets:chararray,
+             frequency:long);
+</code></pre>
+<h4>Extract, Transform, Load</h4>
+
+<p>This last step runs through each of the rows of the data and generates a subset of the data to be indexed into Elasticsearch.</p>
+<pre class="highlight plaintext"><code>filtered_data = FOREACH raw_data
+                GENERATE $0, $1, $2, $3, $4, $5, $7, $8, $9, $10, $11, $14, $15;
+
+STORE filtered_data INTO 'data_$DAY_EPOCH/publisher' USING EsStorage();
+</code></pre>
+<p>You could do many different variations of ETL in Pig Script. For instance, you can combine some of the columns
+into one column.</p>
+
+<p>I&rsquo;ve found that in Pig <code>v0.12.0</code>, concatenation of multiple columns is quite finicky because you can&rsquo;t
+combine multiple columns at one time; it has to be sequential like this:</p>
+<pre class="highlight plaintext"><code>d = FOREACH raw_data
+    GENERATE
+      CONCAT($0, (chararray)CONCAT($1, (chararray)CONCAT($2, $3))) as id, $4, $5, $6;
+</code></pre>
+<p>Note that, without the <code>(chararray)</code>, you quickly run into errors about forcing an explicit type cast.</p>
+
+<h3>Summary</h3>
+
+<p>I&rsquo;ve done an run-through of each of the components in a production setup: <code>Jenkins</code>, <code>DataPipeline</code>, <code>EMR/Pig</code>.</p>
+
+<p>I hope this helps people out there figure out how to spin up, either periodically or on-demand, 
+an Amazon EMR cluster running Hadoop to do some basic ETL to then index into an Elasticsearch cluster.</p>
+
+<p>In the next post, I shall discuss some of the pitfalls, EMR / Elasticsearch performance tuning 
+issues that leads to random failures in the EMR cluster. All of them could cause some rather tricky issues 
+in the indexing task; one of the ones that I have personally experienced myself is having 
+duplicated documents in the Elasticsearch cluster despite having only processed a correct number of them.</p>
+
+<p>If you have any questions, feel free to comment below!</p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/aws-emr-pig-elasticsearch';
+                        var disqus_title = 'AWS EMR, Pig to Elasticearch';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>

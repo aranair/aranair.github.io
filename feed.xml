@@ -5,25 +5,243 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-12-05T00:00:00+08:00</updated>
+  <updated>2016-12-14T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"/>
+    <id>http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</id>
+    <published>2016-12-14T00:00:00+08:00</published>
+    <updated>2016-12-14T21:46:50+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;In one of my &lt;a href="https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"&gt;recent posts&lt;/a&gt;, I briefly talked about using &lt;code&gt;Apache Pig&lt;/code&gt;, to index an
+Elasticsearch cluster. In this post, I do a walkthrough of the DevOps configurations and steps I took, along with the code
+that was required to get it work at the start (barring some issues that I&amp;rsquo;ll talk about in the next post).&lt;/p&gt;
+
+&lt;h3&gt;Production Setup&lt;/h3&gt;
+
+&lt;p&gt;The process starts with &lt;code&gt;Jenkins&lt;/code&gt;; it uses &lt;code&gt;aws-cli&lt;/code&gt; to build an &lt;code&gt;AWS DataPipeLine&lt;/code&gt; with config variables. This DataPipeline,
+with the loaded &lt;code&gt;JSON&lt;/code&gt; configurations, would then provision an Amazon EMR Hadoop cluster for the actual task.&lt;/p&gt;
+
+&lt;p&gt;While &lt;code&gt;Jenkins&lt;/code&gt; could probably be entirely removed and a build be just triggered via DataPipeline or even EMR directly,
+I feel that, this way, other devs don&amp;rsquo;t have to know about certain services in AWS?&lt;/p&gt;
+
+&lt;p&gt;Most importantly, this abstraction takes some cognitive load off them.&lt;/p&gt;
+
+&lt;h3&gt;Jenkins&lt;/h3&gt;
+
+&lt;p&gt;This line in &lt;code&gt;Jenkins&lt;/code&gt; creates a &lt;code&gt;DataPipeLine&lt;/code&gt; using json config files in the code.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;aws datapipeline put-pipeline-definition &lt;span class="se"&gt;\&lt;/span&gt;
+  --region &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;AWS_REGION&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+  --pipeline-id &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PIPELINE_ID&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+  --pipeline-definition file://pipeline/emr_cluster_pipeline.json &lt;span class="se"&gt;\&lt;/span&gt;
+  --parameter-values-uri &lt;span class="s1"&gt;'file://'&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PROPS_FILE&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You can read more about &lt;code&gt;pipeline-definition&lt;/code&gt; and &lt;code&gt;--parameter-values-uri&lt;/code&gt; in the &lt;a href="http://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-custom-templates.html"&gt;AWS documentation&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;DataPipeLine&lt;/h3&gt;
+
+&lt;p&gt;Let&amp;rsquo;s move on to the pipeline definition files. I used something similar to this (obviously stripping away the sensitive data):&lt;/p&gt;
+&lt;pre class="highlight json"&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+  &lt;/span&gt;&lt;span class="s2"&gt;"objects"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Default"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Default"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"failureAndRerunMode"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"CASCADE"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"resourceRole"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DataPipelineDefaultResourceRole"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"role"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DataPipelineDefaultRole"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"scheduleType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"cron"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"pipelineLogUri"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"#{myLogsFolder}"&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"RunJobs"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Run the Jobs"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"type"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"ShellCommandActivity"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"command"&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"runsOn"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR_Cluster"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR_Cluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR Cluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"type"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EmrCluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"masterInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"m3.xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"coreInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"m3.xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"coreInstanceCount"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"5"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"r3.2xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceCount"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"5"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceBidPrice"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;0.3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"region"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"us-east-1"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"subnetId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"subnet-xxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"keyPair"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"some-keypair "&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"emrManagedMasterSecurityGroupId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"sg-xxxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"emrManagedSlaveSecurityGroupId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"sg-xxxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"terminateAfter"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"6 HOURS"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"enableDebugging"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"actionOnTaskFailure"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"terminate"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"actionOnResourceFailure"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"retrynone"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
+        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
+      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
+    &lt;/span&gt;&lt;span class="err"&gt;...&lt;/span&gt;&lt;span class="w"&gt;
+  &lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The config above tells &lt;code&gt;DataPipeLine&lt;/code&gt; to launch the EMR cluster with the id &lt;code&gt;EMR_Cluster&lt;/code&gt; that contains one &lt;code&gt;m3.xlarge&lt;/code&gt; master instance
+and five &lt;code&gt;m3.xlarge&lt;/code&gt; core instances.&lt;/p&gt;
+
+&lt;h4&gt;Task Instances&lt;/h4&gt;
+
+&lt;p&gt;For the task instances, it bids for up to 5 &lt;code&gt;r3.2xlarge&lt;/code&gt; spot instances with a cost of &lt;code&gt;$0.30&lt;/code&gt;
+per instance hour. That&amp;rsquo;s a discount of approximately &lt;code&gt;$0.088&lt;/code&gt;?&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Do note that, not all instances are available as task instances&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The EMR pipeline will eventually execute the command below; it first copies essential libraries like 
+maven jar files that into S3. As you&amp;rsquo;ll see later, these libraries will be used in the task instances later.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;The Bash Script&lt;/h3&gt;
+
+&lt;p&gt;It also executes &lt;code&gt;init-script.sh&lt;/code&gt;. I had a bunch of other variable preparation in there but most importantly,
+I pre-created the Elasticsearch index because the index that is automatically created by Pig Script
+doesn&amp;rsquo;t match what I want.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XPUT &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/data_&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/"&lt;/span&gt; -d &lt;span class="s1"&gt;'{
+  "mappings":{
+     "publisher":{
+        "properties":{
+           "country":{ "type":"string" },
+           ...
+        }
+     }
+   }
+}'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It also handles some miscellaneous tasks like swapping of the Elasticsearch aliases and deleting old ones.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XPOST &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/_aliases"&lt;/span&gt; -d &lt;span class="s1"&gt;'
+{
+  "actions" : [
+    { "remove" : { "index" : "data_*", "alias" : "data_latest" } },
+    { "add" : { "index" : "data_'&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s1"&gt;'", "alias" : "data_latest" } }
+  ]
+}'&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Running the Pig Script&lt;/h3&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;pig -F -param &lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+       -param &lt;span class="nv"&gt;INPUT&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;INPUT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
+       -param &lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; -f &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PHYS_DIR&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/index-data.q"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;These would automatically run in the spot instances for non-group operations. One thing to note, is that the &lt;code&gt;INPUT&lt;/code&gt; variable
+is where I define the S3 path to the Hadoop hdfs files to be ingested and indexed.&lt;/p&gt;
+
+&lt;p&gt;This &lt;strong&gt;should not&lt;/strong&gt; be a local folder because the spot instances do not have access to them at runtime and will fail.&lt;/p&gt;
+
+&lt;h3&gt;Inside the Pig Script&lt;/h3&gt;
+
+&lt;p&gt;Next, I register the required jar files; these are actually just maven files.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;REGISTER piggybank.jar;
+REGISTER s3://S3_BUCKET_NAME/software/libs/elasticsearch-hadoop-pig-2.3.4.jar;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Set the parallelism for this pig script to run in (given the right resources via the EMR cluster).&lt;/p&gt;
+
+&lt;p&gt;To be fair, in this particular example, this parallelism is not used.
+It is only really taken into consideration for group, co-group and join operations.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;SET default_parallel 20;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Initialize the libraries and start the ingesting of the data.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;DEFINE CsvLoader org.apache.pig.piggybank.storage.CSVExcelStorage(',');
+DEFINE EsStorage org.elasticsearch.hadoop.pig.EsStorage('es.nodes=$ES_ENDPOINT','es.http.timeout=5m');
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;$ES_ENDPOINT&lt;/code&gt; variable is a comma delimited variable that has the ports included as well, e.g. &lt;code&gt;52.167.183.192:9200&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;There are other variables that you can define here such as &lt;code&gt;es.mapping.id&lt;/code&gt; that defines the id for the Elasticsearch for example,
+instead of automatically letting Elasticsearch generate one.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;raw_data = LOAD '$INPUT'
+           USING CsvLoader AS (
+             bundle_id:chararray,
+             publisher:chararray,
+             exchange_id:int,
+             country:chararray,
+             categories:chararray,
+             ad_size:chararray,
+             interstitial:int,
+             apis:chararray,
+             platform_id:int,
+             device_os_id:int,
+             video_type:int,
+             ad_type:int,
+             app_id:chararray,
+             publisher_id:chararray,
+             assets:chararray,
+             frequency:long);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4&gt;Extract, Transform, Load&lt;/h4&gt;
+
+&lt;p&gt;This last step runs through each of the rows of the data and generates a subset of the data to be indexed into Elasticsearch.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;filtered_data = FOREACH raw_data
+                GENERATE $0, $1, $2, $3, $4, $5, $7, $8, $9, $10, $11, $14, $15;
+
+STORE filtered_data INTO 'data_$DAY_EPOCH/publisher' USING EsStorage();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;You could do many different variations of ETL in Pig Script. For instance, you can combine some of the columns
+into one column.&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;ve found that in Pig &lt;code&gt;v0.12.0&lt;/code&gt;, concatenation of multiple columns is quite finicky because you can&amp;rsquo;t
+combine multiple columns at one time; it has to be sequential like this:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;d = FOREACH raw_data
+    GENERATE
+      CONCAT($0, (chararray)CONCAT($1, (chararray)CONCAT($2, $3))) as id, $4, $5, $6;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that, without the &lt;code&gt;(chararray)&lt;/code&gt;, you quickly run into errors about forcing an explicit type cast.&lt;/p&gt;
+
+&lt;h3&gt;Summary&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve done an run-through of each of the components in a production setup: &lt;code&gt;Jenkins&lt;/code&gt;, &lt;code&gt;DataPipeline&lt;/code&gt;, &lt;code&gt;EMR/Pig&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I hope this helps people out there figure out how to spin up, either periodically or on-demand, 
+an Amazon EMR cluster running Hadoop to do some basic ETL to then index into an Elasticsearch cluster.&lt;/p&gt;
+
+&lt;p&gt;In the next post, I shall discuss some of the pitfalls, EMR / Elasticsearch performance tuning 
+issues that leads to random failures in the EMR cluster. All of them could cause some rather tricky issues 
+in the indexing task; one of the ones that I have personally experienced myself is having 
+duplicated documents in the Elasticsearch cluster despite having only processed a correct number of them.&lt;/p&gt;
+
+&lt;p&gt;If you have any questions, feel free to comment below!&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Setting up Elasticsearch in Amazon ECS</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/"/>
     <id>http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/</id>
     <published>2016-12-05T00:00:00+08:00</published>
-    <updated>2016-12-13T23:06:39+08:00</updated>
+    <updated>2016-12-14T21:13:53+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to &lt;code&gt;2.3.5&lt;/code&gt; for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already 
+    <content type="html">&lt;p&gt;At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to &lt;code&gt;2.3.5&lt;/code&gt; for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already
 there for it to function properly.&lt;/p&gt;
+
+&lt;h3&gt;Preface&lt;/h3&gt;
+
+&lt;p&gt;If you&amp;rsquo;ll like to skip to the end and just take a look at the Docker-compose, task definitions and config files, feel
+free to skip right to &lt;a href="https://github.com/aranair/docker-elasticsearch-ecs"&gt;the github repository&lt;/a&gt; that I&amp;rsquo;ve prepared to contain all this!&lt;/p&gt;
 
 &lt;h3&gt;Dockerfile&lt;/h3&gt;
 
-&lt;p&gt;First things first, I had to change the destination as well as the syntax for the plugin installs.&lt;/p&gt;
+&lt;p&gt;First, I had to change the destination as well as the syntax for the plugin installs.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM elasticsearch:2.3
 
 WORKDIR /usr/share/elasticsearch
@@ -75,17 +293,17 @@ few lines that I had to meddle around with a bit for it to work.&lt;/p&gt;
 &lt;h3&gt;Discovery&lt;/h3&gt;
 
 &lt;p&gt;So, the default node discovery module for Elasticsearch is &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.x/modules-discovery-zen.html"&gt;Zen Discovery&lt;/a&gt;, and it supports both multicast and unicast.
-Although, since EC2 &lt;a href="https://aws.amazon.com/vpc/faqs/"&gt;doesn&amp;rsquo;t support multicast&lt;/a&gt;, I disabled multicast and used only unicast. There are some 
+Although, since EC2 &lt;a href="https://aws.amazon.com/vpc/faqs/"&gt;doesn&amp;rsquo;t support multicast&lt;/a&gt;, I disabled multicast and used only unicast. There are some
 notable things that were in that docs, though: &lt;strong&gt;the ping (discovery)&lt;/strong&gt; and &lt;strong&gt;the master election&lt;/strong&gt;.&lt;/p&gt;
 
-&lt;p&gt;During the &lt;code&gt;ping phase&lt;/code&gt;, each node uses the discovery mechanism to find other nodes in the cluster. That process, however, 
+&lt;p&gt;During the &lt;code&gt;ping phase&lt;/code&gt;, each node uses the discovery mechanism to find other nodes in the cluster. That process, however,
 won&amp;rsquo;t work out-of-the-box for cloud environments like Elastic Cloud or AWS EC2. There is a plugin that fixes this- &lt;code&gt;cloud-aws&lt;/code&gt;. So I installed it via the Dockerfile above, for each container that runs inside
 the cluster. One issue is that the plugin was built for EC2 where each instance naturally publishes their own instance&amp;rsquo;s IP
 for the discovery process. Inside ECS, that discovery mechanism will fail since it just publishes its container&amp;rsquo;s IP address.&lt;/p&gt;
 
 &lt;h3&gt;Running it in ECS&lt;/h3&gt;
 
-&lt;p&gt;Back in Elasticsearch V1, I think the code below was the de-facto solution as an entry point for Docker. It pings Amazon&amp;rsquo;s &lt;code&gt;169.254.169.254&lt;/code&gt; instance information endpoint for the private IP. You could then start the service with its container&amp;rsquo;s IP as the published address; this address allows for other nodes to connect to it.  A reasonably updated 
+&lt;p&gt;Back in Elasticsearch V1, I think the code below was the de-facto solution as an entry point for Docker. It pings Amazon&amp;rsquo;s &lt;code&gt;169.254.169.254&lt;/code&gt; instance information endpoint for the private IP. You could then start the service with its container&amp;rsquo;s IP as the published address; this address allows for other nodes to connect to it.  A reasonably updated
 &lt;a href="https://github.com/daptiv/elasticsearch-ecs"&gt;github repo&lt;/a&gt; still uses this method. &lt;strong&gt;And it still works.&lt;/strong&gt; But there is a cleaner way now.&lt;/p&gt;
 &lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
 
@@ -129,15 +347,15 @@ for the discovery process. Inside ECS, that discovery mechanism will fail since 
 &lt;p&gt;Next, we go on to the master election part of the cluster.&lt;/p&gt;
 
 &lt;p&gt;Like all distributed systems, the master/leader election is an important process that allows a cluster to choose its &lt;code&gt;brain&lt;/code&gt;,
-for the purpose of handling allocations, state maintenance, index creations, etc. It is vital to the health of the cluster. 
-Elastic.co has a comprehensive &lt;a href="https://www.elastic.co/blog/found-leader-election-in-general"&gt;blog post&lt;/a&gt;, and you can read a quick intro there. &lt;/p&gt;
+for the purpose of handling allocations, state maintenance, index creations, etc. It is vital to the health of the cluster.
+Elastic.co has a comprehensive &lt;a href="https://www.elastic.co/blog/found-leader-election-in-general"&gt;blog post&lt;/a&gt;, and you can read a quick intro there.&lt;/p&gt;
 
-&lt;p&gt;In this context, I could set a minimum number of master nodes. &lt;/p&gt;
+&lt;p&gt;In this context, I could set a minimum number of master nodes.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;The discovery.zen.minimum_master_nodes sets the minimum number of master eligible nodes that need to join a newly elected master for an election to complete and for the elected node to accept its mastership.
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;We need to set the minimum number to a quorum (a majority wins situation) otherwise, the cluster is inoperable.
-You can read more about the split-brain scenario &lt;a href="http://blog.trifork.com/2013/10/24/how-to-avoid-the-split-brain-problem-in-elasticsearch/"&gt;here&lt;/a&gt;. For automatic election, having only 2 
-master-eligible nodes should be avoided, since a quorum of 2 is 2 and a loss of either master-eligible nodes 
+You can read more about the split-brain scenario &lt;a href="http://blog.trifork.com/2013/10/24/how-to-avoid-the-split-brain-problem-in-elasticsearch/"&gt;here&lt;/a&gt;. For automatic election, having only 2
+master-eligible nodes should be avoided, since a quorum of 2 is 2 and a loss of either master-eligible nodes
 will result in the split-brain state.&lt;/p&gt;
 
 &lt;p&gt;If you dynamically scale your clusters, the below command would help with dynamically changing that number as you grow
@@ -151,7 +369,7 @@ your cluster.&lt;/p&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Container memory limit and Heap Size&lt;/h3&gt;
 
-&lt;p&gt;Next, this is something that gets tricky if you deploy to ECS and use the default settings. &lt;/p&gt;
+&lt;p&gt;Next, this is something that gets tricky if you deploy to ECS and use the default settings.&lt;/p&gt;
 
 &lt;p&gt;In my case, my task definitions were set to 1 GB, and the Elasticsearch service was running with a default of 1gb heap size.
 After deploying to ECS, I noticed my docker container was just repeatedly getting stopped and restarted by the ECS agent.&lt;/p&gt;
@@ -159,7 +377,7 @@ After deploying to ECS, I noticed my docker container was just repeatedly gettin
 &lt;p&gt;There were no errors; and elasticsearch logs just announced that it was shutting itself down, gracefully.&lt;/p&gt;
 
 &lt;p&gt;At that point, I tweaked the memory hard limits via the task definitions in ECS and the restarts stopped.
-The heap size that the Elasticsearch service was using was hitting beyond the hard memory limit of the container; 
+The heap size that the Elasticsearch service was using was hitting beyond the hard memory limit of the container;
 so the containers was repeatedly asked to restart.&lt;/p&gt;
 
 &lt;p&gt;So if you&amp;rsquo;re deploying these docker containers to ECS, &lt;strong&gt;its good practice to set a hard memory limit to the ECS task definition!&lt;/strong&gt;&lt;/p&gt;
@@ -181,15 +399,15 @@ roughly half the size of the hard memory limit in ECS to prevent the above scena
     <link rel="alternate" href="http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"/>
     <id>http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</id>
     <published>2016-11-22T00:00:00+08:00</published>
-    <updated>2016-12-08T22:06:24+08:00</updated>
+    <updated>2016-12-14T21:13:53+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;From past experience, I found the maintenance and tuning of a Elastisearch cluster to be 
-a little troublesome overtime. So it isn&amp;rsquo;t surprising to see hosted Elasticsearch services pop up 
-one after another. Ok, to be fair, there are hosted services for nearly everything nowadays, from 
+    <content type="html">&lt;p&gt;From past experience, I found the maintenance and tuning of a Elastisearch cluster to be
+a little troublesome overtime. So it isn&amp;rsquo;t surprising to see hosted Elasticsearch services pop up
+one after another. Ok, to be fair, there are hosted services for nearly everything nowadays, from
 Kafka to Wordpress lol. There is really no shortage of them. Most of them provides hassle-free launching
-of entire clusters within minutes and promises to offload management of the clusters along popular 
+of entire clusters within minutes and promises to offload management of the clusters along popular
 plugins pre-installed.&lt;/p&gt;
 
 &lt;p&gt;Quite frankly, they&amp;rsquo;re welcomed services, but they do come with some caveats and I found these the hard way
@@ -197,20 +415,20 @@ when I was evaluating the services when setting up a Elasticsearch cluster at Po
 
 &lt;h3&gt;Cluster Node Discovery&lt;/h3&gt;
 
-&lt;p&gt;With both Elastic cloud and Amazon Elasticsearch Service, and quite possibly others too, one of the problems 
+&lt;p&gt;With both Elastic cloud and Amazon Elasticsearch Service, and quite possibly others too, one of the problems
 I quickly ran into is that they hide all nodes in the cluster except for the publicly accessible gateway.&lt;/p&gt;
 
-&lt;p&gt;What this means is that, you&amp;rsquo;ll need to disable discovery and only connect through the declared 
+&lt;p&gt;What this means is that, you&amp;rsquo;ll need to disable discovery and only connect through the declared
 &lt;code&gt;es.nodes.wan.only&lt;/code&gt; mode, as described below in the Elasticsearch documentation.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;es.nodes.wan.only (default false)
-Whether the connector is used against an Elasticsearch instance in a cloud/restricted environment 
-over the WAN, such as Amazon Web Services. In this mode, the connector disables discovery and 
-only connects through the declared es.nodes during all operations, including reads and writes. 
+Whether the connector is used against an Elasticsearch instance in a cloud/restricted environment
+over the WAN, such as Amazon Web Services. In this mode, the connector disables discovery and
+only connects through the declared es.nodes during all operations, including reads and writes.
 
 Note that in this mode, performance is highly affected.
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on 
-indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing 
+&lt;p&gt;With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on
+indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing
 to Elastic Cloud is &lt;em&gt;orders of magnitudes&lt;/em&gt; slower than indexing among Amazon web services.&lt;/p&gt;
 
 &lt;h3&gt;AWS ElasticSearch Service and IAM Roles&lt;/h3&gt;
@@ -222,25 +440,25 @@ and it also lacks a good access control mechanism and/or VPC access. While there
 alternative mechanisms to control resource access but for my use-case, none of them were ideal.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Whitelisting of IPs:&lt;/strong&gt;
- This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However 
-for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances 
+ This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However
+for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances
 with random IPs. As you might imagine, whitelisting &lt;code&gt;54.0.0.0/8&lt;/code&gt; isn&amp;rsquo;t exactly safe :P&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;IAM roles:&lt;/strong&gt;
- I could restrict access via IAM roles. However, all requests have to be signed individually, 
+ I could restrict access via IAM roles. However, all requests have to be signed individually,
 and at the time of this writing, there isn&amp;rsquo;t any Pig or Hive scripts available to do that yet. To
-be honest, I don&amp;rsquo;t think there are many libraries that support this right now. This has been 
+be honest, I don&amp;rsquo;t think there are many libraries that support this right now. This has been
 confirmed by AWS.&lt;/p&gt;
 
 &lt;h3&gt;Proxy Server&lt;/h3&gt;
 
 &lt;p&gt;To work around this, one way is to set up a reverse proxy, which is then whitelisted via its IP
-in Access Policies in AWS ElasticSearch Service. This instance will then proxy all requests from the 
+in Access Policies in AWS ElasticSearch Service. This instance will then proxy all requests from the
 indexing instance, in my case- Amazon Elastic MapReduce (EMR) cluster, to the AWS ElasticSearch Service.
 It would also require an Elastic IP, so that the IP in the whitelist does not need to be constantly changed.&lt;/p&gt;
 
-&lt;p&gt;The upside to this is that it requires relatively few changes in the code, but the problem is, 
-there is a single point of weakness &amp;amp; failure- the proxy server. It does not scale well and would 
+&lt;p&gt;The upside to this is that it requires relatively few changes in the code, but the problem is,
+there is a single point of weakness &amp;amp; failure- the proxy server. It does not scale well and would
 also require constant monitoring to ensure that it is not the bottleneck in performance.&lt;/p&gt;
 
 &lt;p&gt;This method is well explained and walked-through in this &lt;a href="https://eladnava.com/secure-aws-elasticsearch-service-behind-vpc/#theworkaround"&gt;blog post&lt;/a&gt;.&lt;/p&gt;
@@ -249,8 +467,8 @@ also require constant monitoring to ensure that it is not the bottleneck in perf
 
 &lt;p&gt;This &lt;a href="https://github.com/abutaha/aws-es-proxy"&gt;github repo&lt;/a&gt; allows you to setup a small web application
 layer that sits between your code and Elasticsearch. It exposes &lt;code&gt;localhost:9200&lt;/code&gt; to your app
-on every instance it is running on and signs every request (based on IAM roles) before relaying 
-it to Elasticsearch. This removes the need for IP-based access control and helps with the 
+on every instance it is running on and signs every request (based on IAM roles) before relaying
+it to Elasticsearch. This removes the need for IP-based access control and helps with the
 scaling issues by eliminating the single point of failure.&lt;/p&gt;
 
 &lt;p&gt;A bootstrap action (for the EMR cluster) could be added to install this and run in the background:&lt;/p&gt;
@@ -265,9 +483,9 @@ chmod +x aws-es-proxy-0.2-linux-amd64
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Choices&lt;/h3&gt;
 
-&lt;p&gt;While the second method is definitely feasible, in the end, in view of the issues (and workarounds) 
+&lt;p&gt;While the second method is definitely feasible, in the end, in view of the issues (and workarounds)
 and the cost of equivalent instances in AWS vs AWS ElasticSearch Service and the lack of support for
-plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would 
+plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would
 probably be much more flexible for us in future than a hosted service with a bunch of restrictions.&lt;/p&gt;
 </content>
   </entry>
@@ -276,7 +494,7 @@ probably be much more flexible for us in future than a hosted service with a bun
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/"/>
     <id>http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/</id>
     <published>2016-07-28T00:00:00+08:00</published>
-    <updated>2016-12-07T23:22:22+08:00</updated>
+    <updated>2016-12-14T21:13:53+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -291,10 +509,10 @@ presentation layer or in the models. From personal experience, I&amp;rsquo;ll sa
 
 &lt;h3&gt;The Obvious Scenario&lt;/h3&gt;
 
-&lt;p&gt;Before the lonely operator was introduced, I used &lt;code&gt;try&lt;/code&gt; in a 2 distinct scenarios. &lt;/p&gt;
+&lt;p&gt;Before the lonely operator was introduced, I used &lt;code&gt;try&lt;/code&gt; in a 2 distinct scenarios.&lt;/p&gt;
 
-&lt;p&gt;The first obvious usecase: when I am not sure if the object that I are calling the method on 
-could be a &lt;code&gt;nil&lt;/code&gt; object or not. Obviously, calling any method on a &lt;code&gt;nil&lt;/code&gt; object 
+&lt;p&gt;The first obvious usecase: when I am not sure if the object that I are calling the method on
+could be a &lt;code&gt;nil&lt;/code&gt; object or not. Obviously, calling any method on a &lt;code&gt;nil&lt;/code&gt; object
 rightfully throws an error during runtime. Of course, I could use something like this to avoid the
 error.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;
@@ -304,29 +522,29 @@ error.&lt;/p&gt;
 &lt;h3&gt;The Not So Obvious Scenario&lt;/h3&gt;
 
 &lt;p&gt;Surprisingly, even when I don&amp;rsquo;t know what the object is and whether it even has that method defined or not,
-I still found myself using &lt;code&gt;try&lt;/code&gt;. It still returns &lt;code&gt;nil&lt;/code&gt;. It&amp;rsquo;s like this deceivingly good and 
-lazy way to sidestep &lt;code&gt;NoMethodError&lt;/code&gt;. But I find that this laziness, potentially leads to surprises 
+I still found myself using &lt;code&gt;try&lt;/code&gt;. It still returns &lt;code&gt;nil&lt;/code&gt;. It&amp;rsquo;s like this deceivingly good and
+lazy way to sidestep &lt;code&gt;NoMethodError&lt;/code&gt;. But I find that this laziness, potentially leads to surprises
 (which obviously isn&amp;rsquo;t good).&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Either a guest user without a name, or a registered user with a name&lt;/span&gt;
 &lt;span class="n"&gt;some_user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;try&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;The Lonely Operator&lt;/h3&gt;
 
-&lt;p&gt;&lt;code&gt;user&amp;amp;.name&lt;/code&gt; is equivalent to &lt;code&gt;user &amp;amp;&amp;amp; user.name&lt;/code&gt; and only this. It still throws a &lt;code&gt;NoMethodError&lt;/code&gt; 
+&lt;p&gt;&lt;code&gt;user&amp;amp;.name&lt;/code&gt; is equivalent to &lt;code&gt;user &amp;amp;&amp;amp; user.name&lt;/code&gt; and only this. It still throws a &lt;code&gt;NoMethodError&lt;/code&gt;
 when the method doesn&amp;rsquo;t exist on the object. And that&amp;rsquo;s good for various reasons.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;invalid_method&lt;/span&gt; &lt;span class="c1"&gt;# throws NoMethodError&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;In the event where I have no idea what the object is, it is a &lt;em&gt;clear&lt;/em&gt; sign that I should spend 
-the time to refactor the code so that the object class is deterministic and 
+&lt;p&gt;In the event where I have no idea what the object is, it is a &lt;em&gt;clear&lt;/em&gt; sign that I should spend
+the time to refactor the code so that the object class is deterministic and
 not rely on a &lt;code&gt;.try&lt;/code&gt; to squirm out of the situation.&lt;/p&gt;
 
-&lt;p&gt;Another nice side effect is that, the lonely operator really doesn&amp;rsquo;t look great when I chain it. 
+&lt;p&gt;Another nice side effect is that, the lonely operator really doesn&amp;rsquo;t look great when I chain it.
 Being huge on aesthetics and coding styles, I just end up chaining less.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;truncate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="c1"&gt;# this just looks clunky imo&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;All those &lt;code&gt;.try(..).try(..)&lt;/code&gt;? I always knew I should be getting rid of those too, but it was just 
-so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me 
-every time. &lt;/p&gt;
+&lt;p&gt;All those &lt;code&gt;.try(..).try(..)&lt;/code&gt;? I always knew I should be getting rid of those too, but it was just
+so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me
+every time.&lt;/p&gt;
 
 &lt;p&gt;I hope this post makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
 </content>
@@ -336,21 +554,21 @@ every time. &lt;/p&gt;
     <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
     <id>http://blog.url.com/posts/2016/07/27/capybara-and-waiting/</id>
     <published>2016-07-27T00:00:00+08:00</published>
-    <updated>2016-12-02T23:09:12+08:00</updated>
+    <updated>2016-12-14T21:13:53+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
-    <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails, 
+    <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails,
 you’re likely to be doing feature tests with &lt;a href="https://github.com/jnicklas/capybara"&gt;Capybara&lt;/a&gt; as well.&lt;/p&gt;
 
-&lt;p&gt;Some of these slipped my mind while adding feature specs at work at 
-&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt; and I spent extra time that I shouldn&amp;rsquo;t have! 
-So I hope this post can be a reminder to myself in future and be of help to anyone who 
+&lt;p&gt;Some of these slipped my mind while adding feature specs at work at
+&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt; and I spent extra time that I shouldn&amp;rsquo;t have!
+So I hope this post can be a reminder to myself in future and be of help to anyone who
 encounters the same problems!&lt;/p&gt;
 
 &lt;h3&gt;Common Scenario&lt;/h3&gt;
 
-&lt;p&gt;Let’s look at a common scenario in a feature test: &lt;/p&gt;
+&lt;p&gt;Let’s look at a common scenario in a feature test:&lt;/p&gt;
 
 &lt;ul&gt;
 &lt;li&gt;Load some form&lt;/li&gt;
@@ -366,30 +584,30 @@ encounters the same problems!&lt;/p&gt;
 
 &lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;text&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;eq&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay 
-between the button click and the actual completion of the code that is run as a result of that click. &lt;/p&gt;
+&lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay
+between the button click and the actual completion of the code that is run as a result of that click.&lt;/p&gt;
 
-&lt;p&gt;It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call. 
+&lt;p&gt;It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call.
 Its hard to predict how long exactly that is going to take.&lt;/p&gt;
 
 &lt;h3&gt;Magical Built-in Matchers&lt;/h3&gt;
 
-&lt;p&gt;For this reason, Capybara provides us with some built-in matchers. They work amazingly well 
-for these scenarios where you are waiting for something to finish before checking the content for text, 
-DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements 
+&lt;p&gt;For this reason, Capybara provides us with some built-in matchers. They work amazingly well
+for these scenarios where you are waiting for something to finish before checking the content for text,
+DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements
 to appear or disappear on the page.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
 &lt;span class="c1"&gt;# have_css, have_selector&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You can even define if the element should be visible or not after it is rendered. &lt;/p&gt;
+&lt;p&gt;You can even define if the element should be visible or not after it is rendered.&lt;/p&gt;
 &lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;visible: &lt;/span&gt;&lt;span class="kp"&gt;false&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Magical. Right? &lt;/p&gt;
+&lt;p&gt;Magical. Right?&lt;/p&gt;
 
 &lt;h3&gt;Old solutions&lt;/h3&gt;
 
 &lt;p&gt;Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn&amp;rsquo;t use them.
-Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&gt;sleep(3)&lt;/code&gt; despite being clunkier solutions. 
+Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&gt;sleep(3)&lt;/code&gt; despite being clunkier solutions.
 &lt;code&gt;wait_until&lt;/code&gt; was then deprecated in Capybara v2.0 altogether.&lt;/p&gt;
 
 &lt;h3&gt;Complications&lt;/h3&gt;
@@ -400,34 +618,34 @@ Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&g
 &lt;span class="n"&gt;reload_page&lt;/span&gt;
 &lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'Linked'&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Nope! There&amp;rsquo;s still a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes. 
+&lt;p&gt;Nope! There&amp;rsquo;s still a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes.
 And the tests would randomly fail since the content-check is dependant on the click event&amp;rsquo;s code execution.
 That&amp;rsquo;s not good; we all want deterministic results for our tests, right?&lt;/p&gt;
 
 &lt;h3&gt;What now?&lt;/h3&gt;
 
-&lt;p&gt;So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post 
-&lt;a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara"&gt;here&lt;/a&gt;.  Through spec 
-helpers, they introduce a &lt;code&gt;wait_for_ajax&lt;/code&gt; method that was designed to be used whenever you need 
+&lt;p&gt;So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post
+&lt;a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara"&gt;here&lt;/a&gt;.  Through spec
+helpers, they introduce a &lt;code&gt;wait_for_ajax&lt;/code&gt; method that was designed to be used whenever you need
 to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.&lt;/p&gt;
 
 &lt;h3&gt;Alternatives&lt;/h3&gt;
 
-&lt;p&gt;Alternatively, you could also use &lt;code&gt;have_selector&lt;/code&gt; infront of the reload to block the execution. But in my opinion, 
-if you don&amp;rsquo;t actually want to test the content, using &lt;code&gt;wait_for_ajax&lt;/code&gt; makes more sense. &lt;/p&gt;
+&lt;p&gt;Alternatively, you could also use &lt;code&gt;have_selector&lt;/code&gt; infront of the reload to block the execution. But in my opinion,
+if you don&amp;rsquo;t actually want to test the content, using &lt;code&gt;wait_for_ajax&lt;/code&gt; makes more sense.&lt;/p&gt;
 
-&lt;p&gt;So the next time you encounter similar issues, stay calm and first check to make sure that you are 
+&lt;p&gt;So the next time you encounter similar issues, stay calm and first check to make sure that you are
 using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;!&lt;/p&gt;
 
 &lt;p&gt;What does everyone think? Are your experiences similar?&lt;/p&gt;
 </content>
   </entry>
   <entry>
-    <title>Dockerized Golang + Postgres on Digital Ocean</title>
+    <title>Setting up Dockerized Golang + Postgres on Digital Ocean</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
     <id>http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/</id>
     <published>2016-04-27T00:00:00+08:00</published>
-    <updated>2016-12-02T22:58:59+08:00</updated>
+    <updated>2016-12-14T21:13:53+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -450,7 +668,7 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
 &lt;p&gt;This runs the postgres service under &lt;code&gt;db&lt;/code&gt; name and as a daemon.&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: &lt;/p&gt;
+&lt;p&gt;To setup a dedicated user for the app and create the database, I opened the bash shell into the container via:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it db /bin/bash
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;From there, a new user was created and granted privileges via psql CLI.&lt;/p&gt;
@@ -459,7 +677,7 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
 CREATE DATABASE appdb;
 GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&amp;rsquo;t allow client authentication in connections yet. &lt;/p&gt;
+&lt;p&gt;If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&amp;rsquo;t allow client authentication in connections yet.&lt;/p&gt;
 
 &lt;p&gt;In order for it to work, there were two files which I had to modify:&lt;/p&gt;
 
@@ -468,9 +686,9 @@ GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 &lt;li&gt;&lt;code&gt;postgresql.conf&lt;/code&gt; - To enable listening of addresses other than localhost&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;To find the location of the &lt;code&gt;hba_file&lt;/code&gt; simply run &lt;code&gt;show hba_file;&lt;/code&gt; in the psql interactive shell. &lt;/p&gt;
+&lt;p&gt;To find the location of the &lt;code&gt;hba_file&lt;/code&gt; simply run &lt;code&gt;show hba_file;&lt;/code&gt; in the psql interactive shell.&lt;/p&gt;
 
-&lt;p&gt;The default one should lie at this location: &lt;/p&gt;
+&lt;p&gt;The default one should lie at this location:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;/var/lib/postgresql/data/pg_hba.conf
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;Installed my favourite text editor via:&lt;/p&gt;
@@ -490,8 +708,8 @@ sudo service postgresql start
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Docker Volumes&lt;/h3&gt;
 
-&lt;p&gt;The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
-In my deployment, you&amp;rsquo;ll notice that I do not specifically set this up and that is because the &lt;a href="&amp;quot;https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile&amp;quot;"&gt;Postgres Dockerfile&lt;/a&gt; already does this by default!&lt;/p&gt;
+&lt;p&gt;The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
+In my deployment, you&amp;rsquo;ll notice that I do not specifically set this up and that is because the &lt;a href="https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile"&gt;Postgres Dockerfile&lt;/a&gt; already does this by default!&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
 ENV PGDATA /var/lib/postgresql/data
 VOLUME /var/lib/postgresql/data
@@ -516,11 +734,11 @@ EXPOSE 5000
 &lt;p&gt;A quick run through of each line:&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;The first line runs the &amp;lsquo;onbuild&amp;rsquo; variant of the golang image that automatically copies the source, build and run it. &lt;/li&gt;
+&lt;li&gt;The first line runs the &amp;lsquo;onbuild&amp;rsquo; variant of the golang image that automatically copies the source, build and run it.&lt;/li&gt;
 &lt;li&gt;The second line installs &amp;#39;goose&amp;rsquo;, which is the tool I use to get (somewhat) Rails-like database migrations.&lt;/li&gt;
 &lt;li&gt;Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.&lt;/li&gt;
 &lt;li&gt;Then copy some app config files into the docker image.&lt;/li&gt;
-&lt;li&gt;Last line simply exposes port 5000 of the container to the outside world. &lt;/li&gt;
+&lt;li&gt;Last line simply exposes port 5000 of the container to the outside world.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker built -t app
 docker run -d -p 80:5000 --name gosnap --link db:postgres app
@@ -541,260 +759,5 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
 &lt;p&gt;I then ran the migrations at this point:&lt;/p&gt;
 &lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it gosnap goose up
 &lt;/code&gt;&lt;/pre&gt;</content>
-  </entry>
-  <entry>
-    <title>Capistrano, Postgres, Rails, Nginx &amp; Puma on DigitalOcean</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/"/>
-    <id>http://blog.url.com/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</id>
-    <published>2016-01-22T00:00:00+08:00</published>
-    <updated>2016-12-08T22:06:24+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Recently, I&amp;rsquo;ve been working on my squash club, &lt;a href="http://www.ucsc.sg"&gt;UCSC&amp;rsquo;s new site&lt;/a&gt;. And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.&lt;/p&gt;
-
-&lt;p&gt;Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I&amp;rsquo;ve historically used Pingdom to avoid having the free instances spin down after 30 mins :P. &lt;/p&gt;
-
-&lt;h3&gt;Overview of Setup&lt;/h3&gt;
-
-&lt;p&gt;I went with a fresh Ubuntu 14.04 DigitalOcean droplet to see how long it takes for me to setup a fresh server for Rails deployment. tl;dr Its actually doesn&amp;rsquo;t take long at all :P&lt;/p&gt;
-
-&lt;p&gt;The stack I chose was nothing out of the ordinary:
-- RVM for ruby (just more used to RVM, no intention to start a war on rbenv vs rvm :P)
-- Rails for application code
-- Postgres for the database
-- Capistrano for deployment (there really isn&amp;rsquo;t other better option imo)
-- Nginx for the reverse proxy (again)
-- Puma for the webserver&lt;/p&gt;
-
-&lt;p&gt;I&amp;rsquo;ve kinda just compiled the steps these posts mainly:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/initial-server-setup-with-ubuntu-14-04"&gt;Initial Server Setup&lt;/a&gt;,&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-14-04"&gt;PostgreSQL&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/deploying-a-rails-app-on-ubuntu-14-04-with-capistrano-nginx-and-puma"&gt;Nginx, Puma, RVM&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-a-host-name-with-digitalocean"&gt;Nameserver setup)&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3&gt;Devise 3, Capistrano &amp;amp; Env Vars&lt;/h3&gt;
-
-&lt;p&gt;I must admit I was stuck here for a good bit haha.&lt;/p&gt;
-
-&lt;p&gt;So, since Devise 3, a secret key has been required on production defined in the Devise initializer:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;config.secret_key = ENV[&amp;quot;SECRET_KEY_BASE&amp;quot;] if Rails.env.production?&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;There are notably 2 ways to get this working:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Symlink configs/secrets.yml with an actual key on capistrano deploy&lt;/li&gt;
-&lt;li&gt;Use &amp;ldquo;environment variables&amp;rdquo; (I assumed so after seeing ENV)&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Most of the people I see fix this by using &lt;a href="https://github.com/rbenv/rbenv-vars"&gt;rbenv-var&lt;/a&gt; to manage environment variables for ruby projects but since I&amp;rsquo;m using rvm, I don&amp;rsquo;t exactly have that option.&lt;/p&gt;
-
-&lt;p&gt;So I ssh&amp;rsquo;d into the server and did this &lt;code&gt;export $SECRET_KEY_BASE=...&lt;/code&gt; and fully expected it to work after seeing the same value with &lt;code&gt;ruby -e &amp;quot;p ENV[&amp;#39;SECRET_KEY_BASE&amp;#39;]&amp;quot;&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Except it didn&amp;rsquo;t.&lt;/p&gt;
-
-&lt;h3&gt;The Problem?&lt;/h3&gt;
-
-&lt;p&gt;After a little digging around, I found out that when you are using Capistrano to deploy, apparently it uses SHELL variables that exist in the lifetime of the deployment (well technically its just SSH) instead of the actual environment variables.&lt;/p&gt;
-
-&lt;p&gt;So the correct place to put the export was in &lt;code&gt;~/.bashrc&lt;/code&gt;!&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;export SECRET_KEY_BASE="xxx"
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The deployment with capistrano was relatively straightforward otherwise.&lt;/p&gt;
-
-&lt;p&gt;Below, I&amp;rsquo;ve compiled the commands I&amp;#39;ved used (most of them) for the entire process.&lt;/p&gt;
-
-&lt;h3&gt;Adding Deploy User&lt;/h3&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;adduser deploy
-gpasswd -a deploy sudo
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Copy public key up to server&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;ssh-copy-id deploy@server_ip_address
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Install Postgres&lt;/h3&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get update
-sudo apt-get install postgresql postgresql-contrib
-sudo -i -u postgres
-createuser --interactive
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Install Nginx&lt;/h3&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo apt-get install curl git-core nginx -y
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Install RVM &amp;amp; Ruby&lt;/h3&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
-curl -sSL https://get.rvm.io | bash -s stable
-source ~/.rvm/scripts/rvm
-rvm requirements
-rvm install 2.2.1
-rvm use 2.2.1 --default
-gem install rails -V --no-ri --no-rdoc
-gem install bundler -V --no-ri --no-rdoc
-gem install pg
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Setting up SSH (Github)&lt;/h3&gt;
-
-&lt;p&gt;&lt;code&gt;ssh -T git@github.com&lt;/code&gt; on the server then add the server&amp;rsquo;s public key into your github account.&lt;/p&gt;
-
-&lt;h3&gt;Gemfile&lt;/h3&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;group :development do
-    gem 'capistrano',         require: false
-    gem 'capistrano-rvm',     require: false
-    gem 'capistrano-rails',   require: false
-    gem 'capistrano-bundler', require: false
-    gem 'capistrano3-puma',   require: false
-end
-
-gem 'puma'
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Deploy.rb&lt;/h3&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'ucsc'&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:repo_url&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'git@github.com:aranair/ucsc.git'&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;            &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_threads&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;16&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_workers&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="mi"&gt;1&lt;/span&gt;
-
-&lt;span class="c1"&gt;# Don't change these unless you know what you're doing&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:pty&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;             &lt;span class="kp"&gt;true&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:use_sudo&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="kp"&gt;false&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:stage&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:production&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_via&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="ss"&gt;:remote_cache&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:deploy_to&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"/home/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/apps/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_bind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;       &lt;span class="s2"&gt;"unix://&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets/&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:application&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;-puma.sock"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;      &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.state"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_pid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids/puma.pid"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_access_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.error.log"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_error_log&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;release_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/log/puma.access.log"&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:ssh_options&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="ss"&gt;forward_agent: &lt;/span&gt;&lt;span class="kp"&gt;true&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;user: &lt;/span&gt;&lt;span class="n"&gt;fetch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:user&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;keys: &lt;/span&gt;&lt;span class="sx"&gt;%w(~/.ssh/id_rsa.pub)&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_preload_app&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_worker_timeout&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;nil&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:puma_init_active_record&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kp"&gt;true&lt;/span&gt;  &lt;span class="c1"&gt;# Change to false when not using ActiveRecord&lt;/span&gt;
-
-&lt;span class="c1"&gt;## Defaults:&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:scm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;           &lt;span class="ss"&gt;:git&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:branch&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:master&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:format&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;        &lt;span class="ss"&gt;:pretty&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:log_level&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:debug&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:keep_releases&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;
-
-&lt;span class="c1"&gt;## Linked Files &amp;amp; Directories (Default None):&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_files&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sx"&gt;%w{config/database.yml}&lt;/span&gt;
-&lt;span class="n"&gt;set&lt;/span&gt; &lt;span class="ss"&gt;:linked_dirs&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;  &lt;span class="sx"&gt;%w{bin log tmp/pids tmp/cache tmp/sockets vendor/bundle public/system}&lt;/span&gt;
-
-&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:puma&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Create Directories for Puma Pids and Socket'&lt;/span&gt;
-  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/sockets -p"&lt;/span&gt;
-      &lt;span class="n"&gt;execute&lt;/span&gt; &lt;span class="s2"&gt;"mkdir &lt;/span&gt;&lt;span class="si"&gt;#{&lt;/span&gt;&lt;span class="n"&gt;shared_path&lt;/span&gt;&lt;span class="si"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/tmp/pids -p"&lt;/span&gt;
-    &lt;span class="k"&gt;end&lt;/span&gt;
-  &lt;span class="k"&gt;end&lt;/span&gt;
-
-  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;:make_dirs&lt;/span&gt;
-&lt;span class="k"&gt;end&lt;/span&gt;
-
-&lt;span class="n"&gt;namespace&lt;/span&gt; &lt;span class="ss"&gt;:deploy&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s2"&gt;"Make sure local git is in sync with remote."&lt;/span&gt;
-  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:check_revision&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-      &lt;span class="k"&gt;unless&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse HEAD`&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="sb"&gt;`git rev-parse origin/master`&lt;/span&gt;
-        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"WARNING: HEAD is not the same as origin/master"&lt;/span&gt;
-        &lt;span class="nb"&gt;puts&lt;/span&gt; &lt;span class="s2"&gt;"Run `git push` to sync changes."&lt;/span&gt;
-        &lt;span class="nb"&gt;exit&lt;/span&gt;
-      &lt;span class="k"&gt;end&lt;/span&gt;
-    &lt;span class="k"&gt;end&lt;/span&gt;
-  &lt;span class="k"&gt;end&lt;/span&gt;
-
-  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Initial Deploy'&lt;/span&gt;
-  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:initial&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-      &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="s1"&gt;'deploy:restart'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'puma:start'&lt;/span&gt;
-      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'deploy'&lt;/span&gt;
-    &lt;span class="k"&gt;end&lt;/span&gt;
-  &lt;span class="k"&gt;end&lt;/span&gt;
-
-  &lt;span class="n"&gt;desc&lt;/span&gt; &lt;span class="s1"&gt;'Restart application'&lt;/span&gt;
-  &lt;span class="n"&gt;task&lt;/span&gt; &lt;span class="ss"&gt;:restart&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-    &lt;span class="n"&gt;on&lt;/span&gt; &lt;span class="n"&gt;roles&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:app&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="ss"&gt;in: :sequence&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;wait: &lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt;
-      &lt;span class="n"&gt;invoke&lt;/span&gt; &lt;span class="s1"&gt;'puma:restart'&lt;/span&gt;
-    &lt;span class="k"&gt;end&lt;/span&gt;
-  &lt;span class="k"&gt;end&lt;/span&gt;
-
-  &lt;span class="n"&gt;before&lt;/span&gt; &lt;span class="ss"&gt;:starting&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;     &lt;span class="ss"&gt;:check_revision&lt;/span&gt;
-  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:compile_assets&lt;/span&gt;
-  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:cleanup&lt;/span&gt;
-  &lt;span class="n"&gt;after&lt;/span&gt;  &lt;span class="ss"&gt;:finishing&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;    &lt;span class="ss"&gt;:restart&lt;/span&gt;
-&lt;span class="k"&gt;end&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Capfile&lt;/h3&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/setup'&lt;/span&gt;
-&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/deploy'&lt;/span&gt;
-
-&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rails'&lt;/span&gt;
-&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/bundler'&lt;/span&gt;
-&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/rvm'&lt;/span&gt;
-&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="s1"&gt;'capistrano/puma'&lt;/span&gt;
-
-
-&lt;span class="no"&gt;Dir&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;glob&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'lib/capistrano/tasks/*.rake'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;each&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="o"&gt;|&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;|&lt;/span&gt; &lt;span class="n"&gt;import&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Nginx&lt;/h3&gt;
-
-&lt;p&gt;config/nginx.conf&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;upstream puma {
-  server unix:///home/deploy/apps/ucsc/shared/tmp/sockets/appname-puma.sock;
-}
-
-server {
-  listen 80 default_server deferred;
-  # server_name *.ucsc.sg;
-
-  root /home/deploy/apps/ucsc/current/public;
-  access_log /home/deploy/apps/ucsc/current/log/nginx.access.log;
-  error_log /home/deploy/apps/ucsc/current/log/nginx.error.log info;
-
-  location ^~ /assets/ {
-    gzip_static on;
-    expires max;
-    add_header Cache-Control public;
-  }
-
-  try_files $uri $uri @puma;
-  location @puma {
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_redirect off;
-
-    proxy_pass http://puma;
-  }
-
-  error_page 500 502 503 504 /500.html;
-  client_max_body_size 10M;
-  keepalive_timeout 10;
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;After Capistrano deploy via &lt;code&gt;ap production deploy: initial&lt;/code&gt;&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo rm /etc/nginx/sites-enabled/default
-sudo ln -nfs "/home/deploy/apps/ucsc/current/config/nginx.conf" "/etc/nginx/sites-enabled/ucsc"
-sudo service nginx restart
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Conclusion&lt;/h3&gt;
-
-&lt;p&gt;Setting it up wasn&amp;rsquo;t too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.&lt;/p&gt;
-
-&lt;p&gt;Maybe in another post I&amp;rsquo;ll have a go at using Ansible or a bash script to automatically set the servers up.&lt;/p&gt;
-
-&lt;p&gt;Future posts:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Ansible / Bash script to set up&lt;/li&gt;
-&lt;li&gt;Docker&lt;/li&gt;
-&lt;/ul&gt;
-</content>
   </entry>
 </feed>
