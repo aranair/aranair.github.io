@@ -10,11 +10,11 @@
     <name>Blog Author</name>
   </author>
   <entry>
-    <title>Set up Amazon EMR Hadoop with Pig to index data to Elasticsearch</title>
+    <title>How to set up Amazon EMR Hadoop with Pig to index to Elasticsearch</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"/>
     <id>http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</id>
     <published>2016-12-14T00:00:00+08:00</published>
-    <updated>2016-12-14T21:46:50+08:00</updated>
+    <updated>2016-12-14T21:51:57+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
