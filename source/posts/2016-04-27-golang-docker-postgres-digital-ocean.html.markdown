@@ -92,7 +92,7 @@ sudo service postgresql start
 ### Docker Volumes
 
 The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
-In my deployment, you'll notice that I do not specifically set this up and that is because the [Postgres Dockerfile]("https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile") already does this by default!
+In my deployment, you'll notice that I do not specifically set this up and that is because the [Postgres Dockerfile](https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile) already does this by default!
 
 ```
 ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
