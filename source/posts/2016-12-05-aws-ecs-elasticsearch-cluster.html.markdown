@@ -1,5 +1,5 @@
 ---
-title: Setting up Elasticsearch in Amazon ECS
+title: How to set up Elasticsearch Cluster in Amazon ECS
 description: 'In this post, I run through how to set up Elasticsearch in Amazon ECS and show some of the problems
 that you might face setting up this way and the solutions to them. A github repository is also provided'
 date: 2016-12-05
