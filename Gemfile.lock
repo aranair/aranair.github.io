@@ -114,6 +114,8 @@ GEM
       em-websocket (~> 0.5.1)
       middleman-core (>= 3.3)
       rack-livereload (~> 0.3.15)
+    middleman-meta-tags (0.2.0)
+      middleman-core (>= 3.0.0)
     middleman-syntax (3.0.0)
       middleman-core (>= 3.2)
       rouge (~> 2.0)
@@ -170,6 +172,7 @@ DEPENDENCIES
   middleman-deploy!
   middleman-disqus
   middleman-livereload
+  middleman-meta-tags
   middleman-sprockets!
   middleman-syntax
   nokogiri

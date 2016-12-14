@@ -1,5 +1,6 @@
 ---
-title: Dockerized Golang + Postgres on Digital Ocean
+title: Setting up Dockerized Golang + Postgres on Digital Ocean
+description: 'This is a walk-through of the steps that you need to set up a dockerized Go container with a dockerized database on Digital Ocean'
 date: 2016-04-27
 tags: golang, docker, devops
 disqus_identifier: 2016/docker-golang-postgres-digital-ocean
@@ -28,7 +29,7 @@ This runs the postgres service under `db` name and as a daemon.
 docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
 ```
 
-To setup a dedicated user for the app and create the database, I opened the bash shell into the container via: 
+To setup a dedicated user for the app and create the database, I opened the bash shell into the container via:
 
 ```
 docker exec -it db /bin/bash
@@ -46,16 +47,16 @@ CREATE DATABASE appdb;
 GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
 ```
 
-If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn't allow client authentication in connections yet. 
+If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn't allow client authentication in connections yet.
 
 In order for it to work, there were two files which I had to modify:
 
 - `hba_file` - To enable client authentication
 - `postgresql.conf` - To enable listening of addresses other than localhost
 
-To find the location of the `hba_file` simply run `show hba_file;` in the psql interactive shell. 
+To find the location of the `hba_file` simply run `show hba_file;` in the psql interactive shell.
 
-The default one should lie at this location: 
+The default one should lie at this location:
 
 ```
 /var/lib/postgresql/data/pg_hba.conf
@@ -90,7 +91,7 @@ sudo service postgresql start
 
 ### Docker Volumes
 
-The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data. 
+The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
 In my deployment, you'll notice that I do not specifically set this up and that is because the [Postgres Dockerfile]("https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile") already does this by default!
 
 ```
@@ -122,11 +123,11 @@ EXPOSE 5000
 
 A quick run through of each line:
 
-- The first line runs the 'onbuild' variant of the golang image that automatically copies the source, build and run it. 
+- The first line runs the 'onbuild' variant of the golang image that automatically copies the source, build and run it.
 - The second line installs 'goose', which is the tool I use to get (somewhat) Rails-like database migrations.
 - Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.
 - Then copy some app config files into the docker image.
-- Last line simply exposes port 5000 of the container to the outside world. 
+- Last line simply exposes port 5000 of the container to the outside world.
 
 ```
 docker built -t app

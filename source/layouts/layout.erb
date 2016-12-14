@@ -7,7 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>BHM</title>
+    <title><%= current_page.try(:title) || 'Learnings of a Software Engineer, Boa Ho Man' %></title>
+
+    <%=
+      display_meta_tags(
+        description: (current_page.try(:data).try(:description) || 'A tech blog about learnings in DevOps, Go, Ruby and software engineering in general, written by Boa Ho Man'),
+        'og:site_name': 'aranair.github.io',
+        'og:title': current_page.try(:title) || 'Learnings of a Software Engineer, Boa Ho Man',
+      )
+    %>
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">

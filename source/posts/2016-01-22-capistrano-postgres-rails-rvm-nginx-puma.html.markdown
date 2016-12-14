@@ -1,5 +1,7 @@
 ---
 title: Capistrano, Postgres, Rails, Nginx & Puma on DigitalOcean
+description 'A walk-through of how to set up a running instance of Rails on Digital Ocean. The components that were used were
+Capistrano, PostgreSQL, Rails, Nginx and Puma'
 date: 2016-01-22
 tags: capistrano, rails, devops
 disqus_identifier: 2016/capistrano-postgres-rails-nginx-puma-digitalocean
@@ -8,7 +10,7 @@ disqus_title: Capistrano, Postgres, Rails, Nginx, Puma on DigitalOcean
 
 Recently, I've been working on my squash club, [UCSC's new site](http://www.ucsc.sg). And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.
 
-Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I've historically used Pingdom to avoid having the free instances spin down after 30 mins :P. 
+Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I've historically used Pingdom to avoid having the free instances spin down after 30 mins :P.
 
 ### Overview of Setup
 
@@ -221,7 +223,7 @@ Dir.glob('lib/capistrano/tasks/*.rake').each { |r| import r }
 
 ```
 
-### Nginx 
+### Nginx
 
 config/nginx.conf
 

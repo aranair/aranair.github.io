@@ -3,7 +3,9 @@
 ###
 
 require 'reading_time'
+
 activate :reading_time
+activate :meta_tags
 
 Time.zone = "Singapore"
 
