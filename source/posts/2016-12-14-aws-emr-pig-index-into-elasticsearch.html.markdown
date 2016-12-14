@@ -34,12 +34,11 @@ aws datapipeline put-pipeline-definition \
   --parameter-values-uri 'file://'${PROPS_FILE}
 ```
 
-You can read more about pipeline definitions(`pipeline-definition`) and parameterized templates(`--parameter-values-uri`)
-in this [AWS docs][parameterized templates].
+You can read more about `pipeline-definition` and `--parameter-values-uri` in the [AWS documentation][parameterized templates].
 
 ### DataPipeLine
 
-Let's move on to the pipeline definition files. Here is an example of the one I was using (obviously stripping away the sensitive data):
+Let's move on to the pipeline definition files. I used something similar to this (obviously stripping away the sensitive data):
 
 ```json
 {
@@ -99,28 +98,27 @@ Let's move on to the pipeline definition files. Here is an example of the one I 
 The config above tells `DataPipeLine` to launch the EMR cluster with the id `EMR_Cluster` that contains one `m3.xlarge` master instance
 and five `m3.xlarge` core instances.
 
-##### Task Instances
+#### Task Instances
 
 For the task instances, it bids for up to 5 `r3.2xlarge` spot instances with a cost of `$0.30`
 per instance hour. That's a discount of approximately `$0.088`?
 
-The command that is eventually run, after the cluster is setup is this:
+**Do note that, not all instances are available as task instances**
+
+The EMR pipeline will eventually execute the command below; it first copies essential libraries like 
+maven jar files that into S3. As you'll see later, these libraries will be used in the task instances later.
+
 
 ```
 aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}
 ```
 
-It copies the some essential libraries like maven jar files that into S3. As you'll see later, these libraries will be
-used in the task instances later.
-
 
 ### The Bash Script
 
-It also calls the bash script `init-script.sh`. There is a bunch of variable preparation in there but most importantly,
-inside this bash script, I pre-create the Elasticsearch index because the one that gets auto created by Pig Script
+It also executes `init-script.sh`. I had a bunch of other variable preparation in there but most importantly,
+I pre-created the Elasticsearch index because the index that is automatically created by Pig Script
 doesn't match what I want.
-
-It also handles a bunch of other pre and post-processing like swapping of the Elasticsearch aliases and deleting old ones.
 
 
 ```bash
@@ -136,6 +134,8 @@ curl -XPUT "${ES_ENDPOINT}/data_${DAY_EPOCH}/" -d '{
 }'
 ```
 
+It also handles some miscellaneous tasks like swapping of the Elasticsearch aliases and deleting old ones.
+
 ```bash
 curl -XPOST "${ES_ENDPOINT}/_aliases" -d '
 {
@@ -147,7 +147,7 @@ curl -XPOST "${ES_ENDPOINT}/_aliases" -d '
 
 ```
 
-##### Running the Pig Script
+### Running the Pig Script
 
 ```sh
 pig -F -param ES_ENDPOINT=${ES_ENDPOINT} \
@@ -211,7 +211,7 @@ raw_data = LOAD '$INPUT'
              frequency:long);
 ```
 
-##### Extract, Transform, Load
+#### Extract, Transform, Load
 
 This last step runs through each of the rows of the data and generates a subset of the data to be indexed into Elasticsearch.
 
@@ -225,8 +225,8 @@ STORE filtered_data INTO 'data_$DAY_EPOCH/publisher' USING EsStorage();
 You could do many different variations of ETL in Pig Script. For instance, you can combine some of the columns
 into one column.
 
-I've found that in Pig `v0.12.0`, concating of multiple columns is quite finicky because you can not
-combine multiple columns at one time; it has to be sequential.
+I've found that in Pig `v0.12.0`, concatenation of multiple columns is quite finicky because you can't
+combine multiple columns at one time; it has to be sequential like this:
 
 ```pig
 d = FOREACH raw_data
@@ -234,17 +234,21 @@ d = FOREACH raw_data
       CONCAT($0, (chararray)CONCAT($1, (chararray)CONCAT($2, $3))) as id, $4, $5, $6;
 ```
 
-### Roundup
+Note that, without the `(chararray)`, you quickly run into errors about forcing an explicit type cast.
 
-So a quick roundup; I've done an overview of each of the components in a production setup: `Jenkins`, `DataPipeline`, `EMR/Pig`.
-It can be used as a guide for spinning up, either periodically or on-demand, an Amazon EMR cluster running Hadoop
-to do some basic ETL and then index into an Elasticsearch cluster.
+### Summary
 
-In the next post, I shall discuss some of the pitfalls, performance issues that leads to random failures in the
-EMR cluster. All of them could cause some very random issues in the indexing task; one of the ones that I have personally
-experienced myself is having duplicated documents in the Elasticsearch cluster despite having only processed a correct number of them.
+I've done an run-through of each of the components in a production setup: `Jenkins`, `DataPipeline`, `EMR/Pig`.
 
-Also, if you have any questions, feel free to comment below!
+I hope this helps people out there figure out how to spin up, either periodically or on-demand, 
+an Amazon EMR cluster running Hadoop to do some basic ETL to then index into an Elasticsearch cluster.
+
+In the next post, I shall discuss some of the pitfalls, EMR / Elasticsearch performance tuning 
+issues that leads to random failures in the EMR cluster. All of them could cause some rather tricky issues 
+in the indexing task; one of the ones that I have personally experienced myself is having 
+duplicated documents in the Elasticsearch cluster despite having only processed a correct number of them.
+
+If you have any questions, feel free to comment below!
 
 [self managed es]: https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/
 [parameterized templates]: http://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-custom-templates.html
