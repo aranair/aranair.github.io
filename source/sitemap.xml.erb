@@ -2,9 +2,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <% pages.each do |p| %>
+    <% priority = (p.destination_path[/tags/] || p.destination_path.length <= 43) ? 0.7 : 1.0 %>
   <url>
     <loc>https://aranair.github.io/<%=p.destination_path.gsub('index.html','')%></loc>
-    <priority>1.0</priority>
+    <priority><%= priority %></priority>
   </url>
 <% end %>
 </urlset>
