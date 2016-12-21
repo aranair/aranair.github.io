@@ -261,7 +261,7 @@ server {
 }
 ```
 
-After Capistrano deploy via ```ap production deploy: initial```
+After Capistrano deploy via `cap production deploy: initial`
 
 ```
 sudo rm /etc/nginx/sites-enabled/default
@@ -272,7 +272,9 @@ sudo service nginx restart
 
 ### Conclusion
 
-Setting it up wasn't too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.
+Setting it up wasn't too hard, but it does seem a little tedious and it is really easy to forget 
+something along the way. No wonder people are turning to ansible/chef for multi-server setups. 
+For individual web developers though, perhaps a bash script is enough.
 
 Maybe in another post I'll have a go at using Ansible or a bash script to automatically set the servers up.
 
@@ -280,5 +282,3 @@ Future posts:
 
 - Ansible / Bash script to set up
 - Docker
-
-
