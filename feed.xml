@@ -14,7 +14,7 @@
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"/>
     <id>http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</id>
     <published>2016-12-14T00:00:00+08:00</published>
-    <updated>2016-12-14T21:51:57+08:00</updated>
+    <updated>2016-12-14T21:54:42+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -223,11 +223,11 @@ duplicated documents in the Elasticsearch cluster despite having only processed 
 </content>
   </entry>
   <entry>
-    <title>Setting up Elasticsearch in Amazon ECS</title>
+    <title>How to set up Elasticsearch Cluster in Amazon ECS</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/"/>
     <id>http://blog.url.com/posts/2016/12/05/aws-ecs-elasticsearch-cluster/</id>
     <published>2016-12-05T00:00:00+08:00</published>
-    <updated>2016-12-14T21:13:53+08:00</updated>
+    <updated>2016-12-14T22:38:02+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -645,7 +645,7 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
     <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
     <id>http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/</id>
     <published>2016-04-27T00:00:00+08:00</published>
-    <updated>2016-12-14T21:13:53+08:00</updated>
+    <updated>2016-12-21T23:30:15+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>

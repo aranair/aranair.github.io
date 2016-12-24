@@ -131,9 +131,12 @@
 <h3>Adding Deploy User</h3>
 <pre class="highlight plaintext"><code>adduser deploy
 gpasswd -a deploy sudo
+usermod -aG sudo deploy
 </code></pre>
 <p>Copy public key up to server</p>
-<pre class="highlight plaintext"><code>ssh-copy-id deploy@server_ip_address
+<pre class="highlight plaintext"><code># On your own machine
+brew install ssh-copy-id
+ssh-copy-id deploy@server_ip_address
 </code></pre>
 <h3>Install Postgres</h3>
 <pre class="highlight plaintext"><code>sudo apt-get update
@@ -298,14 +301,16 @@ server {
   keepalive_timeout 10;
 }
 </code></pre>
-<p>After Capistrano deploy via <code>ap production deploy: initial</code></p>
+<p>After Capistrano deploy via <code>cap production deploy: initial</code></p>
 <pre class="highlight plaintext"><code>sudo rm /etc/nginx/sites-enabled/default
 sudo ln -nfs "/home/deploy/apps/ucsc/current/config/nginx.conf" "/etc/nginx/sites-enabled/ucsc"
 sudo service nginx restart
 </code></pre>
 <h3>Conclusion</h3>
 
-<p>Setting it up wasn&rsquo;t too hard, but it does seem a little tedious and it is really easy to forget something along the way. No wonder people are turning to ansible/chef for multi-server setups. For individual web developers though, perhaps a bash script is enough.</p>
+<p>Setting it up wasn&rsquo;t too hard, but it does seem a little tedious and it is really easy to forget 
+something along the way. No wonder people are turning to ansible/chef for multi-server setups. 
+For individual web developers though, perhaps a bash script is enough.</p>
 
 <p>Maybe in another post I&rsquo;ll have a go at using Ansible or a bash script to automatically set the servers up.</p>
 
