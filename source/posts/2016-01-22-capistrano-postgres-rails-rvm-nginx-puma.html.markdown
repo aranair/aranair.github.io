@@ -69,11 +69,14 @@ Below, I've compiled the commands I'ved used (most of them) for the entire proce
 ```
 adduser deploy
 gpasswd -a deploy sudo
+usermod -aG sudo deploy
 ```
 
 Copy public key up to server
 
 ```
+# On your own machine
+brew install ssh-copy-id
 ssh-copy-id deploy@server_ip_address
 ```
 
