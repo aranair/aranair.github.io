@@ -2,7 +2,7 @@
 title: 'Preventing Duplicates: Amazon EMR Pig to Elasticsearch'
 description: 'I talk about some potential performance bottlenecks and issues in a default configuration like the speculative execution
 when running Pig script from an EMR cluster; they are potential problems for indexing data into the elasticsearch.'
-date: 2016-12-25
+date: 2016-12-24
 tags: elasticsearch, aws, emr, apache pig
 disqus_identifier: 2016/aws-emr-pig-elasticsearch-issues
 disqus_title: AWS EMR, Pig to Elasticearch, Part II- Issues
