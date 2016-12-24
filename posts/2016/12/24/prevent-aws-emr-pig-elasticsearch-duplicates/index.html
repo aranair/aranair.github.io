@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Preventing Duplicates: Amazon EMR Pig to Elasticsearch</title>
+
+    <meta name="description" content="I talk about some potential performance bottlenecks and issues in a default configuration like the speculative execution when running Pig script from an EMR cluster; they are potential problems for..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Preventing Duplicates: Amazon EMR Pig to Elasticsearch" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_12 posts_2016_12_24 posts_2016_12_24_prevent-aws-emr-pig-elasticsearch-duplicates posts_2016_12_24_prevent-aws-emr-pig-elasticsearch-duplicates_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      Preventing Duplicates: Amazon EMR Pig to Elasticsearch<br>
+    </h1>
+    <div class="article__published-date">
+      Dec 24, 2016
+      <span class="article__middle-dot"></span>
+      7  minutes read
+    </div>
+    <p>In the <a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/">previous post</a>, I went through some steps I took to set up the Amazon EMR Hadoop cluster
+to run Apache Pig scripts for indexing data to Elasticsearch. In today&rsquo;s series, I walk through some of the
+problems I encountered when I set the system up and some of the configuration tweaks to both
+Elasticsearch and the EMR cluster that I feel you should consciously think about if you&rsquo;re looking 
+to set it up in a similar way.</p>
+
+<h3>Extra Documents in Elasticsearch</h3>
+
+<p>With the set up in the <a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/">previous post</a>, the EMR cluster starts the data ETL (Extract, Transform, Load) and indexes to
+the Elasticsearch cluster. I had already let it run for a day or two, before I noticed an issue. </p>
+
+<p>I had finished one batch of data, which was about <code>20-25 million</code> rows, I noticed that there were way 
+more indexed documents than actual data! There were consistently <code>2-3 million</code> more rows
+than actual data. It certainly isn&rsquo;t a neglible difference.</p>
+
+<p>From EMR stats, I could see how many rows the cluster has processed and the number there was actually correct?!
+I was puzzled at why this was happening.</p>
+
+<h3>Hypothesis</h3>
+
+<p>I came up with a few hypothesis at first:</p>
+
+<ol>
+<li>EMR tasks consume too much memory, causing EMR jobs to fail and retry.
+causing EMR tasks to fail and retry.</li>
+<li>Too little memory reserved for Elasticsearch heap size.</li>
+<li>Pig script not handling rejection of documents properly, causing retries.</li>
+<li>Pig script parallelism was too high; Elasticsearch cluster was getting overloaded by the indexing,</li>
+</ol>
+
+<p>All of the above, technically, could cause duplicates to be sent to Elasticsearch. I did end up 
+making a few changes to configs before it eventually worked and learnt a few things along the way!</p>
+
+<p>Below, I document some of the steps I took before I found out why. Some of these are actually
+helpful even if you don&rsquo;t run into this issue but if you&rsquo;ll like to skip right to the solution, fast-forward 
+to the last section ;)</p>
+
+<h3>Tweaking Elasticsearch</h3>
+
+<p>I increased the memory allocation in ECS for the Elasticsearch task, and made some temporary changes to the
+to the Elasticsearch index settings during the indexing phase:</p>
+<pre class="highlight plaintext"><code>"settings": {
+  "index": {
+    "number_of_shards":5,
+    "number_of_replicas":0,
+    "max_result_window":1,
+    "refresh_interval":"-1"
+  },
+  ...
+}
+</code></pre>
+<p>This stops the <code>refresh</code> of the index and stops <code>replica propagation</code> during the indexing to reduce flow of
+data. After the indexing is done, I would revert it back to normal via:</p>
+<pre class="highlight plaintext"><code>"settings": {
+  "index": {
+      "number_of_replicas": 2,
+      "max_result_window": 10000,
+      "refresh_interval" : "30s"
+  },
+  ...
+}
+</code></pre>
+<p>The combination of the memory increase and the above tweaks did speed up the indexing process overall 
+but the duplicate documents were still getting indexed after. </p>
+
+<p><em>Hypothesis rejected</em>.</p>
+
+<h3>Pig Script</h3>
+
+<p>First, I lowered the parallelism in the Pig Script to get it to index slower (just to eliminate this as a problem).
+Unfortunately, later on I found out that the parallelism is only used for certain operations like group/join etc. <em>Dead-end</em>.</p>
+
+<p>Then I found out that the <code>elasticsearch-hadoop-pig-2.3.4</code> plugin already handles document rejection 
+and retries properly. </p>
+
+<p><em>Great, another dead-end!</em></p>
+
+<h3>EMR Memory Usage</h3>
+
+<p>I then tried to change the EMR cluster&rsquo;s task instance sizes to have about <code>60GB</code> memory to get that possibility 
+out of the way. (It was also at that point, I learnt that only a few instance types are available for selection for spot 
+instance bidding). </p>
+
+<p><em>That too didn&rsquo;t help.</em></p>
+
+<h3>Hadoop Speculative Execution</h3>
+
+<p>let me just quickly run through what is speculative execution; it is a feature built to 
+combat random delays and slowdowns in a distribution environment.</p>
+<pre class="highlight plaintext"><code>As the EMR cluster processes data, some machines would naturally finish their task quicker than others.
+
+To prevent a system-wide slowdown because of the slower tasks, Hadoop always tries to detect slower-than-expected machines/jobs and assigns a replica of their tasks to other free nodes (or spins up new nodes), as a backup. 
+
+The node that finishes first, would be considered successful; the other slower ones would be killed.
+</code></pre>
+<p>This, as you might expect, would create a ton of problems for Elasticsearch indexing tasks.</p>
+
+<p>Towards the end of each indexing cycle, Elasticsearch would slow down by a fraction and Hadoop 
+would detect the slowdown and spin up all those backup tasks that would be indexing the exact 
+same data at the same time! Since I left the <code>id</code> generation to Elasticsearch (recommended), this would
+ultimately cause the duplicates I saw.</p>
+
+<p><em>Finally!</em></p>
+
+<h3>How Do I Fix It Then?</h3>
+
+<p>For me, there were 2 ways out.</p>
+
+<p>I could generate a composite column to serve as an unique <code>id</code> for each Elasticsearch row that is indexed, 
+so that even if they were duplicated, Elasticsearch would be able to throw away all the duplicate ones. 
+However, this was entirely not viable for the data I was indexing as the composite column would 
+take up so much space it wouldn&rsquo;t really be worth it.</p>
+
+<p>The way I chose was to disable the speculative execution in the Hadoop environment altogether. </p>
+
+<p>For EMR software version 4 and below, you could re-define the bootstrap action for the Hadoop environment.</p>
+<pre class="highlight plaintext"><code>"bootstrapAction": [
+  "s3://us-east-1.elasticmapreduce/bootstrap-actions/configure-hadoop,-m,mapred.map.tasks.speculative.execution=false,-m,mapred.reduce.tasks.speculative.execution=false"
+],
+</code></pre>
+<p>For API version 5+, you would need to do it via the <code>mapred-site</code> classification via configuration JSON files.
+You can read more about them in <a href="http://docs.aws.amazon.com/ElasticMapReduce/latest/ReleaseGuide/emr-configure-apps.html">this documentation</a> for EMR V5.</p>
+<pre class="highlight plaintext"><code>[
+  {
+    "Classification": "mapred-site",
+    "Properties": {
+      "mapred.map.tasks.speculative.execution": "false",
+      "mapred.reduce.tasks.speculative.execution": "false"
+    }
+  }
+]
+</code></pre>
+<h3>Round up</h3>
+
+<p>I hope my learnings can help anyone out there facing a similar issue; do let me know in the comments
+if you have any questions!</p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/aws-emr-pig-elasticsearch-issues';
+                        var disqus_title = 'AWS EMR, Pig to Elasticearch, Part II- Issues';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>

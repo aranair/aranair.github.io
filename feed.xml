@@ -5,10 +5,157 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-12-14T00:00:00+08:00</updated>
+  <updated>2016-12-24T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Preventing Duplicates: Amazon EMR Pig to Elasticsearch</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/"/>
+    <id>http://blog.url.com/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/</id>
+    <published>2016-12-24T00:00:00+08:00</published>
+    <updated>2016-12-24T22:39:39+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;In the &lt;a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"&gt;previous post&lt;/a&gt;, I went through some steps I took to set up the Amazon EMR Hadoop cluster
+to run Apache Pig scripts for indexing data to Elasticsearch. In today&amp;rsquo;s series, I walk through some of the
+problems I encountered when I set the system up and some of the configuration tweaks to both
+Elasticsearch and the EMR cluster that I feel you should consciously think about if you&amp;rsquo;re looking 
+to set it up in a similar way.&lt;/p&gt;
+
+&lt;h3&gt;Extra Documents in Elasticsearch&lt;/h3&gt;
+
+&lt;p&gt;With the set up in the &lt;a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"&gt;previous post&lt;/a&gt;, the EMR cluster starts the data ETL (Extract, Transform, Load) and indexes to
+the Elasticsearch cluster. I had already let it run for a day or two, before I noticed an issue. &lt;/p&gt;
+
+&lt;p&gt;I had finished one batch of data, which was about &lt;code&gt;20-25 million&lt;/code&gt; rows, I noticed that there were way 
+more indexed documents than actual data! There were consistently &lt;code&gt;2-3 million&lt;/code&gt; more rows
+than actual data. It certainly isn&amp;rsquo;t a neglible difference.&lt;/p&gt;
+
+&lt;p&gt;From EMR stats, I could see how many rows the cluster has processed and the number there was actually correct?!
+I was puzzled at why this was happening.&lt;/p&gt;
+
+&lt;h3&gt;Hypothesis&lt;/h3&gt;
+
+&lt;p&gt;I came up with a few hypothesis at first:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;EMR tasks consume too much memory, causing EMR jobs to fail and retry.
+causing EMR tasks to fail and retry.&lt;/li&gt;
+&lt;li&gt;Too little memory reserved for Elasticsearch heap size.&lt;/li&gt;
+&lt;li&gt;Pig script not handling rejection of documents properly, causing retries.&lt;/li&gt;
+&lt;li&gt;Pig script parallelism was too high; Elasticsearch cluster was getting overloaded by the indexing,&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;All of the above, technically, could cause duplicates to be sent to Elasticsearch. I did end up 
+making a few changes to configs before it eventually worked and learnt a few things along the way!&lt;/p&gt;
+
+&lt;p&gt;Below, I document some of the steps I took before I found out why. Some of these are actually
+helpful even if you don&amp;rsquo;t run into this issue but if you&amp;rsquo;ll like to skip right to the solution, fast-forward 
+to the last section ;)&lt;/p&gt;
+
+&lt;h3&gt;Tweaking Elasticsearch&lt;/h3&gt;
+
+&lt;p&gt;I increased the memory allocation in ECS for the Elasticsearch task, and made some temporary changes to the
+to the Elasticsearch index settings during the indexing phase:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"settings": {
+  "index": {
+    "number_of_shards":5,
+    "number_of_replicas":0,
+    "max_result_window":1,
+    "refresh_interval":"-1"
+  },
+  ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This stops the &lt;code&gt;refresh&lt;/code&gt; of the index and stops &lt;code&gt;replica propagation&lt;/code&gt; during the indexing to reduce flow of
+data. After the indexing is done, I would revert it back to normal via:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"settings": {
+  "index": {
+      "number_of_replicas": 2,
+      "max_result_window": 10000,
+      "refresh_interval" : "30s"
+  },
+  ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The combination of the memory increase and the above tweaks did speed up the indexing process overall 
+but the duplicate documents were still getting indexed after. &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Hypothesis rejected&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Pig Script&lt;/h3&gt;
+
+&lt;p&gt;First, I lowered the parallelism in the Pig Script to get it to index slower (just to eliminate this as a problem).
+Unfortunately, later on I found out that the parallelism is only used for certain operations like group/join etc. &lt;em&gt;Dead-end&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Then I found out that the &lt;code&gt;elasticsearch-hadoop-pig-2.3.4&lt;/code&gt; plugin already handles document rejection 
+and retries properly. &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Great, another dead-end!&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;EMR Memory Usage&lt;/h3&gt;
+
+&lt;p&gt;I then tried to change the EMR cluster&amp;rsquo;s task instance sizes to have about &lt;code&gt;60GB&lt;/code&gt; memory to get that possibility 
+out of the way. (It was also at that point, I learnt that only a few instance types are available for selection for spot 
+instance bidding). &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;That too didn&amp;rsquo;t help.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;Hadoop Speculative Execution&lt;/h3&gt;
+
+&lt;p&gt;let me just quickly run through what is speculative execution; it is a feature built to 
+combat random delays and slowdowns in a distribution environment.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;As the EMR cluster processes data, some machines would naturally finish their task quicker than others.
+
+To prevent a system-wide slowdown because of the slower tasks, Hadoop always tries to detect slower-than-expected machines/jobs and assigns a replica of their tasks to other free nodes (or spins up new nodes), as a backup. 
+
+The node that finishes first, would be considered successful; the other slower ones would be killed.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This, as you might expect, would create a ton of problems for Elasticsearch indexing tasks.&lt;/p&gt;
+
+&lt;p&gt;Towards the end of each indexing cycle, Elasticsearch would slow down by a fraction and Hadoop 
+would detect the slowdown and spin up all those backup tasks that would be indexing the exact 
+same data at the same time! Since I left the &lt;code&gt;id&lt;/code&gt; generation to Elasticsearch (recommended), this would
+ultimately cause the duplicates I saw.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Finally!&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;How Do I Fix It Then?&lt;/h3&gt;
+
+&lt;p&gt;For me, there were 2 ways out.&lt;/p&gt;
+
+&lt;p&gt;I could generate a composite column to serve as an unique &lt;code&gt;id&lt;/code&gt; for each Elasticsearch row that is indexed, 
+so that even if they were duplicated, Elasticsearch would be able to throw away all the duplicate ones. 
+However, this was entirely not viable for the data I was indexing as the composite column would 
+take up so much space it wouldn&amp;rsquo;t really be worth it.&lt;/p&gt;
+
+&lt;p&gt;The way I chose was to disable the speculative execution in the Hadoop environment altogether. &lt;/p&gt;
+
+&lt;p&gt;For EMR software version 4 and below, you could re-define the bootstrap action for the Hadoop environment.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"bootstrapAction": [
+  "s3://us-east-1.elasticmapreduce/bootstrap-actions/configure-hadoop,-m,mapred.map.tasks.speculative.execution=false,-m,mapred.reduce.tasks.speculative.execution=false"
+],
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For API version 5+, you would need to do it via the &lt;code&gt;mapred-site&lt;/code&gt; classification via configuration JSON files.
+You can read more about them in &lt;a href="http://docs.aws.amazon.com/ElasticMapReduce/latest/ReleaseGuide/emr-configure-apps.html"&gt;this documentation&lt;/a&gt; for EMR V5.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;[
+  {
+    "Classification": "mapred-site",
+    "Properties": {
+      "mapred.map.tasks.speculative.execution": "false",
+      "mapred.reduce.tasks.speculative.execution": "false"
+    }
+  }
+]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Round up&lt;/h3&gt;
+
+&lt;p&gt;I hope my learnings can help anyone out there facing a similar issue; do let me know in the comments
+if you have any questions!&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>How to set up Amazon EMR Hadoop with Pig to index to Elasticsearch</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"/>
@@ -639,125 +786,5 @@ using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;
 
 &lt;p&gt;What does everyone think? Are your experiences similar?&lt;/p&gt;
 </content>
-  </entry>
-  <entry>
-    <title>Setting up Dockerized Golang + Postgres on Digital Ocean</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/"/>
-    <id>http://blog.url.com/posts/2016/04/27/golang-docker-postgres-digital-ocean/</id>
-    <published>2016-04-27T00:00:00+08:00</published>
-    <updated>2016-12-21T23:30:15+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.&lt;/p&gt;
-
-&lt;p&gt;But with the rise in popularity of Docker recently, I&amp;rsquo;ve been wanting to deploy something into production with Docker but never found the right app for it until this one.&lt;/p&gt;
-
-&lt;p&gt;It was a simple Golang scraper + Api that is backed by PostgreSQL.&lt;/p&gt;
-
-&lt;h3&gt;Overview&lt;/h3&gt;
-
-&lt;p&gt;I went with a fresh Ubuntu 14.04 DigitalOcean droplet (yes again). Some boilerplate setup for a digital ocean instance is recorded here in a &lt;a href="https://aranair.github.io/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma"&gt;previous post&lt;/a&gt;:&lt;/p&gt;
-
-&lt;p&gt;The basic idea was to have 2 Dockerized components to this deployment. The first Docker container would be running the Golang app. The second one is to run Postgres via linked data.&lt;/p&gt;
-
-&lt;h3&gt;Dockerize the Postgres&lt;/h3&gt;
-
-&lt;p&gt;I chose to go with a base installation of Postgres and configure it from there, but YMMV.&lt;/p&gt;
-
-&lt;p&gt;This runs the postgres service under &lt;code&gt;db&lt;/code&gt; name and as a daemon.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;To setup a dedicated user for the app and create the database, I opened the bash shell into the container via:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it db /bin/bash
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;From there, a new user was created and granted privileges via psql CLI.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;psql -U postgres
-&lt;/code&gt;&lt;/pre&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;CREATE USER app;
-CREATE DATABASE appdb;
-GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&amp;rsquo;t allow client authentication in connections yet.&lt;/p&gt;
-
-&lt;p&gt;In order for it to work, there were two files which I had to modify:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;hba_file&lt;/code&gt; - To enable client authentication&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;postgresql.conf&lt;/code&gt; - To enable listening of addresses other than localhost&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;To find the location of the &lt;code&gt;hba_file&lt;/code&gt; simply run &lt;code&gt;show hba_file;&lt;/code&gt; in the psql interactive shell.&lt;/p&gt;
-
-&lt;p&gt;The default one should lie at this location:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;/var/lib/postgresql/data/pg_hba.conf
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Installed my favourite text editor via:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;apt-get update &amp;amp;&amp;amp; apt-get install vim
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Changed from this:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;host  all  all  127.0.0.1/32  md5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;To this, so that it allows connections that are from the same machine:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;host all  all  192.168.1.0/24  md5
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;For &lt;code&gt;/etc/postgresql/9.3/main/postgresql.conf&lt;/code&gt;:  Changing &lt;code&gt;#listen_addresses = &amp;#39;localhost&amp;#39;&lt;/code&gt; to &lt;code&gt;listen_addresses = &amp;#39;*&amp;#39;&lt;/code&gt; would enable it to listen for incoming connection requests from all available IP addresses.&lt;/p&gt;
-
-&lt;p&gt;A restart of the postgres service was also required.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;sudo service postgresql stop
-sudo service postgresql start
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Docker Volumes&lt;/h3&gt;
-
-&lt;p&gt;The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
-In my deployment, you&amp;rsquo;ll notice that I do not specifically set this up and that is because the &lt;a href="https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile"&gt;Postgres Dockerfile&lt;/a&gt; already does this by default!&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
-ENV PGDATA /var/lib/postgresql/data
-VOLUME /var/lib/postgresql/data
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You can find out more about it in the &lt;a href="https://docs.docker.com/engine/userguide/containers/dockervolumes/"&gt;official documentation&lt;/a&gt; if you&amp;rsquo;re interested.&lt;/p&gt;
-
-&lt;h3&gt;Dockerize the Golang App&lt;/h3&gt;
-
-&lt;p&gt;This is the simple Dockerfile that I&amp;rsquo;ve used for my Golang App.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM golang:onbuild
-
-RUN go get bitbucket.org/liamstask/goose/cmd/goose
-
-RUN ["apt-get", "update"]
-RUN ["apt-get", "install", "-y", "vim"]
-
-ADD config.toml /go/bin/
-ADD dbconf.yml /go/src/app/db/
-
-EXPOSE 5000
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;A quick run through of each line:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;The first line runs the &amp;lsquo;onbuild&amp;rsquo; variant of the golang image that automatically copies the source, build and run it.&lt;/li&gt;
-&lt;li&gt;The second line installs &amp;#39;goose&amp;rsquo;, which is the tool I use to get (somewhat) Rails-like database migrations.&lt;/li&gt;
-&lt;li&gt;Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.&lt;/li&gt;
-&lt;li&gt;Then copy some app config files into the docker image.&lt;/li&gt;
-&lt;li&gt;Last line simply exposes port 5000 of the container to the outside world.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker built -t app
-docker run -d -p 80:5000 --name gosnap --link db:postgres app
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;-d&lt;/code&gt; tells it to run it as a daemon,&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;-p 80:5000&lt;/code&gt; tells it to link the host container&amp;rsquo;s port 80 to port 5000 of the docker container&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;--link db:postgres&lt;/code&gt; links our app to the postgres container that we&amp;rsquo;ve created earlier&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Via the link to the postgres container, you automatically get this environment variable &lt;code&gt;$POSTGRES_PORT_5432_TCP_ADDR&lt;/code&gt; in the app. This contains&lt;/p&gt;
-
-&lt;p&gt;If like me, you use goose, your dbconf.yml will should look something like this at the end.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;db:
-   driver: postgres
-   open: host=$POSTGRES_PORT_5432_TCP_ADDR user=app dbname=appdb sslmode=disable
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;I then ran the migrations at this point:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;docker exec -it gosnap goose up
-&lt;/code&gt;&lt;/pre&gt;</content>
   </entry>
 </feed>

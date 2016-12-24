@@ -105,6 +105,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -246,6 +250,10 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/2016/12/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2016/12/24/</loc>
     <priority>0.7</priority>
   </url>
   <url>
