@@ -55,9 +55,9 @@ of this simple starter bot, I will really only be using [setWebhook][4] and [sen
 
 ### Webhook vs Polling
 
-Great! You have an API key now. Now, you'll need to choose between two ways to get messages from Telegram.
+Great! You have an API key now. Next, you'll need to choose between two ways to get messages from Telegram.
 
-- Webhooks via `setWebhook`
+- Webhooks via `setWebhook` or
 - Polling via `getUpdates`
 
 I'm fairly certain that it is easier to set up with `getUpdates` but polling isn't always an option.
@@ -118,7 +118,7 @@ func wrapHandler(h http.Handler) httprouter.Handle {
 
 ### Configs
 
-I use `github.com/BurntSushi/toml` to parse the config toml file. It's like `yml` on steroids lol.
+To parse the config toml file, I used `github.com/BurntSushi/toml` . It's like `yml` on steroids lol.
 
 I will explain the `datapath` in the second part of this series where I will talk about the dockerization
 and deployments. For now, it suffices to know that it will be used as a data volume for docker.
