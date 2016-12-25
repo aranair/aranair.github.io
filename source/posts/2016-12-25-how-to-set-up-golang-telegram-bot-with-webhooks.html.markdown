@@ -3,7 +3,7 @@ title: 'How I Built My Golang Telegram Bot Part 1: Application Code'
 description: 'In this post, I go through all the steps I took to build a golang telegram bot. 
 It would include code to show how to dockerize the app and what to take note of when you are building 
 a telegram bot to use webhooks with.'
-date: 2016-12-29
+date: 2016-12-25
 tags: golang, telegram, bot, webhooks
 disqus_identifier: 2016/build-golang-telegram-bot-webhooks
 disqus_title: How to Build a Golang Telegram Bot with Webhooks
