@@ -8603,7 +8603,8 @@ ol li {
   color: #333; }
 
 ul li {
-  font-size: 1.05em; }
+  font-size: 1.05em;
+  line-height: 1.5em; }
 
 pre code {
   line-height: 1.5em; }
