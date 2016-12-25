@@ -14,7 +14,7 @@
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"/>
     <id>http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</id>
     <published>2016-12-25T00:00:00+08:00</published>
-    <updated>2016-12-25T22:07:55+08:00</updated>
+    <updated>2016-12-25T22:31:38+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -58,10 +58,10 @@ of this simple starter bot, I will really only be using &lt;a href="https://core
 
 &lt;h3&gt;Webhook vs Polling&lt;/h3&gt;
 
-&lt;p&gt;Great! You have an API key now. Now, you&amp;rsquo;ll need to choose between two ways to get messages from Telegram.&lt;/p&gt;
+&lt;p&gt;Great! You have an API key now. Next, you&amp;rsquo;ll need to choose between two ways to get messages from Telegram.&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;Webhooks via &lt;code&gt;setWebhook&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Webhooks via &lt;code&gt;setWebhook&lt;/code&gt; or&lt;/li&gt;
 &lt;li&gt;Polling via &lt;code&gt;getUpdates&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -117,7 +117,7 @@ since I would need them for get requests in future, I&amp;rsquo;ve set it all up
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;Configs&lt;/h3&gt;
 
-&lt;p&gt;I use &lt;code&gt;github.com/BurntSushi/toml&lt;/code&gt; to parse the config toml file. It&amp;rsquo;s like &lt;code&gt;yml&lt;/code&gt; on steroids lol.&lt;/p&gt;
+&lt;p&gt;To parse the config toml file, I used &lt;code&gt;github.com/BurntSushi/toml&lt;/code&gt; . It&amp;rsquo;s like &lt;code&gt;yml&lt;/code&gt; on steroids lol.&lt;/p&gt;
 
 &lt;p&gt;I will explain the &lt;code&gt;datapath&lt;/code&gt; in the second part of this series where I will talk about the dockerization
 and deployments. For now, it suffices to know that it will be used as a data volume for docker.&lt;/p&gt;
