@@ -109,6 +109,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -245,11 +249,27 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/telegram/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/bot/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/webhooks/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2016/</loc>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://aranair.github.io/posts/2016/12/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2016/12/25/</loc>
     <priority>0.7</priority>
   </url>
   <url>

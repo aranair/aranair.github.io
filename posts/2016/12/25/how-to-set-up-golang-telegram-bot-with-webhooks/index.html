@@ -1,0 +1,394 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>How I Built My Golang Telegram Bot Part 1: Application Code</title>
+
+    <meta name="description" content="In this post, I go through all the steps I took to build a golang telegram bot. It would include code to show how to dockerize the app and what to take note of when you are building a telegram bot ..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="How I Built My Golang Telegram Bot Part 1: Application Code" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="/stylesheets/normalize.css" rel="stylesheet" />
+    <link href="/stylesheets/blog.css" rel="stylesheet" />
+    <script src="/javascripts/all.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_12 posts_2016_12_25 posts_2016_12_25_how-to-set-up-golang-telegram-bot-with-webhooks posts_2016_12_25_how-to-set-up-golang-telegram-bot-with-webhooks_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="container">
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      How I Built My Golang Telegram Bot Part 1: Application Code<br>
+    </h1>
+    <div class="article__published-date">
+      Dec 25, 2016
+      <span class="article__middle-dot"></span>
+      19  minutes read
+    </div>
+    <p>This is the first part of the <code>Golang Telegram Bot</code> series. 
+In this series, I&rsquo;ll show you code samples and guide you through them on how to 
+build a Golang Telegram Bot for my own use. It would listen in and respond only upon 
+certain text cues. Finally I&rsquo;ll also demonstrate how to get a self-signed SSL cert working with Nginx
+and deploying the application in a Docker container on a Digital Ocean instance.</p>
+
+<p>Hopefully this will help anyone out there who would like to try their hand at their own bot on Telegram!
+The code for this bot is currently hosted at <a href="https://github.com/aranair/remindbot">https://github.com/aranair/remindbot</a> if you&rsquo;ll like
+to just skip to the code immediately.</p>
+
+<h3>Backstory</h3>
+
+<p>I&rsquo;ve been using <a href="https://web.telegram.org">Telegram</a> for a really long time, and I&rsquo;ve been wanting to build a Telegram bot 
+for a long time since they first announced it. </p>
+
+<p>Initially, I was thrown off a little by the requirement of https for the webhooks, 
+thinking that I might need a domain and a SSL cert to get it working but I quickly found out that
+a self-signed SSL certificate would work just as well in this scenario!</p>
+
+<p>So, if you find yourself in the same situation, don&rsquo;t worry about it! It might be slightly more complex 
+to set up a self-signed SSL cert with Nginx, but it&rsquo;s not all that difficult! In this series, 
+I&rsquo;ll explain code examples that I used to set it all up in <code>production</code>!</p>
+
+<h3>Getting an API Key</h3>
+
+<p>First, you&rsquo;ll need an API key from the <a href="https://telegram.me/botfather"><img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /></a></p>
+
+<p>Send him a <code>/token</code> command to get a set of tokens (botId and API key). 
+You will need it for requests to execute methods using the telegram API. </p>
+<pre class="highlight yaml"><code><span class="c1"># {botId}:{apiKey}</span>
+<span class="s">123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11</span>
+</code></pre>
+<p><strong>Take note</strong> of the word <code>bot</code> before the <code>&lt;token&gt;</code>!</p>
+<pre class="highlight yaml"><code><span class="s">https://api.telegram.org/bot&lt;token&gt;/METHOD_NAME</span>
+</code></pre>
+<p>All the methods are listed over at the <a href="https://core.telegram.org/bots/api#available-methods">Telegram Bot docs</a> but for the purpose
+of this simple starter bot, I will really only be using <a href="https://core.telegram.org/bots/api#setwebhook">setWebhook</a> and <a href="https://core.telegram.org/bots/api#sendMessage">sendMessage</a>.</p>
+
+<h3>Webhook vs Polling</h3>
+
+<p>Great! You have an API key now. Now, you&rsquo;ll need to choose between two ways to get messages from Telegram.</p>
+
+<ul>
+<li>Webhooks via <code>setWebhook</code></li>
+<li>Polling via <code>getUpdates</code></li>
+</ul>
+
+<p>I&rsquo;m fairly certain that it is easier to set up with <code>getUpdates</code> but polling isn&rsquo;t always an option.
+For this bot, I went with webhooks as I wanted the bot to immediately respond upon certain text cues.</p>
+
+<p>With webhooks, everytime there is a message (when privacy mode is disabled anyway), the webhook endpoint
+will be sent a message. So the main objective, is to parse each of these messages or updates and
+respond appropriately.</p>
+
+<p>To set up the Webhook you&rsquo;ll need to send a curl request to the Telegram Api.</p>
+<pre class="highlight shell"><code>curl -F <span class="s2">"url=https://your.domain.com"</span> -F <span class="s2">"certificate=@/file/path/ssl/bot.pem"</span> https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
+</code></pre>
+<p>Of course, you&rsquo;ll need to send the self-signed SSL <strong>public</strong> pem file as an <code>InputFile</code> as well so that
+Telegram knows that it&rsquo;s really the correct server it&rsquo;s sending all the messages to. I&rsquo;ll leave that
+explanation to the second part of this series.</p>
+
+<h3>Router</h3>
+
+<p>There are many popular router implementations out there like <a href="https://github.com/gin-gonic/gin">gin</a> and <a href="https://github.com/gorilla/context">gorilla</a>.
+For me, I&rsquo;ve chosen to go a bit more minimalistic with <code>github.com/gorilla/context</code> and 
+<code>github.com/julienschmidt/httprouter</code> for the router.</p>
+
+<p><em>Ok, to be fair, context (for the params) actually isn&rsquo;t really needed at this point, but
+since I would need them for get requests in future, I&rsquo;ve set it all up first.</em></p>
+<pre class="highlight go"><code><span class="k">package</span><span class="x"> </span><span class="n">router</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="p">(</span><span class="x">
+    </span><span class="s">"net/http"</span><span class="x">
+
+    </span><span class="s">"github.com/gorilla/context"</span><span class="x">
+    </span><span class="s">"github.com/julienschmidt/httprouter"</span><span class="x">
+</span><span class="p">)</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">router</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="o">*</span><span class="n">httprouter</span><span class="o">.</span><span class="n">Router</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">New</span><span class="p">()</span><span class="x"> </span><span class="o">*</span><span class="n">router</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="o">&amp;</span><span class="n">router</span><span class="p">{</span><span class="n">httprouter</span><span class="o">.</span><span class="n">New</span><span class="p">()}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">router</span><span class="p">)</span><span class="x"> </span><span class="n">POST</span><span class="p">(</span><span class="n">path</span><span class="x"> </span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="n">h</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">Handler</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">r</span><span class="o">.</span><span class="n">Handle</span><span class="p">(</span><span class="s">"POST"</span><span class="p">,</span><span class="x"> </span><span class="n">path</span><span class="p">,</span><span class="x"> </span><span class="n">wrapHandler</span><span class="p">(</span><span class="n">h</span><span class="p">))</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">wrapHandler</span><span class="p">(</span><span class="n">h</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">Handler</span><span class="p">)</span><span class="x"> </span><span class="n">httprouter</span><span class="o">.</span><span class="n">Handle</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="k">func</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">,</span><span class="x"> </span><span class="n">ps</span><span class="x"> </span><span class="n">httprouter</span><span class="o">.</span><span class="n">Params</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">context</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="x"> </span><span class="s">"params"</span><span class="p">,</span><span class="x"> </span><span class="n">ps</span><span class="p">)</span><span class="x">
+        </span><span class="n">h</span><span class="o">.</span><span class="n">ServeHTTP</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<h3>Configs</h3>
+
+<p>I use <code>github.com/BurntSushi/toml</code> to parse the config toml file. It&rsquo;s like <code>yml</code> on steroids lol.</p>
+
+<p>I will explain the <code>datapath</code> in the second part of this series where I will talk about the dockerization
+and deployments. For now, it suffices to know that it will be used as a data volume for docker.</p>
+
+<p><strong>Sample configs.toml</strong></p>
+<pre class="highlight go"><code><span class="p">[</span><span class="n">bot</span><span class="p">]</span><span class="x">
+  </span><span class="n">bot_id</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="s">"YOUR_BOT_ID"</span><span class="x">
+  </span><span class="n">api_key</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="s">"YOUR_API_KEY"</span><span class="x">
+</span><span class="p">[</span><span class="n">database</span><span class="p">]</span><span class="x">
+  </span><span class="n">datapath</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="s">"PATH_TO_SQLITEE_FOLDER"</span><span class="x">
+</span></code></pre>
+<h3>App Context / Http Handlers Glue</h3>
+
+<p>Instead of a global object, I mixed app-wide objects like configs and the DB object into an <code>AppContext</code>.
+To link the <code>AppContext</code> and the <code>http handlers</code> together, I used <a href="https://github.com/justinas/alice">github.com/justinas/alice</a> as the glue.</p>
+
+<p><strong>App Context</strong>:</p>
+<pre class="highlight go"><code><span class="k">type</span><span class="x"> </span><span class="n">AppContext</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">db</span><span class="x">   </span><span class="o">*</span><span class="n">sql</span><span class="o">.</span><span class="n">DB</span><span class="x">
+    </span><span class="n">conf</span><span class="x"> </span><span class="n">config</span><span class="o">.</span><span class="n">Config</span><span class="x">
+    </span><span class="n">cmds</span><span class="x"> </span><span class="n">commands</span><span class="o">.</span><span class="n">Commands</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">NewAppContext</span><span class="p">(</span><span class="n">db</span><span class="x"> </span><span class="o">*</span><span class="n">sql</span><span class="o">.</span><span class="n">DB</span><span class="p">,</span><span class="x"> </span><span class="n">conf</span><span class="x"> </span><span class="n">config</span><span class="o">.</span><span class="n">Config</span><span class="p">,</span><span class="x"> </span><span class="n">cmds</span><span class="x"> </span><span class="n">commands</span><span class="o">.</span><span class="n">Commands</span><span class="p">)</span><span class="x"> </span><span class="n">AppContext</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">AppContext</span><span class="p">{</span><span class="n">db</span><span class="o">:</span><span class="x"> </span><span class="n">db</span><span class="p">,</span><span class="x"> </span><span class="n">conf</span><span class="o">:</span><span class="x"> </span><span class="n">conf</span><span class="p">,</span><span class="x"> </span><span class="n">cmds</span><span class="o">:</span><span class="x"> </span><span class="n">cmds</span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p><strong>Message Receiver</strong>:</p>
+<pre class="highlight go"><code><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">ac</span><span class="x"> </span><span class="o">*</span><span class="n">AppContext</span><span class="p">)</span><span class="x"> </span><span class="n">CommandHandler</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x"> </span><span class="o">...</span><span class="x"> </span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p><strong>Main</strong></p>
+
+<p>Since this bot was mainly built for reminders and for personal use really, I&rsquo;ve chosen to go with
+sqlite for now but I&rsquo;ve actually got it set up with <code>pq</code> before and it is really quick to swap it out.</p>
+<pre class="highlight go"><code><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">toml</span><span class="o">.</span><span class="n">DecodeFile</span><span class="p">(</span><span class="s">"configs.toml"</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">conf</span><span class="p">)</span><span class="x">
+</span><span class="n">db</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sql</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="s">"sqlite3"</span><span class="p">,</span><span class="x"> </span><span class="n">conf</span><span class="o">.</span><span class="n">DB</span><span class="o">.</span><span class="n">Datapath</span><span class="o">+</span><span class="s">"/reminders.db"</span><span class="p">)</span><span class="x">
+</span><span class="n">checkErr</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+
+</span><span class="n">ac</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">handlers</span><span class="o">.</span><span class="n">NewAppContext</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="x"> </span><span class="n">conf</span><span class="p">,</span><span class="x"> </span><span class="n">commands</span><span class="o">.</span><span class="n">NewCommandList</span><span class="p">())</span><span class="x">
+
+</span><span class="n">stack</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">alice</span><span class="o">.</span><span class="n">New</span><span class="p">()</span><span class="x">
+</span><span class="n">r</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">router</span><span class="o">.</span><span class="n">New</span><span class="p">()</span><span class="x">
+</span><span class="n">r</span><span class="o">.</span><span class="n">POST</span><span class="p">(</span><span class="s">"/reminders"</span><span class="p">,</span><span class="x"> </span><span class="n">stack</span><span class="o">.</span><span class="n">ThenFunc</span><span class="p">(</span><span class="n">ac</span><span class="o">.</span><span class="n">CommandHandler</span><span class="p">))</span><span class="x">
+
+</span><span class="n">http</span><span class="o">.</span><span class="n">ListenAndServe</span><span class="p">(</span><span class="s">":8080"</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="p">)</span><span class="x">
+</span></code></pre>
+<h3>Parsing the Updates</h3>
+
+<p>The updates that Telegram sends to the bot  will contain numerous fields, including some optional ones 
+that may or may not appear depending on the type of update, but the ones we&rsquo;re concerned with for
+this bot are:</p>
+<pre class="highlight go"><code><span class="k">type</span><span class="x"> </span><span class="n">Update</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Id</span><span class="x">  </span><span class="kt">int64</span><span class="x">   </span><span class="s">`json:"update_id"`</span><span class="x">
+    </span><span class="n">Msg</span><span class="x"> </span><span class="n">Message</span><span class="x"> </span><span class="s">`json:"message"`</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Message</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Id</span><span class="x">   </span><span class="kt">int64</span><span class="x">  </span><span class="s">`json:"message_id"`</span><span class="x">
+    </span><span class="n">Text</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`json:"text"`</span><span class="x">
+    </span><span class="n">Chat</span><span class="x"> </span><span class="n">Chat</span><span class="x">   </span><span class="s">`json:"chat"`</span><span class="x">
+    </span><span class="n">User</span><span class="x"> </span><span class="n">User</span><span class="x">   </span><span class="s">`json:"from"`</span><span class="x"> </span><span class="err">#</span><span class="x"> </span><span class="n">Note</span><span class="o">:</span><span class="x"> </span><span class="n">this</span><span class="x"> </span><span class="n">is</span><span class="x"> </span><span class="n">an</span><span class="x"> </span><span class="n">optional</span><span class="x"> </span><span class="n">field</span><span class="x"> </span><span class="n">so</span><span class="x"> </span><span class="n">it</span><span class="x"> </span><span class="n">may</span><span class="x"> </span><span class="n">be</span><span class="x"> </span><span class="n">empty</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Chat</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Id</span><span class="x">    </span><span class="kt">int64</span><span class="x">  </span><span class="s">`json:"id"`</span><span class="x">
+    </span><span class="n">Title</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`json:"title"`</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">User</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">Id</span><span class="x">        </span><span class="kt">int64</span><span class="x">  </span><span class="s">`json:"id"`</span><span class="x">
+    </span><span class="n">FirstName</span><span class="x"> </span><span class="kt">string</span><span class="x"> </span><span class="s">`json:"first_name"`</span><span class="x">
+    </span><span class="n">Username</span><span class="x">  </span><span class="kt">string</span><span class="x"> </span><span class="s">`json:"username"`</span><span class="x"> </span><span class="err">#</span><span class="x"> </span><span class="n">Note</span><span class="o">:</span><span class="x"> </span><span class="n">another</span><span class="x"> </span><span class="n">optional</span><span class="x"> </span><span class="n">field</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p>Updates comes in as <code>JSON</code> and you can use the code snippet below with the structs above to decode it
+into a more usable object.</p>
+<pre class="highlight go"><code><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">ac</span><span class="x"> </span><span class="o">*</span><span class="n">AppContext</span><span class="p">)</span><span class="x"> </span><span class="n">CommandHandler</span><span class="p">(</span><span class="n">w</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">ResponseWriter</span><span class="p">,</span><span class="x"> </span><span class="n">r</span><span class="x"> </span><span class="o">*</span><span class="n">http</span><span class="o">.</span><span class="n">Request</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">var</span><span class="x"> </span><span class="n">update</span><span class="x"> </span><span class="n">Update</span><span class="x">
+
+    </span><span class="n">decoder</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">json</span><span class="o">.</span><span class="n">NewDecoder</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">Body</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">decoder</span><span class="o">.</span><span class="n">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="n">update</span><span class="p">);</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">!=</span><span class="x"> </span><span class="no">nil</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x"> </span><span class="k">else</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="n">log</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">Msg</span><span class="o">.</span><span class="n">Text</span><span class="p">)</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+
+    </span><span class="n">cmd</span><span class="p">,</span><span class="x"> </span><span class="n">txt</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">ac</span><span class="o">.</span><span class="n">cmds</span><span class="o">.</span><span class="n">Extract</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">Msg</span><span class="o">.</span><span class="n">Text</span><span class="p">)</span><span class="x">
+    </span><span class="n">chatId</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">update</span><span class="o">.</span><span class="n">Msg</span><span class="o">.</span><span class="n">Chat</span><span class="o">.</span><span class="n">Id</span><span class="x">
+
+    </span><span class="k">switch</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">ToLower</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+      </span><span class="o">...</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p><strong>Some key things to note here:</strong></p>
+
+<ul>
+<li>The message would be contained in <code>update.Msg.Text</code></li>
+<li>The <code>chatId</code> is in <code>update.Msg.Chat.Id</code>. This is important because you&rsquo;ll need it to send a 
+response back.</li>
+<li>The bot currently doesn&rsquo;t use <code>User</code> but I&rsquo;ve written the code above so that you can get it as well.</li>
+</ul>
+
+<h3>Command Extraction</h3>
+
+<p>There is a <code>Commands</code> object that contains all the <code>regexp.Regexp</code> items that are used to find matches 
+for commands. These are instantiated once during bot startup but I admit this part is a lot more 
+repetitive than needed and I am still looking for ways to clean this up.</p>
+
+<p>So if you have any suggestions, feel free to let me know in the comments below!</p>
+<pre class="highlight go"><code><span class="k">package</span><span class="x"> </span><span class="n">commands</span><span class="x">
+
+</span><span class="k">import</span><span class="x"> </span><span class="s">"regexp"</span><span class="x">
+
+</span><span class="k">type</span><span class="x"> </span><span class="n">Commands</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">rmt</span><span class="x">   </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+    </span><span class="n">r</span><span class="x">     </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+    </span><span class="n">l</span><span class="x">     </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+    </span><span class="n">c</span><span class="x">     </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+    </span><span class="n">cl</span><span class="x">    </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+    </span><span class="n">hazel</span><span class="x"> </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">NewCommandList</span><span class="p">()</span><span class="x"> </span><span class="n">Commands</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">Commands</span><span class="p">{</span><span class="x">
+        </span><span class="n">rmt</span><span class="o">:</span><span class="x">   </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)^(remind) me to (.+)`</span><span class="p">),</span><span class="x">
+        </span><span class="n">r</span><span class="o">:</span><span class="x">     </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)^(remind) (.+)`</span><span class="p">),</span><span class="x">
+        </span><span class="n">l</span><span class="o">:</span><span class="x">     </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)^(list)`</span><span class="p">),</span><span class="x">
+        </span><span class="n">c</span><span class="o">:</span><span class="x">     </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)^(clear) (\d+)`</span><span class="p">),</span><span class="x">
+        </span><span class="n">cl</span><span class="o">:</span><span class="x">    </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)^(clearall)`</span><span class="p">),</span><span class="x">
+        </span><span class="n">hazel</span><span class="o">:</span><span class="x"> </span><span class="n">compileRegexp</span><span class="p">(</span><span class="s">`(?i)(hazel)`</span><span class="p">),</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="n">compileRegexp</span><span class="p">(</span><span class="n">s</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="o">*</span><span class="n">regexp</span><span class="o">.</span><span class="n">Regexp</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">r</span><span class="p">,</span><span class="x"> </span><span class="n">_</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">regexp</span><span class="o">.</span><span class="n">Compile</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="x">
+    </span><span class="k">return</span><span class="x"> </span><span class="n">r</span><span class="x">
+</span><span class="p">}</span><span class="x">
+
+</span><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">c</span><span class="x"> </span><span class="o">*</span><span class="n">Commands</span><span class="p">)</span><span class="x"> </span><span class="n">Extract</span><span class="p">(</span><span class="n">t</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="k">var</span><span class="x"> </span><span class="n">a</span><span class="x"> </span><span class="p">[]</span><span class="kt">string</span><span class="x">
+
+    </span><span class="n">a</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">c</span><span class="o">.</span><span class="n">rmt</span><span class="o">.</span><span class="n">FindStringSubmatch</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="x">
+    </span><span class="k">if</span><span class="x"> </span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="x"> </span><span class="o">==</span><span class="x"> </span><span class="m">3</span><span class="x"> </span><span class="p">{</span><span class="x">
+        </span><span class="k">return</span><span class="x"> </span><span class="n">a</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="x"> </span><span class="n">a</span><span class="p">[</span><span class="m">2</span><span class="p">]</span><span class="x">
+    </span><span class="p">}</span><span class="x">
+
+    </span><span class="o">...</span><span class="x">
+
+    </span><span class="k">return</span><span class="x"> </span><span class="s">""</span><span class="p">,</span><span class="x"> </span><span class="s">""</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<p><strong>A couple of comments for the code above:</strong></p>
+
+<ul>
+<li>The <code>(?i)</code> is there for case-insensitive regexp.</li>
+<li>I parse the commands and return the command and messages separately back to the route handler for 
+it to do more there.</li>
+<li>If it doesn&rsquo;t match, it&rsquo;ll just return empty strings and subsequently gets thrown away.</li>
+</ul>
+
+<h3>Sending a Response</h3>
+
+<p>You can send either a <code>GET</code> or a <code>POST</code> request to the appropriate API. In this case, we would use
+the <code>sendMessage</code> method. The text in this case, can contain codes like <code>\n</code> and Unicode like <code>안녕</code>.</p>
+
+<p>I use the code below to replace the botId, apiKey, chatId and text for the <code>GET</code> request. It is
+pretty straightforward, right?</p>
+<pre class="highlight go"><code><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">ac</span><span class="x"> </span><span class="o">*</span><span class="n">AppContext</span><span class="p">)</span><span class="x"> </span><span class="n">sendText</span><span class="p">(</span><span class="n">chatId</span><span class="x"> </span><span class="kt">int64</span><span class="p">,</span><span class="x"> </span><span class="n">text</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
+    </span><span class="n">link</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"https://api.telegram.org/bot{botId}:{apiKey}/sendMessage?chat_id={chatId}&amp;text={text}"</span><span class="x">
+    </span><span class="n">link</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Replace</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="x"> </span><span class="s">"{botId}"</span><span class="p">,</span><span class="x"> </span><span class="n">ac</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">BOT</span><span class="o">.</span><span class="n">BotId</span><span class="p">,</span><span class="x"> </span><span class="o">-</span><span class="m">1</span><span class="p">)</span><span class="x">
+    </span><span class="n">link</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Replace</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="x"> </span><span class="s">"{apiKey}"</span><span class="p">,</span><span class="x"> </span><span class="n">ac</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">BOT</span><span class="o">.</span><span class="n">ApiKey</span><span class="p">,</span><span class="x"> </span><span class="o">-</span><span class="m">1</span><span class="p">)</span><span class="x">
+    </span><span class="n">link</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Replace</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="x"> </span><span class="s">"{chatId}"</span><span class="p">,</span><span class="x"> </span><span class="n">strconv</span><span class="o">.</span><span class="n">FormatInt</span><span class="p">(</span><span class="n">chatId</span><span class="p">,</span><span class="x"> </span><span class="m">10</span><span class="p">),</span><span class="x"> </span><span class="o">-</span><span class="m">1</span><span class="p">)</span><span class="x">
+    </span><span class="n">link</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Replace</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="x"> </span><span class="s">"{text}"</span><span class="p">,</span><span class="x"> </span><span class="n">url</span><span class="o">.</span><span class="n">QueryEscape</span><span class="p">(</span><span class="n">text</span><span class="p">),</span><span class="x"> </span><span class="o">-</span><span class="m">1</span><span class="p">)</span><span class="x">
+
+    </span><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">_</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">link</span><span class="p">)</span><span class="x">
+</span><span class="p">}</span><span class="x">
+</span></code></pre>
+<h3>To Be Continued</h3>
+
+<p>I hope you now have a rough idea on how to get started in writing the application code for a Telegram Bot.</p>
+
+<p>In Part 2, I will talk about how to set up <code>Docker</code> for the application and how to set up 
+the self-signed SSL cert with Nginx as the reverse proxy on a Digital Ocean instance. Finally, 
+I will also set up git webhooks so that I can deploy with just one command! Stay tuned!</p>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/build-golang-telegram-bot-webhooks';
+                        var disqus_title = 'How to Build a Golang Telegram Bot with Webhooks';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>

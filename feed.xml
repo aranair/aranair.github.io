@@ -5,10 +5,306 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-12-24T00:00:00+08:00</updated>
+  <updated>2016-12-25T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>How I Built My Golang Telegram Bot Part 1: Application Code</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"/>
+    <id>http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</id>
+    <published>2016-12-25T00:00:00+08:00</published>
+    <updated>2016-12-25T22:07:55+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;This is the first part of the &lt;code&gt;Golang Telegram Bot&lt;/code&gt; series. 
+In this series, I&amp;rsquo;ll show you code samples and guide you through them on how to 
+build a Golang Telegram Bot for my own use. It would listen in and respond only upon 
+certain text cues. Finally I&amp;rsquo;ll also demonstrate how to get a self-signed SSL cert working with Nginx
+and deploying the application in a Docker container on a Digital Ocean instance.&lt;/p&gt;
+
+&lt;p&gt;Hopefully this will help anyone out there who would like to try their hand at their own bot on Telegram!
+The code for this bot is currently hosted at &lt;a href="https://github.com/aranair/remindbot"&gt;https://github.com/aranair/remindbot&lt;/a&gt; if you&amp;rsquo;ll like
+to just skip to the code immediately.&lt;/p&gt;
+
+&lt;h3&gt;Backstory&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve been using &lt;a href="https://web.telegram.org"&gt;Telegram&lt;/a&gt; for a really long time, and I&amp;rsquo;ve been wanting to build a Telegram bot 
+for a long time since they first announced it. &lt;/p&gt;
+
+&lt;p&gt;Initially, I was thrown off a little by the requirement of https for the webhooks, 
+thinking that I might need a domain and a SSL cert to get it working but I quickly found out that
+a self-signed SSL certificate would work just as well in this scenario!&lt;/p&gt;
+
+&lt;p&gt;So, if you find yourself in the same situation, don&amp;rsquo;t worry about it! It might be slightly more complex 
+to set up a self-signed SSL cert with Nginx, but it&amp;rsquo;s not all that difficult! In this series, 
+I&amp;rsquo;ll explain code examples that I used to set it all up in &lt;code&gt;production&lt;/code&gt;!&lt;/p&gt;
+
+&lt;h3&gt;Getting an API Key&lt;/h3&gt;
+
+&lt;p&gt;First, you&amp;rsquo;ll need an API key from the &lt;a href="https://telegram.me/botfather"&gt;&lt;img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Send him a &lt;code&gt;/token&lt;/code&gt; command to get a set of tokens (botId and API key). 
+You will need it for requests to execute methods using the telegram API. &lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# {botId}:{apiKey}&lt;/span&gt;
+&lt;span class="s"&gt;123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Take note&lt;/strong&gt; of the word &lt;code&gt;bot&lt;/code&gt; before the &lt;code&gt;&amp;lt;token&amp;gt;&lt;/code&gt;!&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="s"&gt;https://api.telegram.org/bot&amp;lt;token&amp;gt;/METHOD_NAME&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;All the methods are listed over at the &lt;a href="https://core.telegram.org/bots/api#available-methods"&gt;Telegram Bot docs&lt;/a&gt; but for the purpose
+of this simple starter bot, I will really only be using &lt;a href="https://core.telegram.org/bots/api#setwebhook"&gt;setWebhook&lt;/a&gt; and &lt;a href="https://core.telegram.org/bots/api#sendMessage"&gt;sendMessage&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Webhook vs Polling&lt;/h3&gt;
+
+&lt;p&gt;Great! You have an API key now. Now, you&amp;rsquo;ll need to choose between two ways to get messages from Telegram.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Webhooks via &lt;code&gt;setWebhook&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Polling via &lt;code&gt;getUpdates&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I&amp;rsquo;m fairly certain that it is easier to set up with &lt;code&gt;getUpdates&lt;/code&gt; but polling isn&amp;rsquo;t always an option.
+For this bot, I went with webhooks as I wanted the bot to immediately respond upon certain text cues.&lt;/p&gt;
+
+&lt;p&gt;With webhooks, everytime there is a message (when privacy mode is disabled anyway), the webhook endpoint
+will be sent a message. So the main objective, is to parse each of these messages or updates and
+respond appropriately.&lt;/p&gt;
+
+&lt;p&gt;To set up the Webhook you&amp;rsquo;ll need to send a curl request to the Telegram Api.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -F &lt;span class="s2"&gt;"url=https://your.domain.com"&lt;/span&gt; -F &lt;span class="s2"&gt;"certificate=@/file/path/ssl/bot.pem"&lt;/span&gt; https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Of course, you&amp;rsquo;ll need to send the self-signed SSL &lt;strong&gt;public&lt;/strong&gt; pem file as an &lt;code&gt;InputFile&lt;/code&gt; as well so that
+Telegram knows that it&amp;rsquo;s really the correct server it&amp;rsquo;s sending all the messages to. I&amp;rsquo;ll leave that
+explanation to the second part of this series.&lt;/p&gt;
+
+&lt;h3&gt;Router&lt;/h3&gt;
+
+&lt;p&gt;There are many popular router implementations out there like &lt;a href="https://github.com/gin-gonic/gin"&gt;gin&lt;/a&gt; and &lt;a href="https://github.com/gorilla/context"&gt;gorilla&lt;/a&gt;.
+For me, I&amp;rsquo;ve chosen to go a bit more minimalistic with &lt;code&gt;github.com/gorilla/context&lt;/code&gt; and 
+&lt;code&gt;github.com/julienschmidt/httprouter&lt;/code&gt; for the router.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Ok, to be fair, context (for the params) actually isn&amp;rsquo;t really needed at this point, but
+since I would need them for get requests in future, I&amp;rsquo;ve set it all up first.&lt;/em&gt;&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;package&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;import&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="s"&gt;"net/http"&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="s"&gt;"github.com/gorilla/context"&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="s"&gt;"github.com/julienschmidt/httprouter"&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;httprouter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Router&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;New&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;httprouter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;New&lt;/span&gt;&lt;span class="p"&gt;()}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;POST&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Handler&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Handle&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"POST"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;wrapHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;wrapHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Handler&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;httprouter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Handle&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ResponseWriter&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Request&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ps&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;httprouter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Params&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"params"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ps&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ServeHTTP&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Configs&lt;/h3&gt;
+
+&lt;p&gt;I use &lt;code&gt;github.com/BurntSushi/toml&lt;/code&gt; to parse the config toml file. It&amp;rsquo;s like &lt;code&gt;yml&lt;/code&gt; on steroids lol.&lt;/p&gt;
+
+&lt;p&gt;I will explain the &lt;code&gt;datapath&lt;/code&gt; in the second part of this series where I will talk about the dockerization
+and deployments. For now, it suffices to know that it will be used as a data volume for docker.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Sample configs.toml&lt;/strong&gt;&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;bot&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;bot_id&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"YOUR_BOT_ID"&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;api_key&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"YOUR_API_KEY"&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;database&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="x"&gt;
+  &lt;/span&gt;&lt;span class="n"&gt;datapath&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"PATH_TO_SQLITEE_FOLDER"&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;App Context / Http Handlers Glue&lt;/h3&gt;
+
+&lt;p&gt;Instead of a global object, I mixed app-wide objects like configs and the DB object into an &lt;code&gt;AppContext&lt;/code&gt;.
+To link the &lt;code&gt;AppContext&lt;/code&gt; and the &lt;code&gt;http handlers&lt;/code&gt; together, I used &lt;a href="https://github.com/justinas/alice"&gt;github.com/justinas/alice&lt;/a&gt; as the glue.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;App Context&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;sql&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DB&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Config&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;cmds&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;NewAppContext&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;sql&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DB&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;config&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Config&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;cmds&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;cmds&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;cmds&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Message Receiver&lt;/strong&gt;:&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;CommandHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ResponseWriter&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Request&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Main&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Since this bot was mainly built for reminders and for personal use really, I&amp;rsquo;ve chosen to go with
+sqlite for now but I&amp;rsquo;ve actually got it set up with &lt;code&gt;pq&lt;/code&gt; before and it is really quick to swap it out.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;toml&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DecodeFile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"configs.toml"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;sql&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"sqlite3"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DB&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Datapath&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="s"&gt;"/reminders.db"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;checkErr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;handlers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;NewAppContext&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;db&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;commands&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;NewCommandList&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="n"&gt;stack&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;alice&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;New&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;router&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;New&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;POST&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"/reminders"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ThenFunc&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CommandHandler&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ListenAndServe&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;":8080"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Parsing the Updates&lt;/h3&gt;
+
+&lt;p&gt;The updates that Telegram sends to the bot  will contain numerous fields, including some optional ones 
+that may or may not appear depending on the type of update, but the ones we&amp;rsquo;re concerned with for
+this bot are:&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Update&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Id&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;int64&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="s"&gt;`json:"update_id"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Msg&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Message&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;`json:"message"`&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Message&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Id&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="kt"&gt;int64&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="s"&gt;`json:"message_id"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;`json:"text"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Chat&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Chat&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="s"&gt;`json:"chat"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="s"&gt;`json:"from"`&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Note&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;this&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;is&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;an&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;optional&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;field&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;so&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;it&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;may&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;be&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;empty&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Chat&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Id&lt;/span&gt;&lt;span class="x"&gt;    &lt;/span&gt;&lt;span class="kt"&gt;int64&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="s"&gt;`json:"id"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Title&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;`json:"title"`&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;User&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Id&lt;/span&gt;&lt;span class="x"&gt;        &lt;/span&gt;&lt;span class="kt"&gt;int64&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="s"&gt;`json:"id"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;FirstName&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;`json:"first_name"`&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;Username&lt;/span&gt;&lt;span class="x"&gt;  &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;`json:"username"`&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="err"&gt;#&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Note&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;another&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;optional&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;field&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Updates comes in as &lt;code&gt;JSON&lt;/code&gt; and you can use the code snippet below with the structs above to decode it
+into a more usable object.&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;CommandHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;w&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ResponseWriter&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Request&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Update&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="n"&gt;decoder&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;json&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;NewDecoder&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Body&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;decoder&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Decode&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;!=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="no"&gt;nil&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Println&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;err&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Println&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Msg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;txt&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;cmds&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Extract&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Msg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;chatId&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;update&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Msg&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Chat&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Id&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="k"&gt;switch&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ToLower&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cmd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+      &lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Some key things to note here:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The message would be contained in &lt;code&gt;update.Msg.Text&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;chatId&lt;/code&gt; is in &lt;code&gt;update.Msg.Chat.Id&lt;/code&gt;. This is important because you&amp;rsquo;ll need it to send a 
+response back.&lt;/li&gt;
+&lt;li&gt;The bot currently doesn&amp;rsquo;t use &lt;code&gt;User&lt;/code&gt; but I&amp;rsquo;ve written the code above so that you can get it as well.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Command Extraction&lt;/h3&gt;
+
+&lt;p&gt;There is a &lt;code&gt;Commands&lt;/code&gt; object that contains all the &lt;code&gt;regexp.Regexp&lt;/code&gt; items that are used to find matches 
+for commands. These are instantiated once during bot startup but I admit this part is a lot more 
+repetitive than needed and I am still looking for ways to clean this up.&lt;/p&gt;
+
+&lt;p&gt;So if you have any suggestions, feel free to let me know in the comments below!&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;package&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;commands&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;import&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"regexp"&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;type&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="k"&gt;struct&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;rmt&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;cl&lt;/span&gt;&lt;span class="x"&gt;    &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;hazel&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;NewCommandList&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;rmt&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt;   &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)^(remind) me to (.+)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)^(remind) (.+)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;l&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)^(list)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt;     &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)^(clear) (\d+)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;cl&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt;    &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)^(clearall)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="n"&gt;hazel&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;`(?i)(hazel)`&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;compileRegexp&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Regexp&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;regexp&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Compile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+&lt;/span&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;Commands&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;Extract&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;var&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;FindStringSubmatch&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="m"&gt;3&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+        &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="k"&gt;return&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;""&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;""&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;A couple of comments for the code above:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;(?i)&lt;/code&gt; is there for case-insensitive regexp.&lt;/li&gt;
+&lt;li&gt;I parse the commands and return the command and messages separately back to the route handler for 
+it to do more there.&lt;/li&gt;
+&lt;li&gt;If it doesn&amp;rsquo;t match, it&amp;rsquo;ll just return empty strings and subsequently gets thrown away.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Sending a Response&lt;/h3&gt;
+
+&lt;p&gt;You can send either a &lt;code&gt;GET&lt;/code&gt; or a &lt;code&gt;POST&lt;/code&gt; request to the appropriate API. In this case, we would use
+the &lt;code&gt;sendMessage&lt;/code&gt; method. The text in this case, can contain codes like &lt;code&gt;\n&lt;/code&gt; and Unicode like &lt;code&gt;안녕&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I use the code below to replace the botId, apiKey, chatId and text for the &lt;code&gt;GET&lt;/code&gt; request. It is
+pretty straightforward, right?&lt;/p&gt;
+&lt;pre class="highlight go"&gt;&lt;code&gt;&lt;span class="k"&gt;func&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;AppContext&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;sendText&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;chatId&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;int64&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="kt"&gt;string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;:=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"https://api.telegram.org/bot{botId}:{apiKey}/sendMessage?chat_id={chatId}&amp;amp;text={text}"&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"{botId}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BOT&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BotId&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"{apiKey}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;ac&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;conf&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BOT&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ApiKey&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"{chatId}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;strconv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;FormatInt&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;chatId&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="m"&gt;10&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+    &lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="s"&gt;"{text}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;QueryEscape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+
+    &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="x"&gt; &lt;/span&gt;&lt;span class="n"&gt;http&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Get&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="x"&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;To Be Continued&lt;/h3&gt;
+
+&lt;p&gt;I hope you now have a rough idea on how to get started in writing the application code for a Telegram Bot.&lt;/p&gt;
+
+&lt;p&gt;In Part 2, I will talk about how to set up &lt;code&gt;Docker&lt;/code&gt; for the application and how to set up 
+the self-signed SSL cert with Nginx as the reverse proxy on a Digital Ocean instance. Finally, 
+I will also set up git webhooks so that I can deploy with just one command! Stay tuned!&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Preventing Duplicates: Amazon EMR Pig to Elasticsearch</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/"/>
@@ -694,97 +990,6 @@ so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Dem
 every time.&lt;/p&gt;
 
 &lt;p&gt;I hope this post makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Capybara &amp; Waiting</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/07/27/capybara-and-waiting/"/>
-    <id>http://blog.url.com/posts/2016/07/27/capybara-and-waiting/</id>
-    <published>2016-07-27T00:00:00+08:00</published>
-    <updated>2016-12-14T21:13:53+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails,
-you’re likely to be doing feature tests with &lt;a href="https://github.com/jnicklas/capybara"&gt;Capybara&lt;/a&gt; as well.&lt;/p&gt;
-
-&lt;p&gt;Some of these slipped my mind while adding feature specs at work at
-&lt;a href="https://www.pocketmath.com/"&gt;pocketmath&lt;/a&gt; and I spent extra time that I shouldn&amp;rsquo;t have!
-So I hope this post can be a reminder to myself in future and be of help to anyone who
-encounters the same problems!&lt;/p&gt;
-
-&lt;h3&gt;Common Scenario&lt;/h3&gt;
-
-&lt;p&gt;Let’s look at a common scenario in a feature test:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Load some form&lt;/li&gt;
-&lt;li&gt;Click a random button&lt;/li&gt;
-&lt;li&gt;Check if the refreshed page (or partially re-rendered pages) matches your expected results&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;If you’re just transitioning from unit tests, it might be tempting to jump right to this option:&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;visit&lt;/span&gt; &lt;span class="n"&gt;some_path&lt;/span&gt;
-&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Submit'&lt;/span&gt; &lt;span class="c1"&gt;# Does an AJAX request&lt;/span&gt;
-
-&lt;span class="c1"&gt;# -- Page refresh or re-render --&lt;/span&gt;
-
-&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;text&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;eq&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You&amp;rsquo;ll find that it doesn&amp;rsquo;t work too well (not at all actually). This is because there is a delay
-between the button click and the actual completion of the code that is run as a result of that click.&lt;/p&gt;
-
-&lt;p&gt;It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call.
-Its hard to predict how long exactly that is going to take.&lt;/p&gt;
-
-&lt;h3&gt;Magical Built-in Matchers&lt;/h3&gt;
-
-&lt;p&gt;For this reason, Capybara provides us with some built-in matchers. They work amazingly well
-for these scenarios where you are waiting for something to finish before checking the content for text,
-DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements
-to appear or disappear on the page.&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;
-&lt;span class="c1"&gt;# have_css, have_selector&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You can even define if the element should be visible or not after it is rendered.&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'#dom-id'&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;should&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'something'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;visible: &lt;/span&gt;&lt;span class="kp"&gt;false&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Magical. Right?&lt;/p&gt;
-
-&lt;h3&gt;Old solutions&lt;/h3&gt;
-
-&lt;p&gt;Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn&amp;rsquo;t use them.
-Instead they used &lt;code&gt;wait_until { ... }&lt;/code&gt; or even &lt;code&gt;sleep(3)&lt;/code&gt; despite being clunkier solutions.
-&lt;code&gt;wait_until&lt;/code&gt; was then deprecated in Capybara v2.0 altogether.&lt;/p&gt;
-
-&lt;h3&gt;Complications&lt;/h3&gt;
-
-&lt;p&gt;Take a look at the scenario below, is that single &lt;code&gt;have_content&lt;/code&gt; there sufficient? What do you think?&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;fill_in&lt;/span&gt; &lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="ss"&gt;with: &lt;/span&gt;&lt;span class="s1"&gt;'Daniel'&lt;/span&gt;
-&lt;span class="n"&gt;click_button&lt;/span&gt; &lt;span class="s1"&gt;'Link'&lt;/span&gt; &lt;span class="c1"&gt;#some AJAX call happens&lt;/span&gt;
-&lt;span class="n"&gt;reload_page&lt;/span&gt;
-&lt;span class="n"&gt;expect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;&lt;span class="nf"&gt;to&lt;/span&gt; &lt;span class="n"&gt;have_content&lt;/span&gt; &lt;span class="s1"&gt;'Linked'&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Nope! There&amp;rsquo;s still a chance that the &lt;code&gt;reload_page&lt;/code&gt; would happen before the AJAX code finishes.
-And the tests would randomly fail since the content-check is dependant on the click event&amp;rsquo;s code execution.
-That&amp;rsquo;s not good; we all want deterministic results for our tests, right?&lt;/p&gt;
-
-&lt;h3&gt;What now?&lt;/h3&gt;
-
-&lt;p&gt;So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post
-&lt;a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara"&gt;here&lt;/a&gt;.  Through spec
-helpers, they introduce a &lt;code&gt;wait_for_ajax&lt;/code&gt; method that was designed to be used whenever you need
-to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.&lt;/p&gt;
-
-&lt;h3&gt;Alternatives&lt;/h3&gt;
-
-&lt;p&gt;Alternatively, you could also use &lt;code&gt;have_selector&lt;/code&gt; infront of the reload to block the execution. But in my opinion,
-if you don&amp;rsquo;t actually want to test the content, using &lt;code&gt;wait_for_ajax&lt;/code&gt; makes more sense.&lt;/p&gt;
-
-&lt;p&gt;So the next time you encounter similar issues, stay calm and first check to make sure that you are
-using the Capybara built-in matchers before using &lt;code&gt;sleep&lt;/code&gt;!&lt;/p&gt;
-
-&lt;p&gt;What does everyone think? Are your experiences similar?&lt;/p&gt;
 </content>
   </entry>
 </feed>
