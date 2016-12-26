@@ -385,10 +385,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/22/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://aranair.github.io/posts/2014/04/19/</loc>
     <priority>0.7</priority>
   </url>
@@ -434,6 +430,10 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/2014/page/2/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/04/22/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>
