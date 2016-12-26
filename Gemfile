@@ -10,6 +10,7 @@ gem 'middleman-deploy', github: 'middleman-contrib/middleman-deploy', branch: 'm
 gem "middleman-sprockets", github: 'middleman/middleman-sprockets', branch: 'master'
 gem "redcarpet"
 gem "therubyracer"
+gem "oj"
 gem "nokogiri"
 gem "bootstrap-sass", require: false
 gem "jquery-middleman"

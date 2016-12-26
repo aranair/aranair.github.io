@@ -109,18 +109,20 @@ configure :build do
   set :css_dir, 'stylesheets'
   set :js_dir, 'javascripts'
   set :images_dir, 'images'
+
   activate :directory_indexes
   activate :sprockets
 
   activate :disqus do |d|
     d.shortname = "homan-gh-blog"
   end
-  # For example, change the Compass output style for deployment
-  # activate :minify_css
-  # activate :minify_javascript
 
   # Enable cache buster
-  # activate :asset_hash
+  activate :asset_hash
+  activate :minify_css
+  activate :minify_javascript
+
+  # For example, change the Compass output style for deployment
 
   # Use relative URLs
   # activate :relative_assets
