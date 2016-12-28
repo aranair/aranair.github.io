@@ -1,5 +1,5 @@
 ---
-title: 'How I Built My Golang Telegram Bot Part 1: Application Code'
+title: 'How I Built a Golang Telegram Bot Part 1: Application Code'
 description: 'In this post, I go through all the steps I took to build a golang telegram bot. 
 It would include code to show how to dockerize the app and what to take note of when you are building 
 a telegram bot to use webhooks with.'
@@ -21,7 +21,7 @@ to just skip to the code immediately.
 
 ### Backstory
 
-I've been using [Telegram][1] for a really long time, and I've been wanting to build a Telegram bot 
+I've been using [Telegram][1] for a really long time, and been wanting to build a Telegram bot 
 for a long time since they first announced it. 
   
 Initially, I was thrown off a little by the requirement of https for the webhooks, 
@@ -29,15 +29,16 @@ thinking that I might need a domain and a SSL cert to get it working but I quick
 a self-signed SSL certificate would work just as well in this scenario!
 
 So, if you find yourself in the same situation, don't worry about it! It might be slightly more complex 
-to set up a self-signed SSL cert with Nginx, but it's not all that difficult! In this series, 
-I'll explain code examples that I used to set it all up in `production`!
+to set up a self-signed SSL cert with Nginx, but it's not that difficult! In this series, I'll show you the code
+samples that got my own bot up and running in production!
 
-### Getting an API Key
+### Creating a Bot and Getting an API Key
 
-First, you'll need an API key from the [![botfather.png](https://s24.postimg.org/d0amvsmut/botfather.png)](https://telegram.me/botfather)
+First, I sent `/newbot` to the [![botfather.png](https://s24.postimg.org/d0amvsmut/botfather.png)](https://telegram.me/botfather).
 
-Send him a `/token` command to get a set of tokens (botId and API key). 
-You will need it for requests to execute methods using the telegram API. 
+After creating the bot, I got a set of (botId and API key) by sending him a `/token` command.
+
+The credentials are needed for subsequent requests to execute methods using the Telegram API. 
 
 ```yaml
 # {botId}:{apiKey}
@@ -50,40 +51,39 @@ You will need it for requests to execute methods using the telegram API.
 https://api.telegram.org/bot<token>/METHOD_NAME
 ```
 
-All the methods are listed over at the [Telegram Bot docs][3] but for the purpose
-of this simple starter bot, I will really only be using [setWebhook][4] and [sendMessage][5].
+There are a ton of Api methods listed over at the [Telegram Bot docs][3] but for the purpose
+of this simple starter bot, I will only be using [setWebhook][4] and [sendMessage][5].
 
 ### Webhook vs Polling
 
-Great! You have an API key now. Next, you'll need to choose between two ways to get messages from Telegram.
+Great! I have the API key now. Next, I have to choose between the two ways to get messages from Telegram.
 
 - Webhooks via `setWebhook` or
 - Polling via `getUpdates`
 
-I'm fairly certain that it is easier to set up with `getUpdates` but polling isn't always an option.
-For this bot, I went with webhooks as I wanted the bot to immediately respond upon certain text cues.
+I'm fairly certain that it is easier to set up with `getUpdates` but polling isn't always an option and not having
+real-time updates isn't as fun IMHO :P So, for this bot, I went with webhooks as I wanted the bot to respond in real-time.
 
-With webhooks, everytime there is a message (when privacy mode is disabled anyway), the webhook endpoint
-will be sent a message. So the main objective, is to parse each of these messages or updates and
-respond appropriately.
+With webhooks, everytime there is a message (when privacy mode is disabled anyway), the API endpoint
+will be sent a message. So the main objective, is simply, to parse each of these updates and respond appropriately.
 
-To set up the Webhook you'll need to send a curl request to the Telegram Api.
+To set up the Webhook all I had to do is to send a curl request to the Telegram Api.
 
 ```bash
 curl -F "url=https://your.domain.com" -F "certificate=@/file/path/ssl/bot.pem" https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
 ```
 
-Of course, you'll need to send the self-signed SSL **public** pem file as an `InputFile` as well so that
-Telegram knows that it's really the correct server it's sending all the messages to. I'll leave that
-explanation to the second part of this series.
+Of course, before that, I need the self-signed SSL **public** pem file; that is sent as an `InputFile` so that
+Telegram can differentiate the correct server it's supposed to send all the messages to. This part is a bit more relevant
+in the second part of the series where I deploy the bot to Digital Ocean so I'll leave this explanation to the second part.
 
 ### Router
 
-There are many popular router implementations out there like [gin][gin] and [gorilla][gorilla].
-For me, I've chosen to go a bit more minimalistic with `github.com/gorilla/context` and 
-`github.com/julienschmidt/httprouter` for the router.
+I had a choice of many popular router implementations out there like [gin][gin] and [gorilla][gorilla].
+But for this project, I chose to go a bit ligher with just `github.com/gorilla/context` and 
+`github.com/julienschmidt/httprouter` since I don't really need that much functionality.
 
-*Ok, to be fair, context (for the params) actually isn't really needed at this point, but
+*Ok, to be fair, even the context (for the params) isn't really needed at this point, but
 since I would need them for get requests in future, I've set it all up first.*
 
 ```go
@@ -118,10 +118,10 @@ func wrapHandler(h http.Handler) httprouter.Handle {
 
 ### Configs
 
-To parse the config toml file, I used `github.com/BurntSushi/toml` . It's like `yml` on steroids lol.
+To parse the config toml file, I used `github.com/BurntSushi/toml` with `toml` files. It's like `yml` on steroids lol.
 
-I will explain the `datapath` in the second part of this series where I will talk about the dockerization
-and deployments. For now, it suffices to know that it will be used as a data volume for docker.
+The `datapath` is actually the data volume path for Docker; but I'll talk about that in more details in the second part 
+of this series about deployments.
 
 **Sample configs.toml**
 
@@ -160,8 +160,9 @@ func (ac *AppContext) CommandHandler(w http.ResponseWriter, r *http.Request) { .
 
 **Main**
 
-Since this bot was mainly built for reminders and for personal use really, I've chosen to go with
-sqlite for now but I've actually got it set up with `pq` before and it is really quick to swap it out.
+Since this bot was mainly built for personal reminders, I've chosen to go with `Sqlite3` for now but I've 
+got it set up with `pq` before and it is fairly easy to swap it out, since both the libraries uses the `database/sql` 
+library.
 
 ```go
 _, err := toml.DecodeFile("configs.toml", &conf)
@@ -179,9 +180,9 @@ http.ListenAndServe(":8080", r)
 
 ### Parsing the Updates
 
-The updates that Telegram sends to the bot  will contain numerous fields, including some optional ones 
-that may or may not appear depending on the type of update, but the ones we're concerned with for
-this bot are:
+The updates that Telegram sends to the bot contains a lot of fields, including some optional ones 
+that may or may not appear depending on the type of update, but the ones I'm concerned with for
+this bot are only these:
 
 ```go
 type Update struct {
@@ -233,7 +234,7 @@ func (ac *AppContext) CommandHandler(w http.ResponseWriter, r *http.Request) {
 
 **Some key things to note here:**
 
-- The message would be contained in `update.Msg.Text`
+- The message is parsed into `update.Msg.Text`
 - The `chatId` is in `update.Msg.Chat.Id`. This is important because you'll need it to send a 
 response back.
 - The bot currently doesn't use `User` but I've written the code above so that you can get it as well.
@@ -244,7 +245,7 @@ There is a `Commands` object that contains all the `regexp.Regexp` items that ar
 for commands. These are instantiated once during bot startup but I admit this part is a lot more 
 repetitive than needed and I am still looking for ways to clean this up.
 
-So if you have any suggestions, feel free to let me know in the comments below!
+So if you have any suggestions, do let me know in the comments below!
 
 ```go
 package commands
@@ -299,11 +300,10 @@ it to do more there.
 
 ### Sending a Response
 
-You can send either a `GET` or a `POST` request to the appropriate API. In this case, we would use
-the `sendMessage` method. The text in this case, can contain codes like `\n` and Unicode like `안녕`.
+I can send either a `GET` or a `POST` request to the appropriate API. I used the `sendMessage` method via the API.
+The text in this case, can contain codes like `\n` and Unicode like `안녕`.
 
-I use the code below to replace the botId, apiKey, chatId and text for the `GET` request. It is
-pretty straightforward, right?
+To replace the botId, apiKey, chatId and text for the `GET` request, I do the following:
 
 ```go
 func (ac *AppContext) sendText(chatId int64, text string) {
@@ -317,14 +317,15 @@ func (ac *AppContext) sendText(chatId int64, text string) {
 }
 ```
 
+And it's done! The application code is pretty short I'll say.
 
 ### To Be Continued
 
-I hope you now have a rough idea on how to get started in writing the application code for a Telegram Bot.
+I hope this gives you a rough idea if you would like to get started in writing the application code for a Telegram Bot.
 
-In Part 2, I will talk about how to set up `Docker` for the application and how to set up 
+In Part 2, I will talk about how I set up `Docker` for the bot, and also
 the self-signed SSL cert with Nginx as the reverse proxy on a Digital Ocean instance. Finally, 
-I will also set up git webhooks so that I can deploy with just one command! Stay tuned!
+I'll also show how I set up the git webhooks so that I can deploy with just one command!
 
 [1]: https://web.telegram.org
 [2]: https://github.com/aranair/remindbot
