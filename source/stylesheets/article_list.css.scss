@@ -76,6 +76,7 @@ h1.article__article-title {
   font-size: $p-font-size * $heading-multiplication * 1.1;
   font-weight: $heading-weight;
   margin-bottom: 0px;
+  text-align: center;
 }
 
 .article__published-date {
@@ -83,6 +84,6 @@ h1.article__article-title {
   font-size: $p-font-size * 0.9;
   color: rgba(0, 0, 0, 0.4);
   font-weight: 300;
-  padding-left: 3px;
   margin-bottom: 35px;
+  text-align: center;
 }

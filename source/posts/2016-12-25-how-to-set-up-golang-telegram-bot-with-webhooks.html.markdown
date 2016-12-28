@@ -1,5 +1,5 @@
 ---
-title: 'How I Built a Golang Telegram Bot Part 1: Application Code'
+title: 'How I Built a Simple Golang Telegram Bot'
 description: 'In this post, I go through all the steps I took to build a golang telegram bot. 
 It would include code to show how to dockerize the app and what to take note of when you are building 
 a telegram bot to use webhooks with.'
