@@ -10,9 +10,9 @@ disqus_title: How to Build a Golang Telegram Bot with Webhooks
 ---
 
 This is the first part of the `Golang Telegram Bot` series. 
-In this series, I'll show you code samples and guide you through them on how to 
-build a Golang Telegram Bot for my own use. It would listen in and respond only upon 
-certain text cues. Finally I'll also demonstrate how to get a self-signed SSL cert working with Nginx
+In this series, I'll show you, with code samples, how I built a Golang Telegram Bot for my own use. 
+It would listen in and respond in real-time to certain text cues. 
+Finally I'll also demonstrate how to get a self-signed SSL cert working with Nginx
 and deploying the application in a Docker container on a Digital Ocean instance.
 
 Hopefully this will help anyone out there who would like to try their hand at their own bot on Telegram!
