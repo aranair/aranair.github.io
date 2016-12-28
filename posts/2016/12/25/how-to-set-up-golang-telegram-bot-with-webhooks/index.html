@@ -7,17 +7,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>How I Built My Golang Telegram Bot Part 1: Application Code</title>
+    <title>How I Built a Simple Golang Telegram Bot</title>
 
     <meta name="description" content="In this post, I go through all the steps I took to build a golang telegram bot. It would include code to show how to dockerize the app and what to take note of when you are building a telegram bot ..." />
 <meta property="og:site_name" content="aranair.github.io" />
-<meta property="og:title" content="How I Built My Golang Telegram Bot Part 1: Application Code" />
+<meta property="og:title" content="How I Built a Simple Golang Telegram Bot" />
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-a9969bfe.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
     <script src="/javascripts/all-0a091114.js" async="true"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script>
@@ -61,19 +61,75 @@
 
     <div class="wrapper">
       <div class="container">
+        <div class="tags">
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+
           <div class="article row">
     <h1 class="page-header article__article-title">
-      How I Built My Golang Telegram Bot Part 1: Application Code<br>
+      How I Built a Simple Golang Telegram Bot<br>
     </h1>
     <div class="article__published-date">
       Dec 25, 2016
       <span class="article__middle-dot"></span>
-      19  minutes read
+      20  minutes read
     </div>
+    <div class="article__tags-container">
+      <ul class="article__tags">
+        <li class="article__tag">
+          <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/telegram/" class="article__tag-link">telegram</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/bot/" class="article__tag-link">bot</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/webhooks/" class="article__tag-link">webhooks</a>
+        </li>
+      </ul>
+    </div>
+    <hr>
     <p>This is the first part of the <code>Golang Telegram Bot</code> series. 
-In this series, I&rsquo;ll show you code samples and guide you through them on how to 
-build a Golang Telegram Bot for my own use. It would listen in and respond only upon 
-certain text cues. Finally I&rsquo;ll also demonstrate how to get a self-signed SSL cert working with Nginx
+In this series, I&rsquo;ll show you, with code samples, how I built a Golang Telegram Bot for my own use. 
+It would listen in and respond in real-time to certain text cues. 
+Finally I&rsquo;ll also demonstrate how to get a self-signed SSL cert working with Nginx
 and deploying the application in a Docker container on a Digital Ocean instance.</p>
 
 <p>Hopefully this will help anyone out there who would like to try their hand at their own bot on Telegram!
@@ -82,7 +138,7 @@ to just skip to the code immediately.</p>
 
 <h3>Backstory</h3>
 
-<p>I&rsquo;ve been using <a href="https://web.telegram.org">Telegram</a> for a really long time, and I&rsquo;ve been wanting to build a Telegram bot 
+<p>I&rsquo;ve been using <a href="https://web.telegram.org">Telegram</a> for a really long time, and been wanting to build a Telegram bot 
 for a long time since they first announced it. </p>
 
 <p>Initially, I was thrown off a little by the requirement of https for the webhooks, 
@@ -90,54 +146,54 @@ thinking that I might need a domain and a SSL cert to get it working but I quick
 a self-signed SSL certificate would work just as well in this scenario!</p>
 
 <p>So, if you find yourself in the same situation, don&rsquo;t worry about it! It might be slightly more complex 
-to set up a self-signed SSL cert with Nginx, but it&rsquo;s not all that difficult! In this series, 
-I&rsquo;ll explain code examples that I used to set it all up in <code>production</code>!</p>
+to set up a self-signed SSL cert with Nginx, but it&rsquo;s not that difficult! In this series, I&rsquo;ll show you the code
+samples that got my own bot up and running in production!</p>
 
-<h3>Getting an API Key</h3>
+<h3>Creating a Bot and Getting an API Key</h3>
 
-<p>First, you&rsquo;ll need an API key from the <a href="https://telegram.me/botfather"><img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /></a></p>
+<p>First, I sent <code>/newbot</code> to the <a href="https://telegram.me/botfather"><img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /></a>.</p>
 
-<p>Send him a <code>/token</code> command to get a set of tokens (botId and API key). 
-You will need it for requests to execute methods using the telegram API. </p>
+<p>After creating the bot, I got a set of (botId and API key) by sending him a <code>/token</code> command.</p>
+
+<p>The credentials are needed for subsequent requests to execute methods using the Telegram API. </p>
 <pre class="highlight yaml"><code><span class="c1"># {botId}:{apiKey}</span>
 <span class="s">123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11</span>
 </code></pre>
 <p><strong>Take note</strong> of the word <code>bot</code> before the <code>&lt;token&gt;</code>!</p>
 <pre class="highlight yaml"><code><span class="s">https://api.telegram.org/bot&lt;token&gt;/METHOD_NAME</span>
 </code></pre>
-<p>All the methods are listed over at the <a href="https://core.telegram.org/bots/api#available-methods">Telegram Bot docs</a> but for the purpose
-of this simple starter bot, I will really only be using <a href="https://core.telegram.org/bots/api#setwebhook">setWebhook</a> and <a href="https://core.telegram.org/bots/api#sendMessage">sendMessage</a>.</p>
+<p>There are a ton of Api methods listed over at the <a href="https://core.telegram.org/bots/api#available-methods">Telegram Bot docs</a> but for the purpose
+of this simple starter bot, I will only be using <a href="https://core.telegram.org/bots/api#setwebhook">setWebhook</a> and <a href="https://core.telegram.org/bots/api#sendMessage">sendMessage</a>.</p>
 
 <h3>Webhook vs Polling</h3>
 
-<p>Great! You have an API key now. Next, you&rsquo;ll need to choose between two ways to get messages from Telegram.</p>
+<p>Great! I have the API key now. Next, I have to choose between the two ways to get messages from Telegram.</p>
 
 <ul>
 <li>Webhooks via <code>setWebhook</code> or</li>
 <li>Polling via <code>getUpdates</code></li>
 </ul>
 
-<p>I&rsquo;m fairly certain that it is easier to set up with <code>getUpdates</code> but polling isn&rsquo;t always an option.
-For this bot, I went with webhooks as I wanted the bot to immediately respond upon certain text cues.</p>
+<p>I&rsquo;m fairly certain that it is easier to set up with <code>getUpdates</code> but polling isn&rsquo;t always an option and not having
+real-time updates isn&rsquo;t as fun IMHO :P So, for this bot, I went with webhooks as I wanted the bot to respond in real-time.</p>
 
-<p>With webhooks, everytime there is a message (when privacy mode is disabled anyway), the webhook endpoint
-will be sent a message. So the main objective, is to parse each of these messages or updates and
-respond appropriately.</p>
+<p>With webhooks, everytime there is a message (when privacy mode is disabled anyway), the API endpoint
+will be sent a message. So the main objective, is simply, to parse each of these updates and respond appropriately.</p>
 
-<p>To set up the Webhook you&rsquo;ll need to send a curl request to the Telegram Api.</p>
+<p>To set up the Webhook all I had to do is to send a curl request to the Telegram Api.</p>
 <pre class="highlight shell"><code>curl -F <span class="s2">"url=https://your.domain.com"</span> -F <span class="s2">"certificate=@/file/path/ssl/bot.pem"</span> https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
 </code></pre>
-<p>Of course, you&rsquo;ll need to send the self-signed SSL <strong>public</strong> pem file as an <code>InputFile</code> as well so that
-Telegram knows that it&rsquo;s really the correct server it&rsquo;s sending all the messages to. I&rsquo;ll leave that
-explanation to the second part of this series.</p>
+<p>Of course, before that, I need the self-signed SSL <strong>public</strong> pem file; that is sent as an <code>InputFile</code> so that
+Telegram can differentiate the correct server it&rsquo;s supposed to send all the messages to. This part is a bit more relevant
+in the second part of the series where I deploy the bot to Digital Ocean so I&rsquo;ll leave this explanation to the second part.</p>
 
 <h3>Router</h3>
 
-<p>There are many popular router implementations out there like <a href="https://github.com/gin-gonic/gin">gin</a> and <a href="https://github.com/gorilla/context">gorilla</a>.
-For me, I&rsquo;ve chosen to go a bit more minimalistic with <code>github.com/gorilla/context</code> and 
-<code>github.com/julienschmidt/httprouter</code> for the router.</p>
+<p>I had a choice of many popular router implementations out there like <a href="https://github.com/gin-gonic/gin">gin</a> and <a href="https://github.com/gorilla/context">gorilla</a>.
+But for this project, I chose to go a bit ligher with just <code>github.com/gorilla/context</code> and 
+<code>github.com/julienschmidt/httprouter</code> since I don&rsquo;t really need that much functionality.</p>
 
-<p><em>Ok, to be fair, context (for the params) actually isn&rsquo;t really needed at this point, but
+<p><em>Ok, to be fair, even the context (for the params) isn&rsquo;t really needed at this point, but
 since I would need them for get requests in future, I&rsquo;ve set it all up first.</em></p>
 <pre class="highlight go"><code><span class="k">package</span><span class="x"> </span><span class="n">router</span><span class="x">
 
@@ -169,10 +225,10 @@ since I would need them for get requests in future, I&rsquo;ve set it all up fir
 </span></code></pre>
 <h3>Configs</h3>
 
-<p>To parse the config toml file, I used <code>github.com/BurntSushi/toml</code> . It&rsquo;s like <code>yml</code> on steroids lol.</p>
+<p>To parse the config toml file, I used <code>github.com/BurntSushi/toml</code> with <code>toml</code> files. It&rsquo;s like <code>yml</code> on steroids lol.</p>
 
-<p>I will explain the <code>datapath</code> in the second part of this series where I will talk about the dockerization
-and deployments. For now, it suffices to know that it will be used as a data volume for docker.</p>
+<p>The <code>datapath</code> is actually the data volume path for Docker; but I&rsquo;ll talk about that in more details in the second part 
+of this series about deployments.</p>
 
 <p><strong>Sample configs.toml</strong></p>
 <pre class="highlight go"><code><span class="p">[</span><span class="n">bot</span><span class="p">]</span><span class="x">
@@ -202,8 +258,9 @@ To link the <code>AppContext</code> and the <code>http handlers</code> together,
 </span></code></pre>
 <p><strong>Main</strong></p>
 
-<p>Since this bot was mainly built for reminders and for personal use really, I&rsquo;ve chosen to go with
-sqlite for now but I&rsquo;ve actually got it set up with <code>pq</code> before and it is really quick to swap it out.</p>
+<p>Since this bot was mainly built for personal reminders, I&rsquo;ve chosen to go with <code>Sqlite3</code> for now but I&rsquo;ve 
+got it set up with <code>pq</code> before and it is fairly easy to swap it out, since both the libraries uses the <code>database/sql</code> 
+library.</p>
 <pre class="highlight go"><code><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">toml</span><span class="o">.</span><span class="n">DecodeFile</span><span class="p">(</span><span class="s">"configs.toml"</span><span class="p">,</span><span class="x"> </span><span class="o">&amp;</span><span class="n">conf</span><span class="p">)</span><span class="x">
 </span><span class="n">db</span><span class="p">,</span><span class="x"> </span><span class="n">err</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="n">sql</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="s">"sqlite3"</span><span class="p">,</span><span class="x"> </span><span class="n">conf</span><span class="o">.</span><span class="n">DB</span><span class="o">.</span><span class="n">Datapath</span><span class="o">+</span><span class="s">"/reminders.db"</span><span class="p">)</span><span class="x">
 </span><span class="n">checkErr</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="x">
@@ -218,9 +275,9 @@ sqlite for now but I&rsquo;ve actually got it set up with <code>pq</code> before
 </span></code></pre>
 <h3>Parsing the Updates</h3>
 
-<p>The updates that Telegram sends to the bot  will contain numerous fields, including some optional ones 
-that may or may not appear depending on the type of update, but the ones we&rsquo;re concerned with for
-this bot are:</p>
+<p>The updates that Telegram sends to the bot contains a lot of fields, including some optional ones 
+that may or may not appear depending on the type of update, but the ones I&rsquo;m concerned with for
+this bot are only these:</p>
 <pre class="highlight go"><code><span class="k">type</span><span class="x"> </span><span class="n">Update</span><span class="x"> </span><span class="k">struct</span><span class="x"> </span><span class="p">{</span><span class="x">
     </span><span class="n">Id</span><span class="x">  </span><span class="kt">int64</span><span class="x">   </span><span class="s">`json:"update_id"`</span><span class="x">
     </span><span class="n">Msg</span><span class="x"> </span><span class="n">Message</span><span class="x"> </span><span class="s">`json:"message"`</span><span class="x">
@@ -267,7 +324,7 @@ into a more usable object.</p>
 <p><strong>Some key things to note here:</strong></p>
 
 <ul>
-<li>The message would be contained in <code>update.Msg.Text</code></li>
+<li>The message is parsed into <code>update.Msg.Text</code></li>
 <li>The <code>chatId</code> is in <code>update.Msg.Chat.Id</code>. This is important because you&rsquo;ll need it to send a 
 response back.</li>
 <li>The bot currently doesn&rsquo;t use <code>User</code> but I&rsquo;ve written the code above so that you can get it as well.</li>
@@ -279,7 +336,7 @@ response back.</li>
 for commands. These are instantiated once during bot startup but I admit this part is a lot more 
 repetitive than needed and I am still looking for ways to clean this up.</p>
 
-<p>So if you have any suggestions, feel free to let me know in the comments below!</p>
+<p>So if you have any suggestions, do let me know in the comments below!</p>
 <pre class="highlight go"><code><span class="k">package</span><span class="x"> </span><span class="n">commands</span><span class="x">
 
 </span><span class="k">import</span><span class="x"> </span><span class="s">"regexp"</span><span class="x">
@@ -333,11 +390,10 @@ it to do more there.</li>
 
 <h3>Sending a Response</h3>
 
-<p>You can send either a <code>GET</code> or a <code>POST</code> request to the appropriate API. In this case, we would use
-the <code>sendMessage</code> method. The text in this case, can contain codes like <code>\n</code> and Unicode like <code>안녕</code>.</p>
+<p>I can send either a <code>GET</code> or a <code>POST</code> request to the appropriate API. I used the <code>sendMessage</code> method via the API.
+The text in this case, can contain codes like <code>\n</code> and Unicode like <code>안녕</code>.</p>
 
-<p>I use the code below to replace the botId, apiKey, chatId and text for the <code>GET</code> request. It is
-pretty straightforward, right?</p>
+<p>To replace the botId, apiKey, chatId and text for the <code>GET</code> request, I do the following:</p>
 <pre class="highlight go"><code><span class="k">func</span><span class="x"> </span><span class="p">(</span><span class="n">ac</span><span class="x"> </span><span class="o">*</span><span class="n">AppContext</span><span class="p">)</span><span class="x"> </span><span class="n">sendText</span><span class="p">(</span><span class="n">chatId</span><span class="x"> </span><span class="kt">int64</span><span class="p">,</span><span class="x"> </span><span class="n">text</span><span class="x"> </span><span class="kt">string</span><span class="p">)</span><span class="x"> </span><span class="p">{</span><span class="x">
     </span><span class="n">link</span><span class="x"> </span><span class="o">:=</span><span class="x"> </span><span class="s">"https://api.telegram.org/bot{botId}:{apiKey}/sendMessage?chat_id={chatId}&amp;text={text}"</span><span class="x">
     </span><span class="n">link</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">s</span><span class="o">.</span><span class="n">Replace</span><span class="p">(</span><span class="n">link</span><span class="p">,</span><span class="x"> </span><span class="s">"{botId}"</span><span class="p">,</span><span class="x"> </span><span class="n">ac</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">BOT</span><span class="o">.</span><span class="n">BotId</span><span class="p">,</span><span class="x"> </span><span class="o">-</span><span class="m">1</span><span class="p">)</span><span class="x">
@@ -348,13 +404,15 @@ pretty straightforward, right?</p>
     </span><span class="n">_</span><span class="p">,</span><span class="x"> </span><span class="n">_</span><span class="x"> </span><span class="o">=</span><span class="x"> </span><span class="n">http</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">link</span><span class="p">)</span><span class="x">
 </span><span class="p">}</span><span class="x">
 </span></code></pre>
+<p>And it&rsquo;s done! The application code is pretty short I&rsquo;ll say.</p>
+
 <h3>To Be Continued</h3>
 
-<p>I hope you now have a rough idea on how to get started in writing the application code for a Telegram Bot.</p>
+<p>I hope this gives you a rough idea if you would like to get started in writing the application code for a Telegram Bot.</p>
 
-<p>In Part 2, I will talk about how to set up <code>Docker</code> for the application and how to set up 
+<p>In Part 2, I will talk about how I set up <code>Docker</code> for the bot, and also
 the self-signed SSL cert with Nginx as the reverse proxy on a Digital Ocean instance. Finally, 
-I will also set up git webhooks so that I can deploy with just one command! Stay tuned!</p>
+I&rsquo;ll also show how I set up the git webhooks so that I can deploy with just one command!</p>
 
     <div id='disqus_thread'></div>
 <script type='text/javascript'>
