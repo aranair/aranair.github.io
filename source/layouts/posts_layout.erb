@@ -8,6 +8,15 @@
       <span class="article__middle-dot"></span>
       <%= reading_time current_article.body %> read
     </div>
+    <div class="article__tags-container">
+      <ul class="article__tags">
+      <% current_article.tags.each do |tag| %>
+        <li class="article__tag">
+          <%= link_to tag, tag_path(tag), class: 'article__tag-link' %>
+        </li>
+      <% end %>
+      </ul>
+    </div>
     <hr>
     <%= yield %>
     <%= disqus %>

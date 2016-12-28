@@ -85,6 +85,41 @@ h1.article__article-title {
   font-size: $p-font-size * 0.9;
   color: rgba(0, 0, 0, 0.4);
   font-weight: 300;
-  margin-bottom: 35px;
   text-align: center;
+  margin-bottom: 5px;
 }
+
+.article__tags {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+  font-size: $p-font-size * 0.85;
+  font-family: $article-title-date-font;
+  margin-bottom: 35px;
+}
+
+.article__tag {
+  display: inline-block;
+}
+
+.article__tag:not(:last-child)::after {
+  content: ",";
+  display: inline-block;
+  margin-left: -1px;
+  margin-right: 5px;
+}
+
+.article__tag-link {
+  border-bottom: 0px;
+  text-decoration: none;
+  color: $red;
+}
+
+.article__tag-link:active,
+.article__tag-link:focus,
+.article__tag-link:hover, {
+  color: $maroon;
+  border-bottom: 0px;
+}
+

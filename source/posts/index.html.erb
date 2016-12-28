@@ -11,8 +11,6 @@ description: 'The list of articles that I have written'
   paginate: paginate
 }) %>
 
-<%= partial "tags_partial" %>
-
 <% page_articles.each_with_index do |article, i| %>
   <div class="article-list__article-summary">
     <h2 class="article-summary__article-title">
