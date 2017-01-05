@@ -34,10 +34,11 @@ samples that got my own bot up and running in production!
 
 ### Creating a Bot and Getting an API Key
 
-First, I sent `/newbot` to the [![botfather.png](https://s24.postimg.org/d0amvsmut/botfather.png)](https://telegram.me/botfather).
+First, I sent `/newbot` to this guy.
 
-After creating the bot, I got a set of (botId and API key) by sending him a `/token` command.
+[![botfather.png](https://s24.postimg.org/d0amvsmut/botfather.png)](https://telegram.me/botfather)
 
+After creating the bot, I got a set of (botId and API key) by sending him a `/token` command.  
 The credentials are needed for subsequent requests to execute methods using the Telegram API. 
 
 ```yaml
