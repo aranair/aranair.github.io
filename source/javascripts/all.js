@@ -1,4 +1,5 @@
 //= require jquery
+//= require bootstrap-sprockets
 //= require headroom.min
 //= require jQuery.headroom
 //= require typed
