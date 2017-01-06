@@ -46,6 +46,10 @@ code { font-size: 80%; }
   text-align: justify;
 }
 
+.article-summary__article-content h3 {
+  font-size: $p-font-size * 1.1;
+}
+
 .article-summary__readmore {
   line-height: $p-font-size * 3;
 }
