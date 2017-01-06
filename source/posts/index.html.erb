@@ -21,7 +21,9 @@ description: 'The list of articles that I have written'
         <%= reading_time article.body %> read
       </span>
     </h2>
-    <%= article.summary(250) %>
+    <div class="article-summary__article-content">
+      <%= article.summary(350) %>
+    </div>
     <%= link_to "Read more &#8594;", article, class: "article-summary__readmore" %>
   </div>
 <% end %>

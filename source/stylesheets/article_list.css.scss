@@ -42,6 +42,10 @@ code { font-size: 80%; }
   }
 }
 
+.article-summary__article-content p {
+  text-align: justify;
+}
+
 .article-summary__readmore {
   line-height: $p-font-size * 3;
 }
