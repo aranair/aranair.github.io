@@ -5,10 +5,269 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2016-12-25T00:00:00+08:00</updated>
+  <updated>2017-01-21T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>How I Deployed My Golang Telegram Bot</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"/>
+    <id>http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/</id>
+    <published>2017-01-21T00:00:00+08:00</published>
+    <updated>2017-01-21T22:17:58+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Continuing where I left off in the &lt;a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"&gt;first part&lt;/a&gt; of my &lt;code&gt;Golang Telegram Bot&lt;/code&gt;, in this post I go through all the
+steps I took to get to a one command deployment of my Telegram bot into a Digital Ocean Ubuntu 16.04
+instance. A number of components were involved: dockerizing the app, setting up a self-signed SSL cert,
+get the Nginx to work as a reverse proxy with that, submitting the SSL to Telegram, and finally setting up
+git post-update webhooks for deployment.&lt;/p&gt;
+
+&lt;h3&gt;Dockerizing the App&lt;/h3&gt;
+
+&lt;p&gt;To prepare the bot for deployment, a natural choice was to dockerize it. I&amp;rsquo;ve found it simpler, by far, to use docker 
+to get the environment needed for my apps to run instead of manually fiddling with the server in most cases. It
+also gives me the benefit of being able to run multiple containers on a single instance if the load
+isn&amp;rsquo;t too high on them. Let&amp;rsquo;s dive in to the code.&lt;/p&gt;
+
+&lt;h5&gt;Dockerfile&lt;/h5&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="s"&gt;FROM golang:1.6&lt;/span&gt;
+
+&lt;span class="s"&gt;ADD configs.toml /go/bin/&lt;/span&gt;
+
+&lt;span class="s"&gt;ADD . /go/src/github.com/aranair/remindbot&lt;/span&gt;
+&lt;span class="s"&gt;WORKDIR /go/src/github.com/aranair/remindbot&lt;/span&gt;
+
+&lt;span class="s"&gt;RUN go get ./...&lt;/span&gt;
+&lt;span class="s"&gt;RUN go install ./...&lt;/span&gt;
+
+&lt;span class="s"&gt;WORKDIR /go/bin/&lt;/span&gt;
+&lt;span class="s"&gt;ENTRYPOINT remindbot&lt;/span&gt;
+
+&lt;span class="s"&gt;EXPOSE 8080&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I start from the base &lt;a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile"&gt;Golang 1.6 image&lt;/a&gt;. &lt;/p&gt;
+
+&lt;p&gt;From there, the next line adds a &lt;code&gt;configs.toml&lt;/code&gt; into the bin folder.
+This file contains credentials and configs that my app needs to run. This should be added into the server
+manually, so that it doesn&amp;rsquo;t get checked into the github repository for security reasons. &lt;/p&gt;
+
+&lt;p&gt;I took a look at the &lt;a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile"&gt;official Golang Dockerfile&lt;/a&gt; and I saw that the default &lt;code&gt;gopath&lt;/code&gt; is &lt;code&gt;/go&lt;/code&gt;.
+By adding my config item into &lt;code&gt;/go/bin&lt;/code&gt; folder, I can easily give the app direct access to the file,
+without having to provide it an additional arbiturary path to get that file.&lt;/p&gt;
+
+&lt;p&gt;The next line adds the files into the image during the build process.
+Previously, I would get the files in a different way. I would use this:&lt;/p&gt;
+&lt;pre class="highlight docker"&gt;&lt;code&gt;go get /go/src/github.com/aranair/remindbot
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;But it&amp;rsquo;s actually a little easier to do it in the above way:&lt;/p&gt;
+&lt;pre class="highlight docker"&gt;&lt;code&gt;&lt;span class="k"&gt;ADD&lt;/span&gt;&lt;span class="s"&gt; . /go/src/github.com/aranair/remindbot&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This would take all the files at &lt;code&gt;.&lt;/code&gt;, the location where &lt;code&gt;docker build&lt;/code&gt; 
+would run from, and copy them  into &lt;code&gt;/go/src/github.com/aranair/remindbot&lt;/code&gt; during the build process, 
+essentially achieving the same result as &lt;code&gt;go get ...&lt;/code&gt;. &lt;/p&gt;
+
+&lt;p&gt;What&amp;rsquo;s different here is that I don&amp;rsquo;t -have- to remember to push to github before the deployment. 
+I also wouldn&amp;rsquo;t need to manually &lt;code&gt;git pull&lt;/code&gt;. The entire deployment process can be contained 
+inside the post-update webhook. I&amp;rsquo;ll discuss that in more detail further down.&lt;/p&gt;
+
+&lt;h3&gt;Docker Compose&lt;/h3&gt;
+
+&lt;p&gt;Personally, I hate fiddling with manual running of the containers so I just use docker-compose, 
+especially if there is more than one component to worry about. For this bot, there is really only
+the mounted volume so that my sqlite3 files won&amp;rsquo;t get flushed on a deployment but I could 
+just as easily set-up a PostgreSQL database up with a few simple additions to this file.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;2'&lt;/span&gt;
+&lt;span class="na"&gt;services&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="na"&gt;gobot&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;build&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;.&lt;/span&gt;
+    &lt;span class="na"&gt;ports&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080:8080"&lt;/span&gt;
+    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The section under ports exposes and links the container&amp;rsquo;s port 8080 to the server&amp;rsquo;s port 8080 (&lt;code&gt;HOST::CONTAINER&lt;/code&gt; format). 
+More about that can be found in the &lt;a href="https://docs.docker.com/compose/compose-file/#/ports"&gt;compose-file documentations&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;For the volumes, the code above simply tells the container to link the host&amp;rsquo;s &lt;code&gt;/var/data/&lt;/code&gt; to the container&amp;rsquo;s &lt;code&gt;/var/data/&lt;/code&gt;
+essentially creating a mounted volume. Again, the format is &lt;code&gt;HOST::CONTAINER&lt;/code&gt;. I store the files there for my 
+&lt;code&gt;Sqlite&lt;/code&gt; database and this mounted volume preserves the data on deployments.&lt;/p&gt;
+
+&lt;h3&gt;How to Set-up Self-Signed SSL Certificate&lt;/h3&gt;
+
+&lt;p&gt;One of the main hassles and requirements of the Telegram API is that they require https, and that requires
+an SSL certificate. It encrypts communication between Telegram and my server, and this helps Telegram to
+verify that my server is the correct one, and not a bogus one when a potential man-in-the-middle hijacks the 
+traffic.&lt;/p&gt;
+
+&lt;p&gt;I could go get an SSL cert from a provider, but in this case, what we&amp;rsquo;re really concerned is the
+identity of my server to Telegram and not for users so a self-signed certificate would work just as well.&lt;/p&gt;
+
+&lt;p&gt;I SSH&amp;rsquo;d into the server to create the certs.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/self-signed.key -out /etc/ssl/certs/self-signed.crt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-days&lt;/code&gt; defines the validity span. I did adjust the validity-days to something much bigger but generally might be better with a year or two.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rsa:2048&lt;/code&gt; means that will create an RSA key that is 2048 bits long.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-keyout&lt;/code&gt; refers to the private key for the cert&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-out&lt;/code&gt; refers the cert itself&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The process leads me through the steps above for some further information. The most important bit
+is the &lt;strong&gt;Common Name&lt;/strong&gt;. In my case, I didn&amp;rsquo;t have a domain, so I simply put in the &lt;code&gt;server_IP_address&lt;/code&gt; 
+for my Digital Ocean instance.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;Country Name (2 letter code) [AU]:SG
+State or Province Name (full name) [Some-State]:Singapore
+Locality Name (eg, city) []:Singapore
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (e.g. server FQDN or YOUR name) []:server_IP_address
+Email Address []:boa.homan@gmail.com
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As part of Nginx best practices, I also created a strong Diffie-Hellman group for added security.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Configuring Nginx to Use the SSL Cert&lt;/h3&gt;
+
+&lt;p&gt;I first made a new Nginx configuration snippet at &lt;code&gt;/etc/nginx/snippets&lt;/code&gt; that simply points
+to the SSL certs I just created above.&lt;/p&gt;
+&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="n"&gt;ssl_certificate&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;certs&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;crt&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_certificate_key&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;private&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;key&lt;/span&gt;;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Another snippet to set-up some SSL settings based on recommendations from &lt;a href="https://cipherli.st/"&gt;https://cipherli.st/&lt;/a&gt;.&lt;/p&gt;
+&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="c"&gt;# from https://cipherli.st/
+# and https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
+&lt;/span&gt;
+&lt;span class="n"&gt;ssl_protocols&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt;.&lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt;.&lt;span class="m"&gt;2&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_prefer_server_ciphers&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_ciphers&lt;/span&gt; &lt;span class="s2"&gt;"EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_ecdh_curve&lt;/span&gt; &lt;span class="n"&gt;secp384r1&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_session_cache&lt;/span&gt; &lt;span class="n"&gt;shared&lt;/span&gt;:&lt;span class="n"&gt;SSL&lt;/span&gt;:&lt;span class="m"&gt;10&lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_session_tickets&lt;/span&gt; &lt;span class="n"&gt;off&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_stapling&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
+&lt;span class="n"&gt;ssl_stapling_verify&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
+&lt;span class="n"&gt;resolver&lt;/span&gt; &lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt; &lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;4&lt;/span&gt;.&lt;span class="m"&gt;4&lt;/span&gt; &lt;span class="n"&gt;valid&lt;/span&gt;=&lt;span class="m"&gt;300&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;;
+&lt;span class="n"&gt;resolver_timeout&lt;/span&gt; &lt;span class="m"&gt;5&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;;
+&lt;span class="c"&gt;# Disable preloading HSTS for now.  You can use the commented out header line that includes
+# the "preload" directive if you understand the implications.
+#add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+&lt;/span&gt;&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;Strict&lt;/span&gt;-&lt;span class="n"&gt;Transport&lt;/span&gt;-&lt;span class="n"&gt;Security&lt;/span&gt; &lt;span class="s2"&gt;"max-age=63072000; includeSubdomains"&lt;/span&gt;;
+&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;-&lt;span class="n"&gt;Frame&lt;/span&gt;-&lt;span class="n"&gt;Options&lt;/span&gt; &lt;span class="n"&gt;DENY&lt;/span&gt;;
+&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;-&lt;span class="n"&gt;Content&lt;/span&gt;-&lt;span class="n"&gt;Type&lt;/span&gt;-&lt;span class="n"&gt;Options&lt;/span&gt; &lt;span class="n"&gt;nosniff&lt;/span&gt;;
+
+&lt;span class="n"&gt;ssl_dhparam&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;certs&lt;/span&gt;/&lt;span class="n"&gt;dhparam&lt;/span&gt;.&lt;span class="n"&gt;pem&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Finally, we will need to edit the Nginx configuration files to use SSL.&lt;/p&gt;
+
+&lt;p&gt;This is what the file intially looks like: &lt;/p&gt;
+&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="c"&gt;# /etc/nginx/sites-available/default
+&lt;/span&gt;
+&lt;span class="n"&gt;server&lt;/span&gt; {
+    &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+    &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+
+    &lt;span class="c"&gt;# SSL configuration
+&lt;/span&gt;
+    &lt;span class="c"&gt;# listen 443 ssl default_server;
+&lt;/span&gt;    &lt;span class="c"&gt;# listen [::]:443 ssl default_server;
+&lt;/span&gt;
+    ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I changed it to look like this (remember to replace IP!)&lt;/p&gt;
+&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="n"&gt;server&lt;/span&gt; {
+  &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+  &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+  &lt;span class="n"&gt;server_name&lt;/span&gt; &lt;span class="n"&gt;YOUR_SERVER_IP_ADDRESS&lt;/span&gt;;
+  &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;301&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;://$&lt;span class="n"&gt;server_name&lt;/span&gt;$&lt;span class="n"&gt;request_uri&lt;/span&gt;;
+}
+
+&lt;span class="n"&gt;server&lt;/span&gt; {
+&lt;span class="c"&gt;# SSL configuration
+&lt;/span&gt;
+  &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;443&lt;/span&gt; &lt;span class="n"&gt;ssl&lt;/span&gt; &lt;span class="n"&gt;http2&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+  &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;443&lt;/span&gt; &lt;span class="n"&gt;ssl&lt;/span&gt; &lt;span class="n"&gt;http2&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
+
+  &lt;span class="n"&gt;include&lt;/span&gt; &lt;span class="n"&gt;snippets&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;conf&lt;/span&gt;;
+  &lt;span class="n"&gt;include&lt;/span&gt; &lt;span class="n"&gt;snippets&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;-&lt;span class="n"&gt;params&lt;/span&gt;.&lt;span class="n"&gt;conf&lt;/span&gt;;
+
+  &lt;span class="n"&gt;location&lt;/span&gt; / {
+    &lt;span class="n"&gt;proxy_pass&lt;/span&gt; &lt;span class="n"&gt;http&lt;/span&gt;://&lt;span class="m"&gt;127&lt;/span&gt;.&lt;span class="m"&gt;0&lt;/span&gt;.&lt;span class="m"&gt;0&lt;/span&gt;.&lt;span class="m"&gt;1&lt;/span&gt;:&lt;span class="m"&gt;8080&lt;/span&gt;;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;What I did was to basically ask Nginx to automatically redirect HTTP requests to HTTPS. And ask it to
+server root from the port 8080 that the docker container is listening to.&lt;/p&gt;
+
+&lt;h3&gt;UFW Firewall&lt;/h3&gt;
+
+&lt;p&gt;For security reasons, I also enabled &lt;a href="https://help.ubuntu.com/community/UFW"&gt;ufw firewall&lt;/a&gt; by doing the following: &lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo ufw &lt;span class="nb"&gt;enable
+&lt;/span&gt;sudo ufw allow &lt;span class="s1"&gt;'OpenSSH'&lt;/span&gt;
+sudo ufw allow &lt;span class="s1"&gt;'Nginx Full'&lt;/span&gt;
+sudo ufw delete allow &lt;span class="s1"&gt;'Nginx HTTP'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It should look something like this in &lt;code&gt;sudo ufw status&lt;/code&gt;&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;To                         Action      From
+--                         ------      ----
+Nginx Full                 ALLOW       Anywhere
+OpenSSH                    ALLOW       Anywhere
+Nginx Full &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;            ALLOW       Anywhere &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;
+OpenSSH &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;               ALLOW       Anywhere &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And its done; to start Nginx, all that&amp;rsquo;s left is to &lt;code&gt;sudo nginx -t&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3&gt;Sending Telegram the SSL Cert&lt;/h3&gt;
+
+&lt;p&gt;Telegram will need the other side of the cert. Consulting their documentation, it seems that they
+need the PEM file. To get that, I had to convert the current CRT file into the PEM format.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;openssl x509 -in /etc/ssl/certs/self-signed.crt -outform pem -out /etc/ssl/certs/bot.pem
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To get the cert to Telegram&amp;rsquo;s hands, I sent it via their API using this: (Replace bot keys!)&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -F &lt;span class="s2"&gt;"url=https://your.domain.or.ip.com"&lt;/span&gt; -F &lt;span class="s2"&gt;"certificate=@/etc/ssl/certs/bot.pem"&lt;/span&gt; https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Set-up Git Hooks&lt;/h3&gt;
+
+&lt;p&gt;Great! Now all that&amp;rsquo;s left is the deployment process. The general outcome that I wanted is that
+it&amp;rsquo;ll be a one-command process that updates the code in the server, rebuilds and restarts the docker
+container with the updated app.&lt;/p&gt;
+
+&lt;p&gt;At my server, I created the necessary files for the server git repository&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; /var
+mkdir repo &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd &lt;/span&gt;repo
+mkdir bot.git &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd &lt;/span&gt;bot.git
+git init --bare
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4&gt;The Hooks&lt;/h4&gt;
+
+&lt;p&gt;Looking into the &lt;code&gt;hooks&lt;/code&gt; folder in bot.git, there were many samples for the different hooks provided.
+For the purpose of this bot, I created a &lt;code&gt;post-receive&lt;/code&gt; hook with the following content.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/sh&lt;/span&gt;
+git --work-tree&lt;span class="o"&gt;=&lt;/span&gt;/var/app/remindbot --git-dir&lt;span class="o"&gt;=&lt;/span&gt;/var/repo/bot.git checkout -f
+&lt;span class="nb"&gt;cd&lt;/span&gt; /var/app/remindbot
+docker-compose build
+docker-compose down
+docker-compose up -d
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The sets the &lt;code&gt;/var/app&lt;/code&gt; folder to be the working directory for my app. And the script goes into
+my working directory and rebuilds the container and restarts it. All of this will happen on deployment!&lt;/p&gt;
+
+&lt;p&gt;Of course, I also had to make the post-receive file executable.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;chmod +x post-receive
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Deploy All The Things!&lt;/h3&gt;
+
+&lt;p&gt;From my development machine, I added a remote repo to my local git repo.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;git remote add prod ssh://user@my.domain.or.ip.com/var/repo/bot.git
+git push prod master
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And the Telegram bot finally goes live, responding to live chats in Telegram. All of this code can be found 
+at the &lt;a href="https://github.com/aranair/remindbot"&gt;project github repository&lt;/a&gt;. The reminder bot&amp;rsquo;s name is Hazel. She responds instantly to 
+chats in Telegram and helps me to manage my ever-growing list of responsibilities everyday now :P&lt;/p&gt;
+
+&lt;p&gt;Feel free to star it or fork it or leave comments below!&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>How I Built a Simple Telegram Bot in Go</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"/>
@@ -933,66 +1192,6 @@ chmod +x aws-es-proxy-0.2-linux-amd64
 and the cost of equivalent instances in AWS vs AWS ElasticSearch Service and the lack of support for
 plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would
 probably be much more flexible for us in future than a hosted service with a bunch of restrictions.&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Nil, Try &amp; The Lonely Operator</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/"/>
-    <id>http://blog.url.com/posts/2016/07/28/nil-try-and-lonely-operator/</id>
-    <published>2016-07-28T00:00:00+08:00</published>
-    <updated>2016-12-14T21:13:53+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Recently, I left a comment on one of my colleague&amp;rsquo;s PR and we had a discussion with him about
-the use of &lt;code&gt;try&lt;/code&gt; vs the lonely operator &lt;code&gt;&amp;amp;.&lt;/code&gt; and it led to a number of conclusions personally.&lt;/p&gt;
-
-&lt;p&gt;I used to use lots of &lt;code&gt;.try&lt;/code&gt;. I&amp;rsquo;ve also come across codebases littered with it, be it in the
-presentation layer or in the models. From personal experience, I&amp;rsquo;ll say it&amp;rsquo;s pretty easy to end up with
-&lt;code&gt;.try&lt;/code&gt; littered all around.&lt;/p&gt;
-
-&lt;p&gt;I was curious about when it shouldn&amp;rsquo;t be used, and if there were better alternatives.&lt;/p&gt;
-
-&lt;h3&gt;The Obvious Scenario&lt;/h3&gt;
-
-&lt;p&gt;Before the lonely operator was introduced, I used &lt;code&gt;try&lt;/code&gt; in a 2 distinct scenarios.&lt;/p&gt;
-
-&lt;p&gt;The first obvious usecase: when I am not sure if the object that I are calling the method on
-could be a &lt;code&gt;nil&lt;/code&gt; object or not. Obviously, calling any method on a &lt;code&gt;nil&lt;/code&gt; object
-rightfully throws an error during runtime. Of course, I could use something like this to avoid the
-error.&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt; &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;And &lt;code&gt;user.try(:name)&lt;/code&gt; yields the same result.&lt;/p&gt;
-
-&lt;h3&gt;The Not So Obvious Scenario&lt;/h3&gt;
-
-&lt;p&gt;Surprisingly, even when I don&amp;rsquo;t know what the object is and whether it even has that method defined or not,
-I still found myself using &lt;code&gt;try&lt;/code&gt;. It still returns &lt;code&gt;nil&lt;/code&gt;. It&amp;rsquo;s like this deceivingly good and
-lazy way to sidestep &lt;code&gt;NoMethodError&lt;/code&gt;. But I find that this laziness, potentially leads to surprises
-(which obviously isn&amp;rsquo;t good).&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Either a guest user without a name, or a registered user with a name&lt;/span&gt;
-&lt;span class="n"&gt;some_user&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;try&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ss"&gt;:name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;The Lonely Operator&lt;/h3&gt;
-
-&lt;p&gt;&lt;code&gt;user&amp;amp;.name&lt;/code&gt; is equivalent to &lt;code&gt;user &amp;amp;&amp;amp; user.name&lt;/code&gt; and only this. It still throws a &lt;code&gt;NoMethodError&lt;/code&gt;
-when the method doesn&amp;rsquo;t exist on the object. And that&amp;rsquo;s good for various reasons.&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="p"&gt;[]&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;invalid_method&lt;/span&gt; &lt;span class="c1"&gt;# throws NoMethodError&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;In the event where I have no idea what the object is, it is a &lt;em&gt;clear&lt;/em&gt; sign that I should spend
-the time to refactor the code so that the object class is deterministic and
-not rely on a &lt;code&gt;.try&lt;/code&gt; to squirm out of the situation.&lt;/p&gt;
-
-&lt;p&gt;Another nice side effect is that, the lonely operator really doesn&amp;rsquo;t look great when I chain it.
-Being huge on aesthetics and coding styles, I just end up chaining less.&lt;/p&gt;
-&lt;pre class="highlight ruby"&gt;&lt;code&gt;&lt;span class="n"&gt;user&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;name&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nf"&gt;truncate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="c1"&gt;# this just looks clunky imo&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;All those &lt;code&gt;.try(..).try(..)&lt;/code&gt;? I always knew I should be getting rid of those too, but it was just
-so safe. &lt;a href="https://en.wikipedia.org/wiki/Law_of_Demeter"&gt;Law of Demeter&lt;/a&gt; literally screams at me
-every time.&lt;/p&gt;
-
-&lt;p&gt;I hope this post makes you think twice the next time &lt;code&gt;.try&lt;/code&gt; chains comes to mind:P&lt;/p&gt;
 </content>
   </entry>
 </feed>

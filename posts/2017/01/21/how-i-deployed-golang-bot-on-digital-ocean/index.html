@@ -1,0 +1,427 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>How I Deployed My Golang Telegram Bot</title>
+
+    <meta name="description" content="In this post, I go through the steps I took to dockerize and deploy my golang Telegram bot. I walk through the entire process with code samples, from the self-served certificate / api setup using o..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="How I Deployed My Golang Telegram Bot" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2017 posts_2017_01 posts_2017_01_21 posts_2017_01_21_how-i-deployed-golang-bot-on-digital-ocean posts_2017_01_21_how-i-deployed-golang-bot-on-digital-ocean_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="container">
+        <div class="tags">
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+
+          <div class="article row">
+    <h1 class="page-header article__article-title">
+      How I Deployed My Golang Telegram Bot<br>
+    </h1>
+    <div class="article__published-date">
+      Jan 21, 2017
+      <span class="article__middle-dot"></span>
+      13  minutes read
+    </div>
+    <div class="article__tags-container">
+      <ul class="article__tags">
+        <li class="article__tag">
+          <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/telegram/" class="article__tag-link">telegram</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/bot/" class="article__tag-link">bot</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/webhooks/" class="article__tag-link">webhooks</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/ssl/" class="article__tag-link">ssl</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/nginx/" class="article__tag-link">nginx</a>
+        </li>
+        <li class="article__tag">
+          <a href="/posts/tags/digital-ocean/" class="article__tag-link">digital-ocean</a>
+        </li>
+      </ul>
+    </div>
+    <hr>
+
+    <div class="article__content">
+      <p>Continuing where I left off in the <a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/">first part</a> of my <code>Golang Telegram Bot</code>, in this post I go through all the
+steps I took to get to a one command deployment of my Telegram bot into a Digital Ocean Ubuntu 16.04
+instance. A number of components were involved: dockerizing the app, setting up a self-signed SSL cert,
+get the Nginx to work as a reverse proxy with that, submitting the SSL to Telegram, and finally setting up
+git post-update webhooks for deployment.</p>
+
+<h3>Dockerizing the App</h3>
+
+<p>To prepare the bot for deployment, a natural choice was to dockerize it. I&rsquo;ve found it simpler, by far, to use docker 
+to get the environment needed for my apps to run instead of manually fiddling with the server in most cases. It
+also gives me the benefit of being able to run multiple containers on a single instance if the load
+isn&rsquo;t too high on them. Let&rsquo;s dive in to the code.</p>
+
+<h5>Dockerfile</h5>
+<pre class="highlight yaml"><code><span class="s">FROM golang:1.6</span>
+
+<span class="s">ADD configs.toml /go/bin/</span>
+
+<span class="s">ADD . /go/src/github.com/aranair/remindbot</span>
+<span class="s">WORKDIR /go/src/github.com/aranair/remindbot</span>
+
+<span class="s">RUN go get ./...</span>
+<span class="s">RUN go install ./...</span>
+
+<span class="s">WORKDIR /go/bin/</span>
+<span class="s">ENTRYPOINT remindbot</span>
+
+<span class="s">EXPOSE 8080</span>
+</code></pre>
+<p>I start from the base <a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile">Golang 1.6 image</a>. </p>
+
+<p>From there, the next line adds a <code>configs.toml</code> into the bin folder.
+This file contains credentials and configs that my app needs to run. This should be added into the server
+manually, so that it doesn&rsquo;t get checked into the github repository for security reasons. </p>
+
+<p>I took a look at the <a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile">official Golang Dockerfile</a> and I saw that the default <code>gopath</code> is <code>/go</code>.
+By adding my config item into <code>/go/bin</code> folder, I can easily give the app direct access to the file,
+without having to provide it an additional arbiturary path to get that file.</p>
+
+<p>The next line adds the files into the image during the build process.
+Previously, I would get the files in a different way. I would use this:</p>
+<pre class="highlight docker"><code>go get /go/src/github.com/aranair/remindbot
+</code></pre>
+<p>But it&rsquo;s actually a little easier to do it in the above way:</p>
+<pre class="highlight docker"><code><span class="k">ADD</span><span class="s"> . /go/src/github.com/aranair/remindbot</span>
+</code></pre>
+<p>This would take all the files at <code>.</code>, the location where <code>docker build</code> 
+would run from, and copy them  into <code>/go/src/github.com/aranair/remindbot</code> during the build process, 
+essentially achieving the same result as <code>go get ...</code>. </p>
+
+<p>What&rsquo;s different here is that I don&rsquo;t -have- to remember to push to github before the deployment. 
+I also wouldn&rsquo;t need to manually <code>git pull</code>. The entire deployment process can be contained 
+inside the post-update webhook. I&rsquo;ll discuss that in more detail further down.</p>
+
+<h3>Docker Compose</h3>
+
+<p>Personally, I hate fiddling with manual running of the containers so I just use docker-compose, 
+especially if there is more than one component to worry about. For this bot, there is really only
+the mounted volume so that my sqlite3 files won&rsquo;t get flushed on a deployment but I could 
+just as easily set-up a PostgreSQL database up with a few simple additions to this file.</p>
+<pre class="highlight yaml"><code><span class="na">version</span><span class="pi">:</span> <span class="s1">'</span><span class="s">2'</span>
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">gobot</span><span class="pi">:</span>
+    <span class="na">build</span><span class="pi">:</span> <span class="s">.</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s2">"</span><span class="s">8080:8080"</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">/var/data:/var/data</span>
+</code></pre>
+<p>The section under ports exposes and links the container&rsquo;s port 8080 to the server&rsquo;s port 8080 (<code>HOST::CONTAINER</code> format). 
+More about that can be found in the <a href="https://docs.docker.com/compose/compose-file/#/ports">compose-file documentations</a>.</p>
+
+<p>For the volumes, the code above simply tells the container to link the host&rsquo;s <code>/var/data/</code> to the container&rsquo;s <code>/var/data/</code>
+essentially creating a mounted volume. Again, the format is <code>HOST::CONTAINER</code>. I store the files there for my 
+<code>Sqlite</code> database and this mounted volume preserves the data on deployments.</p>
+
+<h3>How to Set-up Self-Signed SSL Certificate</h3>
+
+<p>One of the main hassles and requirements of the Telegram API is that they require https, and that requires
+an SSL certificate. It encrypts communication between Telegram and my server, and this helps Telegram to
+verify that my server is the correct one, and not a bogus one when a potential man-in-the-middle hijacks the 
+traffic.</p>
+
+<p>I could go get an SSL cert from a provider, but in this case, what we&rsquo;re really concerned is the
+identity of my server to Telegram and not for users so a self-signed certificate would work just as well.</p>
+
+<p>I SSH&rsquo;d into the server to create the certs.</p>
+<pre class="highlight shell"><code>sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/self-signed.key -out /etc/ssl/certs/self-signed.crt
+</code></pre>
+<ul>
+<li><code>-days</code> defines the validity span. I did adjust the validity-days to something much bigger but generally might be better with a year or two.</li>
+<li><code>rsa:2048</code> means that will create an RSA key that is 2048 bits long.</li>
+<li><code>-keyout</code> refers to the private key for the cert</li>
+<li><code>-out</code> refers the cert itself</li>
+</ul>
+
+<p>The process leads me through the steps above for some further information. The most important bit
+is the <strong>Common Name</strong>. In my case, I didn&rsquo;t have a domain, so I simply put in the <code>server_IP_address</code> 
+for my Digital Ocean instance.</p>
+<pre class="highlight plaintext"><code>Country Name (2 letter code) [AU]:SG
+State or Province Name (full name) [Some-State]:Singapore
+Locality Name (eg, city) []:Singapore
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (e.g. server FQDN or YOUR name) []:server_IP_address
+Email Address []:boa.homan@gmail.com
+</code></pre>
+<p>As part of Nginx best practices, I also created a strong Diffie-Hellman group for added security.</p>
+<pre class="highlight shell"><code>sudo openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
+</code></pre>
+<h3>Configuring Nginx to Use the SSL Cert</h3>
+
+<p>I first made a new Nginx configuration snippet at <code>/etc/nginx/snippets</code> that simply points
+to the SSL certs I just created above.</p>
+<pre class="highlight conf"><code><span class="n">ssl_certificate</span> /<span class="n">etc</span>/<span class="n">ssl</span>/<span class="n">certs</span>/<span class="n">self</span>-<span class="n">signed</span>.<span class="n">crt</span>;
+<span class="n">ssl_certificate_key</span> /<span class="n">etc</span>/<span class="n">ssl</span>/<span class="n">private</span>/<span class="n">self</span>-<span class="n">signed</span>.<span class="n">key</span>;
+</code></pre>
+<p>Another snippet to set-up some SSL settings based on recommendations from <a href="https://cipherli.st/">https://cipherli.st/</a>.</p>
+<pre class="highlight conf"><code><span class="c"># from https://cipherli.st/
+# and https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
+</span>
+<span class="n">ssl_protocols</span> <span class="n">TLSv1</span> <span class="n">TLSv1</span>.<span class="m">1</span> <span class="n">TLSv1</span>.<span class="m">2</span>;
+<span class="n">ssl_prefer_server_ciphers</span> <span class="n">on</span>;
+<span class="n">ssl_ciphers</span> <span class="s2">"EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"</span>;
+<span class="n">ssl_ecdh_curve</span> <span class="n">secp384r1</span>;
+<span class="n">ssl_session_cache</span> <span class="n">shared</span>:<span class="n">SSL</span>:<span class="m">10</span><span class="n">m</span>;
+<span class="n">ssl_session_tickets</span> <span class="n">off</span>;
+<span class="n">ssl_stapling</span> <span class="n">on</span>;
+<span class="n">ssl_stapling_verify</span> <span class="n">on</span>;
+<span class="n">resolver</span> <span class="m">8</span>.<span class="m">8</span>.<span class="m">8</span>.<span class="m">8</span> <span class="m">8</span>.<span class="m">8</span>.<span class="m">4</span>.<span class="m">4</span> <span class="n">valid</span>=<span class="m">300</span><span class="n">s</span>;
+<span class="n">resolver_timeout</span> <span class="m">5</span><span class="n">s</span>;
+<span class="c"># Disable preloading HSTS for now.  You can use the commented out header line that includes
+# the "preload" directive if you understand the implications.
+#add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+</span><span class="n">add_header</span> <span class="n">Strict</span>-<span class="n">Transport</span>-<span class="n">Security</span> <span class="s2">"max-age=63072000; includeSubdomains"</span>;
+<span class="n">add_header</span> <span class="n">X</span>-<span class="n">Frame</span>-<span class="n">Options</span> <span class="n">DENY</span>;
+<span class="n">add_header</span> <span class="n">X</span>-<span class="n">Content</span>-<span class="n">Type</span>-<span class="n">Options</span> <span class="n">nosniff</span>;
+
+<span class="n">ssl_dhparam</span> /<span class="n">etc</span>/<span class="n">ssl</span>/<span class="n">certs</span>/<span class="n">dhparam</span>.<span class="n">pem</span>
+</code></pre>
+<p>Finally, we will need to edit the Nginx configuration files to use SSL.</p>
+
+<p>This is what the file intially looks like: </p>
+<pre class="highlight conf"><code><span class="c"># /etc/nginx/sites-available/default
+</span>
+<span class="n">server</span> {
+    <span class="n">listen</span> <span class="m">80</span> <span class="n">default_server</span>;
+    <span class="n">listen</span> [::]:<span class="m">80</span> <span class="n">default_server</span>;
+
+    <span class="c"># SSL configuration
+</span>
+    <span class="c"># listen 443 ssl default_server;
+</span>    <span class="c"># listen [::]:443 ssl default_server;
+</span>
+    ...
+</code></pre>
+<p>I changed it to look like this (remember to replace IP!)</p>
+<pre class="highlight conf"><code><span class="n">server</span> {
+  <span class="n">listen</span> <span class="m">80</span> <span class="n">default_server</span>;
+  <span class="n">listen</span> [::]:<span class="m">80</span> <span class="n">default_server</span>;
+  <span class="n">server_name</span> <span class="n">YOUR_SERVER_IP_ADDRESS</span>;
+  <span class="n">return</span> <span class="m">301</span> <span class="n">https</span>://$<span class="n">server_name</span>$<span class="n">request_uri</span>;
+}
+
+<span class="n">server</span> {
+<span class="c"># SSL configuration
+</span>
+  <span class="n">listen</span> <span class="m">443</span> <span class="n">ssl</span> <span class="n">http2</span> <span class="n">default_server</span>;
+  <span class="n">listen</span> [::]:<span class="m">443</span> <span class="n">ssl</span> <span class="n">http2</span> <span class="n">default_server</span>;
+
+  <span class="n">include</span> <span class="n">snippets</span>/<span class="n">self</span>-<span class="n">signed</span>.<span class="n">conf</span>;
+  <span class="n">include</span> <span class="n">snippets</span>/<span class="n">ssl</span>-<span class="n">params</span>.<span class="n">conf</span>;
+
+  <span class="n">location</span> / {
+    <span class="n">proxy_pass</span> <span class="n">http</span>://<span class="m">127</span>.<span class="m">0</span>.<span class="m">0</span>.<span class="m">1</span>:<span class="m">8080</span>;
+  }
+}
+</code></pre>
+<p>What I did was to basically ask Nginx to automatically redirect HTTP requests to HTTPS. And ask it to
+server root from the port 8080 that the docker container is listening to.</p>
+
+<h3>UFW Firewall</h3>
+
+<p>For security reasons, I also enabled <a href="https://help.ubuntu.com/community/UFW">ufw firewall</a> by doing the following: </p>
+<pre class="highlight shell"><code>sudo ufw <span class="nb">enable
+</span>sudo ufw allow <span class="s1">'OpenSSH'</span>
+sudo ufw allow <span class="s1">'Nginx Full'</span>
+sudo ufw delete allow <span class="s1">'Nginx HTTP'</span>
+</code></pre>
+<p>It should look something like this in <code>sudo ufw status</code></p>
+<pre class="highlight shell"><code>To                         Action      From
+--                         ------      ----
+Nginx Full                 ALLOW       Anywhere
+OpenSSH                    ALLOW       Anywhere
+Nginx Full <span class="o">(</span>v6<span class="o">)</span>            ALLOW       Anywhere <span class="o">(</span>v6<span class="o">)</span>
+OpenSSH <span class="o">(</span>v6<span class="o">)</span>               ALLOW       Anywhere <span class="o">(</span>v6<span class="o">)</span>
+</code></pre>
+<p>And its done; to start Nginx, all that&rsquo;s left is to <code>sudo nginx -t</code></p>
+
+<h3>Sending Telegram the SSL Cert</h3>
+
+<p>Telegram will need the other side of the cert. Consulting their documentation, it seems that they
+need the PEM file. To get that, I had to convert the current CRT file into the PEM format.</p>
+<pre class="highlight shell"><code>openssl x509 -in /etc/ssl/certs/self-signed.crt -outform pem -out /etc/ssl/certs/bot.pem
+</code></pre>
+<p>To get the cert to Telegram&rsquo;s hands, I sent it via their API using this: (Replace bot keys!)</p>
+<pre class="highlight shell"><code>curl -F <span class="s2">"url=https://your.domain.or.ip.com"</span> -F <span class="s2">"certificate=@/etc/ssl/certs/bot.pem"</span> https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
+</code></pre>
+<h3>Set-up Git Hooks</h3>
+
+<p>Great! Now all that&rsquo;s left is the deployment process. The general outcome that I wanted is that
+it&rsquo;ll be a one-command process that updates the code in the server, rebuilds and restarts the docker
+container with the updated app.</p>
+
+<p>At my server, I created the necessary files for the server git repository</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> /var
+mkdir repo <span class="o">&amp;&amp;</span> <span class="nb">cd </span>repo
+mkdir bot.git <span class="o">&amp;&amp;</span> <span class="nb">cd </span>bot.git
+git init --bare
+</code></pre>
+<h4>The Hooks</h4>
+
+<p>Looking into the <code>hooks</code> folder in bot.git, there were many samples for the different hooks provided.
+For the purpose of this bot, I created a <code>post-receive</code> hook with the following content.</p>
+<pre class="highlight shell"><code><span class="c">#!/bin/sh</span>
+git --work-tree<span class="o">=</span>/var/app/remindbot --git-dir<span class="o">=</span>/var/repo/bot.git checkout -f
+<span class="nb">cd</span> /var/app/remindbot
+docker-compose build
+docker-compose down
+docker-compose up -d
+</code></pre>
+<p>The sets the <code>/var/app</code> folder to be the working directory for my app. And the script goes into
+my working directory and rebuilds the container and restarts it. All of this will happen on deployment!</p>
+
+<p>Of course, I also had to make the post-receive file executable.</p>
+<pre class="highlight shell"><code>chmod +x post-receive
+</code></pre>
+<h3>Deploy All The Things!</h3>
+
+<p>From my development machine, I added a remote repo to my local git repo.</p>
+<pre class="highlight shell"><code>git remote add prod ssh://user@my.domain.or.ip.com/var/repo/bot.git
+git push prod master
+</code></pre>
+<p>And the Telegram bot finally goes live, responding to live chats in Telegram. All of this code can be found 
+at the <a href="https://github.com/aranair/remindbot">project github repository</a>. The reminder bot&rsquo;s name is Hazel. She responds instantly to 
+chats in Telegram and helps me to manage my ever-growing list of responsibilities everyday now :P</p>
+
+<p>Feel free to star it or fork it or leave comments below!</p>
+
+    </div>
+
+    <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2017/deploy-golang-telegram-bot';
+                        var disqus_title = 'How I Deployed My Golang Telegram Bot';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+    <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+  </div>
+
+      </div>
+    </div>
+  </body>
+</html>
