@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -117,7 +116,9 @@
       </ul>
     </div>
     <hr>
-    <p>Went with <code>ember-rails</code> gem&rsquo;s default setup, did a bundle install/minimum rails set up and got this error in the browser&hellip;</p>
+
+    <div class="article__content">
+      <p>Went with <code>ember-rails</code> gem&rsquo;s default setup, did a bundle install/minimum rails set up and got this error in the browser&hellip;</p>
 
 <p><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px">Assertion failed: Ember Handlebars requires Handlebars version 1.0.0, COMPILER<em>REVISION expected: 4, got: 3 - Please note: Builds of master may have other COMPILER</em>REVISION values.</span><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px"> </span></p>
 
@@ -132,6 +133,8 @@
 <p>Turns out that ember rc.6 is not compatible with handlebars rc4 because it hardcodes it to require rc3&hellip;&hellip;. - -&rsquo;</p>
 
 <p>Short of modifying emberjs files myself, I did the <code>rails generate ember:install --head</code> again to get the latest nightly builds of ember hoping to get rc6.1 but unfortunately it didn&rsquo;t grab rc6.1 to my dismay&hellip; So I went to <a href="http://builds.emberjs.com/ember-1.0.0-rc.6.1.js," title="Ember Nightly">http://builds.emberjs.com/ember-1.0.0-rc.6.1.js</a> and downloaded it manually into my vendor folders and finally got it to work</p>
+
+    </div>
 
     <div id='disqus_thread'></div>
 <script type='text/javascript'>

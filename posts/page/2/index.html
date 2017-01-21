@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -125,9 +124,11 @@
         6  minutes read
       </span>
     </h2>
-    <p>(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)</p>
+    <div class="article-summary__article-content">
+      <p>(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)</p>
 
-<p>Recently, I’ve had the chance to work with Golang in Wego to build our analytics...</p>
+<p>Recently, I’ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing,...</p>
+    </div>
     <a href="/posts/2015/05/05/golang-protobuf/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -139,7 +140,8 @@
         5  minutes read
       </span>
     </h2>
-    <p>Suppose you have a JSON of this format:</p>
+    <div class="article-summary__article-content">
+      <p>Suppose you have a JSON of this format:</p>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="s2">"results"</span><span class="p">:</span><span class="w"> 
     </span><span class="s2">"collection"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
@@ -149,7 +151,15 @@
       </span><span class="p">},</span><span class="w">
       </span><span class="p">{</span><span class="w">
         </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">first_name</span><span class="p">:</span><span class="w"> </span><span class="s2">"John"</span><span class="p">,</span><span class="w"> </span><span class="err">last_name</span><span class="p">:</span><span class="w"> </span><span class="s2">"Lee"</span><span class="w">
-        </span></code></pre>
+        </span><span class="s2">"phone"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2345"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<h3>Similarities</h3>
+
+<p>There are essentially 2 methods to do this, using pre...</p>
+    </div>
     <a href="/posts/2014/05/21/predefined-structs-vs-type-assertion-go/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -161,9 +171,12 @@
         less than a minute read
       </span>
     </h2>
-    <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
+    <div class="article-summary__article-content">
+      <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
 
-<p>This works...</p>
+<p>This works well for color schemes that offer both dark and light versions, for example Solarized.</p>
+<pre class="highlight plaintext"><code>let g:scheme_bg...</code></pre>
+    </div>
     <a href="/posts/2014/05/20/vim-toggle-background-scheme/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -175,7 +188,9 @@
         1  minute read
       </span>
     </h2>
-    <p>Something that most people use frequently but take for granted for sure is the use of Option + Arrow keys to navgiate between words in Mac OS X. Its just something you use and not think about much and it becomes second nature almost. So when I moved...</p>
+    <div class="article-summary__article-content">
+      <p>Something that most people use frequently but take for granted for sure is the use of Option + Arrow keys to navgiate between words in Mac OS X. Its just something you use and not think about much and it becomes second nature almost. So when I moved to iTerm, I’m sure a couple of you would have wanted to maintain the the same behaviour of that in...</p>
+    </div>
     <a href="/posts/2014/05/12/opt-arrow-navigation-in-iterm2/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -187,9 +202,11 @@
         2  minutes read
       </span>
     </h2>
-    <p>I do abit of development work using plain Javascript on and off. I’ve written OOP modular Javascript for Wego as well but my development work is never really deep enough to encounter all the classic “noob” problems. </p>
+    <div class="article-summary__article-content">
+      <p>I do abit of development work using plain Javascript on and off. I’ve written OOP modular Javascript for Wego as well but my development work is never really deep enough to encounter all the classic “noob” problems. </p>
 
-<p>Today I came across one. It was...</p>
+<p>Today I came across one. It was something that got me a little mind-blown because it is something that I have entirely taken for granted...</p>
+    </div>
     <a href="/posts/2014/05/07/block-scope-in-javascript/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -201,9 +218,13 @@
         4  minutes read
       </span>
     </h2>
-    <p>When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with <code>jQuery UI's date picker</code> + <code>moment.js</code> for the parsing/display of the dates.</p>
+    <div class="article-summary__article-content">
+      <p>When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with <code>jQuery UI's date picker</code> + <code>moment.js</code> for the parsing/display of the dates.</p>
 
 <h3>The Issues</h3>
+
+<p>There were a few things that kinda put me off guard. The first: when deserializing/serializing...</p>
+    </div>
     <a href="/posts/2014/05/04/emberjs-jqueryui-date-momentjs/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -215,7 +236,11 @@
         2  minutes read
       </span>
     </h2>
-    <p>The problem begins when one of my ‘filter functions’ for the my model (delayed/active tasks lists from all tasks) wasn’t getting reactively updated when the store gets new entries or updates. When I found out why, I thought to myself that this is actually...</p>
+    <div class="article-summary__article-content">
+      <p>The problem begins when one of my ‘filter functions’ for the my model (delayed/active tasks lists from all tasks) wasn’t getting reactively updated when the store gets new entries or updates. When I found out why, I thought to myself that this is actually a pretty easy scenario to fall into IMHO.</p>
+
+<p>I realised that I wasn’t actually utilising ember...</p>
+    </div>
     <a href="/posts/2014/05/04/emberjs-computed-properties-vs-manual-filter/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -227,7 +252,9 @@
         1  minute read
       </span>
     </h2>
-    <p>While I am doing development work on projects, be it at work or at home, I find that something that I do at least a couple of times (or more) daily. After commiting and pushing the changes, sometimes I want to go to the branch on github from the terminal...</p>
+    <div class="article-summary__article-content">
+      <p>While I am doing development work on projects, be it at work or at home, I find that something that I do at least a couple of times (or more) daily. After commiting and pushing the changes, sometimes I want to go to the branch on github from the terminal to either create a pull request or to just view all the commits/diffs altogether. It gets a little...</p>
+    </div>
     <a href="/posts/2014/04/29/cmd-function-to-browse-git-branch-compare/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -239,7 +266,9 @@
         1  minute read
       </span>
     </h2>
-    <p>I work for Wego (hotels/flights metasearch) and we’ve got many sites for the various cctlds. To test them after frontend development, usually I’ll just add like www.wego.com.sg to my host file and direct it to 127.0.0.1 but sometimes it gets a little...</p>
+    <div class="article-summary__article-content">
+      <p>I work for Wego (hotels/flights metasearch) and we’ve got many sites for the various cctlds. To test them after frontend development, usually I’ll just add like www.wego.com.sg to my host file and direct it to 127.0.0.1 but sometimes it gets a little troublesome, especially when the autocomplete forms breaks from www.wego.com.sg without the 3000...</p>
+    </div>
     <a href="/posts/2014/04/28/dnsmasq-for-local-dev/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -251,11 +280,13 @@
         1  minute read
       </span>
     </h2>
-    <p>There seems to be some issue with building the thrift gem 0.8.0 on Mavericks. Taken from this discussion: <a href="https://issues.apache.org/jira/browse/THRIFT-2219" title="Jira">Jira Issue</a></p>
+    <div class="article-summary__article-content">
+      <p>There seems to be some issue with building the thrift gem 0.8.0 on Mavericks. Taken from this discussion: <a href="https://issues.apache.org/jira/browse/THRIFT-2219" title="Jira">Jira Issue</a></p>
 
 <blockquote>
-<p>The issue is that in Mavericks, strlcpy is now defined as a macro if you install the SDK. This conflicts with the duplicate declaration...</p>
+<p>The issue is that in Mavericks, strlcpy is now defined as a macro if you install the SDK. This conflicts with the duplicate declaration of strlcpy as a function in strlcpy.h. The fix should be simple: don’t re-declare the strlcpy...</p>
 </blockquote>
+    </div>
     <a href="/posts/2014/04/25/thrift-gem-0-8-0-with-mavericks-10-9/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
 

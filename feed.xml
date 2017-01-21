@@ -10,18 +10,18 @@
     <name>Blog Author</name>
   </author>
   <entry>
-    <title>How I Built a Simple Golang Telegram Bot</title>
+    <title>How I Built a Simple Telegram Bot in Go</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"/>
     <id>http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</id>
     <published>2016-12-25T00:00:00+08:00</published>
-    <updated>2016-12-28T23:08:04+08:00</updated>
+    <updated>2017-01-21T17:41:06+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
     <content type="html">&lt;p&gt;This is the first part of the &lt;code&gt;Golang Telegram Bot&lt;/code&gt; series. 
 In this series, I&amp;rsquo;ll show you, with code samples, how I built a Golang Telegram Bot for my own use. 
 It would listen in and respond in real-time to certain text cues. 
-Finally I&amp;rsquo;ll also demonstrate how to get a self-signed SSL cert working with Nginx
+Finally I&amp;rsquo;ll also show you how to get a self-signed SSL cert working with Nginx
 and deploying the application in a Docker container on a Digital Ocean instance.&lt;/p&gt;
 
 &lt;p&gt;Hopefully this will help anyone out there who would like to try their hand at their own bot on Telegram!
@@ -43,11 +43,12 @@ samples that got my own bot up and running in production!&lt;/p&gt;
 
 &lt;h3&gt;Creating a Bot and Getting an API Key&lt;/h3&gt;
 
-&lt;p&gt;First, I sent &lt;code&gt;/newbot&lt;/code&gt; to the &lt;a href="https://telegram.me/botfather"&gt;&lt;img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;First, I sent &lt;code&gt;/newbot&lt;/code&gt; to this guy.&lt;/p&gt;
 
-&lt;p&gt;After creating the bot, I got a set of (botId and API key) by sending him a &lt;code&gt;/token&lt;/code&gt; command.&lt;/p&gt;
+&lt;p&gt;&lt;a href="https://telegram.me/botfather"&gt;&lt;img src="https://s24.postimg.org/d0amvsmut/botfather.png" alt="botfather.png" /&gt;&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;The credentials are needed for subsequent requests to execute methods using the Telegram API. &lt;/p&gt;
+&lt;p&gt;After creating the bot, I got a set of (botId and API key) by sending him a &lt;code&gt;/token&lt;/code&gt; command.&lt;br&gt;
+The credentials are needed for subsequent requests to execute methods using the Telegram API. &lt;/p&gt;
 &lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# {botId}:{apiKey}&lt;/span&gt;
 &lt;span class="s"&gt;123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;

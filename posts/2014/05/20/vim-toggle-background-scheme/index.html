@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -117,7 +116,9 @@
       </ul>
     </div>
     <hr>
-    <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
+
+    <div class="article__content">
+      <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
 
 <p>This works well for color schemes that offer both dark and light versions, for example Solarized.</p>
 <pre class="highlight plaintext"><code>let g:scheme_bg = "dark"
@@ -132,6 +133,8 @@
 endfunction
 </code></pre><pre class="highlight plaintext"><code>map &lt;F3&gt; :call ToggleDark()&lt;CR&gt;
 </code></pre>
+    </div>
+
     <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[

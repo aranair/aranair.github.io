@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -117,7 +116,9 @@
       </ul>
     </div>
     <hr>
-    <p>I work for Wego (hotels/flights metasearch) and we&rsquo;ve got many sites for the various cctlds. To test them after frontend development, usually I&rsquo;ll just add like www.wego.com.sg to my host file and direct it to 127.0.0.1 but sometimes it gets a little troublesome, especially when the autocomplete forms breaks from www.wego.com.sg without the 3000 port. </p>
+
+    <div class="article__content">
+      <p>I work for Wego (hotels/flights metasearch) and we&rsquo;ve got many sites for the various cctlds. To test them after frontend development, usually I&rsquo;ll just add like www.wego.com.sg to my host file and direct it to 127.0.0.1 but sometimes it gets a little troublesome, especially when the autocomplete forms breaks from www.wego.com.sg without the 3000 port. </p>
 
 <p>I found this little gem the other day to help me deal with that. It basically helps me to just add .dev behind any domain and it&rsquo;ll automatically be redirected back to 127.0.0.1; a real life-saver!</p>
 <pre class="highlight plaintext"><code>brew install dnsmasq
@@ -136,6 +137,8 @@ sudo mkdir -v /etc/resolver
 sudo bash -c 'echo "nameserver 127.0.0.1" &gt; /etc/resolver/dev'
 
 </code></pre>
+    </div>
+
     <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[

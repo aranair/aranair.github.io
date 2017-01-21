@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -123,7 +122,9 @@
       </ul>
     </div>
     <hr>
-    <p>At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to <code>2.3.5</code> for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already
+
+    <div class="article__content">
+      <p>At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to <code>2.3.5</code> for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already
 there for it to function properly.</p>
 
 <h3>Preface</h3>
@@ -284,6 +285,8 @@ roughly half the size of the hard memory limit in ECS to prevent the above scena
 <p>Feel free to checkout <a href="https://github.com/aranair/docker-elasticsearch-ecs">this github repository</a> that I&rsquo;ve put together the code I&rsquo;ve talked about!</p>
 
 <p>Do check back in a week or two!</p>
+
+    </div>
 
     <div id='disqus_thread'></div>
 <script type='text/javascript'>

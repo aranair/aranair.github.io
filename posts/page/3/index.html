@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -123,9 +122,13 @@
         2  minutes read
       </span>
     </h2>
-    <p>What exactly is BEM? <code>BEM stands for Block, Element, Modifier.</code></p>
+    <div class="article-summary__article-content">
+      <p>What exactly is BEM? <code>BEM stands for Block, Element, Modifier.</code></p>
 
-<p>In case you haven’t heard of BEM yet, have a look at the <a href="http://bem.info/method/definitions/" title="Bem Definition">definition</a>  to have a look. It’s a really interesting naming convention for your DOM elements that makes it more manageable in the...</p>
+<p>In case you haven’t heard of BEM yet, have a look at the <a href="http://bem.info/method/definitions/" title="Bem Definition">definition</a>  to have a look. It’s a really interesting naming convention for your DOM elements that makes it more manageable in the long run that has gained popularity recently. Trending yo!</p>
+
+<p>Its pretty useful in that it sort of...</p>
+    </div>
     <a href="/posts/2014/04/22/my-dilemma-with-bem/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -137,15 +140,19 @@
         less than a minute read
       </span>
     </h2>
-    <p>It was…surprisingly easy, no honestly, much easier than I thought.</p>
+    <div class="article-summary__article-content">
+      <p>It was…surprisingly easy, no honestly, much easier than I thought.</p>
 
 <h3>Steps:</h3>
 
 <ul>
 <li>Create new Heroku application: <code>heroku create &lt;appname&gt; --stack cedar --buildpack https://github.com/oortcloud/heroku-buildpack-meteorite</code>
 </li>
-<li>Setup other than MongoDB for your...</li>
+<li>Setup other than MongoDB for your Meteor application (I just added MongoHQ via <code>heroku addons:add mongoHQ</code>
+</li>
+<li><code>heroku config:set ROOT_URL=http...</code></li>
 </ul>
+    </div>
     <a href="/posts/2014/04/19/deploying-meteor-0-8-0-meteorite-to-heroku/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -157,7 +164,11 @@
         1  minute read
       </span>
     </h2>
-    <p>So after a few months of inactivity from Emberjs, I’ve decided to come back to abit of development fun! First things first, I had to upgrade a couple of things (once again). I went on to upgrade ember to 1.3.0 and ember-data to one of their 1.0.0 nightly...</p>
+    <div class="article-summary__article-content">
+      <p>So after a few months of inactivity from Emberjs, I’ve decided to come back to abit of development fun! First things first, I had to upgrade a couple of things (once again). I went on to upgrade ember to 1.3.0 and ember-data to one of their 1.0.0 nightly builds. It didn’t require that many changes like before (thank god for that). </p>
+
+<p>One particular...</p>
+    </div>
     <a href="/posts/2014/01/31/emberjs-saving-associated-models-controller/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -169,9 +180,11 @@
         2  minutes read
       </span>
     </h2>
-    <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
+    <div class="article-summary__article-content">
+      <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
 
-<p>It was pretty simple and straightforward mostly. You basically...</p>
+<p>It was pretty simple and straightforward mostly. You basically just change the store to have “adapter: DS.RESTAdapter” and extend the model to have the appropriate...</p>
+    </div>
     <a href="/posts/2013/08/04/emberjs-model-restadapter-conventions/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -183,9 +196,11 @@
         2  minutes read
       </span>
     </h2>
-    <p>After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. </p>
+    <div class="article-summary__article-content">
+      <p>After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. </p>
 
-<p>So basically, today I wanted to have tasks displayed out in the /tasks page separated into a few different ‘categories...</p>
+<p>So basically, today I wanted to have tasks displayed out in the /tasks page separated into a few different ‘categories’ - delayed, active, completed, and coming soon etc. Something so simple would probably be done...</p>
+    </div>
     <a href="/posts/2013/07/28/replicating-rails-scopes-in-emberjs/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
   <div class="article-list__article-summary">
@@ -197,9 +212,13 @@
         2  minutes read
       </span>
     </h2>
-    <p>Went with <code>ember-rails</code> gem’s default setup, did a bundle install/minimum rails set up and got this error in the browser…</p>
+    <div class="article-summary__article-content">
+      <p>Went with <code>ember-rails</code> gem’s default setup, did a bundle install/minimum rails set up and got this error in the browser…</p>
 
-<p><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px">Assertion failed: Ember Handlebars requires Handlebars version 1.0.0, COMPILER<em>REVISION expected: 4, got: 3 - Please note: Builds...</em></span></p>
+<p><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px">Assertion failed: Ember Handlebars requires Handlebars version 1.0.0, COMPILER<em>REVISION expected: 4, got: 3 - Please note: Builds of master may have other COMPILER</em>REVISION values.</span><span style="color:rgb(255, 0, 0); font-family:menlo,monospace; font-size:11px"> </span></p>
+
+<div class="console-message console-debug-level" style="box-sizing: border-box; clear: right; position: relative; border-top-width: 1px; border-top-style: solid; border-top-color: rgb(240, 240, 240); padding: 1px 22px 1px 0px; margin-left: 24px; min-height: 16px; color: rgb(48, 57, 66); font-family: Menlo, monospace; font-size: 11px; line-height: normal;"><span style="color:blue">EBUG: Ember.VERSION : 1.0.0-rc.6 <a class="console-message-url webkit-html-resource-link" href="http://127.0.0.1:3000/assets/ember.js?body=1" style="box-sizing: border-box; float: right; text-align: right; max-width: 100%; margin-left: 4px; color: rgb(84, 84, 84); cursor: pointer;" title="http://127.0.0.1:3000/assets/ember.js?body=1:364">ember.js?body...</a></span></div>
+    </div>
     <a href="/posts/2013/07/27/embers-handlebars-setup-problem/" class="article-summary__readmore">Read more &#8594;</a>
   </div>
 

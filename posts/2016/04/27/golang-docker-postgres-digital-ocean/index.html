@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -123,7 +122,9 @@
       </ul>
     </div>
     <hr>
-    <p>My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.</p>
+
+    <div class="article__content">
+      <p>My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.</p>
 
 <p>But with the rise in popularity of Docker recently, I&rsquo;ve been wanting to deploy something into production with Docker but never found the right app for it until this one.</p>
 
@@ -233,6 +234,8 @@ docker run -d -p 80:5000 --name gosnap --link db:postgres app
 <p>I then ran the migrations at this point:</p>
 <pre class="highlight plaintext"><code>docker exec -it gosnap goose up
 </code></pre>
+    </div>
+
     <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[

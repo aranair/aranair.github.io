@@ -15,11 +15,10 @@
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Lato|Montserrat">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-e62ae23a.css" rel="stylesheet" />
-    <script src="/javascripts/all-0a091114.js" async="true"></script>
-    <!-- Latest compiled and minified JavaScript -->
+    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -126,7 +125,9 @@
       </ul>
     </div>
     <hr>
-    <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
+
+    <div class="article__content">
+      <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
 
 <p>The packages allows us to process 2 different modes of communication protocol with just one set of schema defined in proto files:</p>
 
@@ -191,6 +192,8 @@
 <p>This setup will get us the bare infrastructure working, treating the plugins as blackboxes for now.</p>
 
 <p>Stay tuned for the 3rd part of this series where I will go into details and discuss how the <a href="https://github.com/aranair/heka-bigquery">heka-bigquery plugin</a> works!</p>
+
+    </div>
 
     <div id='disqus_thread'></div>
 <script type='text/javascript'>

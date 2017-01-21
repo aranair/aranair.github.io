@@ -59,7 +59,7 @@ a:hover {
   margin: 0 0.5%; }
 
 .container {
-  max-width: 650px;
+  max-width: 550px;
   margin: auto; }
 
 ul li,
