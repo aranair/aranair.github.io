@@ -3,7 +3,7 @@ title: 'How I Deployed My Golang Telegram Bot'
 description: 'In this post, I go through the steps I took to dockerize and deploy my golang Telegram bot.
 I walk through the entire process with code samples, from the self-served certificate / api setup
 using of the Nginx as reverse proxy to the final deployment via git webhooks scripts.'
-date: 2017-01-22
+date: 2017-01-21 
 tags: golang, telegram, bot, webhooks, ssl, nginx, digital-ocean
 disqus_identifier: 2017/deploy-golang-telegram-bot
 disqus_title: How I Deployed My Golang Telegram Bot
