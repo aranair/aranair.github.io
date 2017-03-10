@@ -10,11 +10,11 @@
     <name>Blog Author</name>
   </author>
   <entry>
-    <title>How I Tuned My Apache Spark Data Processing Task on Amazon EMR</title>
+    <title>Tuning My Apache Spark Data Processing Cluster on Amazon EMR</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/"/>
     <id>http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</id>
     <published>2017-03-10T00:00:00+08:00</published>
-    <updated>2017-03-11T00:49:33+08:00</updated>
+    <updated>2017-03-11T00:51:30+08:00</updated>
     <author>
       <name>Article Author</name>
     </author>
