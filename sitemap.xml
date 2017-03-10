@@ -117,6 +117,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -277,7 +281,31 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/apache-spark/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/scala/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/aws/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/emr/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2017/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/03/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/03/10/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -401,11 +429,11 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/29/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/28/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/28/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/25/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -461,7 +489,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/25/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/29/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>

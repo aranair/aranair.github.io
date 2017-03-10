@@ -5,10 +5,248 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2017-01-21T00:00:00+08:00</updated>
+  <updated>2017-03-10T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>How I Tuned My Apache Spark Data Processing Task on Amazon EMR</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/"/>
+    <id>http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</id>
+    <published>2017-03-10T00:00:00+08:00</published>
+    <updated>2017-03-11T00:49:33+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Lately, I worked on some data integration at Pocketmath where I wrote a 
+bunch of Spark scripts in Scala to run some transformations on a data set of about 
+250GB on a monthly basis. In this post, I&amp;rsquo;ll talk about some of the 
+problems I encountered, and some considerations while setting up the cluster and running
+the Spark tasks.&lt;/p&gt;
+
+&lt;h3&gt;Dataset Size&lt;/h3&gt;
+
+&lt;p&gt;The size of the data set is about 250GB, which isn&amp;rsquo;t quite close to the scale other data 
+scientist/engineers handle, but is easily one of the bigger ones for me. Nonetheless, I do think the 
+transformations are on the heavy side; it involves a chain of rather expensive operations. &lt;/p&gt;
+
+&lt;p&gt;Because of the sensitive nature of the data, I&amp;rsquo;m going to skip the nitty-gritty details of the task.
+I&amp;rsquo;ll run through the kind of steps that were included in the script.&lt;/p&gt;
+
+&lt;h3&gt;Multiple Shuffle Operations&lt;/h3&gt;
+
+&lt;p&gt;The script starts off with multiple &lt;code&gt;JOIN&lt;/code&gt;s into a &lt;code&gt;UNION&lt;/code&gt;, &lt;code&gt;EXPLODE&lt;/code&gt;, &lt;code&gt;SORT&lt;/code&gt; within partition, 
+then &lt;code&gt;GROUP&lt;/code&gt; and &lt;code&gt;COLLECT&lt;/code&gt; into another &lt;code&gt;SORT&lt;/code&gt; eventually. They&amp;rsquo;re 
+&lt;em&gt;pretty&lt;/em&gt; expensive shuffle operations and as you might imagine, doing this on this data size did
+pose some problems at first when I wasn&amp;rsquo;t so familar with the details of how Spark handles
+memory allocations.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow.png"&gt;&lt;img src="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow-small.png" alt="Spark Flow Chart" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Second Difficulty&lt;/h3&gt;
+
+&lt;p&gt;Secondly, I also had to split a file that looks like the examples below. Essentially, you can imagine 
+them to be ranks or row numbers (of course, with a bunch of other data transformations)&lt;/p&gt;
+
+&lt;p&gt;From this format:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;51abebcfab2ef2abeed2f 8,120,384,898 
+21abfbbeef5791adef3f2 1,9,1214,8827 
+...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Into these two files:&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# 1,2 are like IDs&lt;/span&gt;
+51abebcfab2ef2abeed2f 1
+21abfbbeef5791adef3f2 2
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;pre class="highlight shell"&gt;&lt;code&gt;1 8,120,384,898 
+2 1,9,1214,8827 
+...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It turns out that generating a consistent row number like this is a difficult operation for Spark to handle. 
+Matter of fact, it is probably an expensive task for any distributed system to perform. Also, 
+I was working mostly with &lt;code&gt;Dataframes&lt;/code&gt; in Spark 2.0 and the only way that I know of currently to 
+generate these row numbers is to first convert into an RDD and do a &lt;code&gt;zipWithIndex&lt;/code&gt; on it. &lt;/p&gt;
+&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;segRdd&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;segmentIdGroups&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rdd&lt;/span&gt;
+&lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;rows&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;segRdd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zipWithIndex&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Row&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Long&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nc"&gt;Row&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fromSeq&lt;/span&gt;&lt;span class="o"&gt;((&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+:&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;toSeq&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;em&gt;Well, there is another method that involves windows and partitions but unfortunately it basically 
+moves all the data into one partition, which isn&amp;rsquo;t feasible for me.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;Executer Cores and Memory Allocation&lt;/h3&gt;
+
+&lt;p&gt;For the Spark task that I send to Amazon EMR, I manually set the 
+&lt;code&gt;--executor-cores&lt;/code&gt; and &lt;code&gt;--executor-memory&lt;/code&gt; configurations. The calculation is somewhat 
+non-intuitive because I had to manually take into account the overheads of &lt;code&gt;YARN&lt;/code&gt;, 
+the application master/driver cores and memory usage et cetera.&lt;/p&gt;
+
+&lt;p&gt;In general, YARN overheads take roughly &lt;code&gt;7%&lt;/code&gt; and reducing some from there is good practice, to ensure enough
+is left for system processes and Hadoop e.g.&lt;/p&gt;
+
+&lt;p&gt;Say for an instance of &lt;code&gt;r3.8xlarge&lt;/code&gt;&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# 122GB RAM, 16 cores&lt;/span&gt;
+
+&lt;span class="nv"&gt;$CORES_PER_DRIVER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
+&lt;span class="nv"&gt;$MEMORY_PER_DRIVER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;24G
+
+&lt;span class="nv"&gt;$CORES_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
+&lt;span class="nv"&gt;$MEMORY_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;24G
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;With 4 cores per executor, each instance could &lt;em&gt;potentially&lt;/em&gt; run 4 executors. To account for the overhead,
+I multiply the memory by &lt;code&gt;93%&lt;/code&gt;, which works out to be &lt;code&gt;28G&lt;/code&gt;. In the end, I used &lt;code&gt;24G&lt;/code&gt; just 
+to account for overheads for the driver, Hadoop processes, the UI and the OS but on hindsight, 
+&lt;code&gt;26G&lt;/code&gt; probably would&amp;rsquo;ve worked too.&lt;/p&gt;
+&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="n"&gt;total_memory_available&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;total_cores_available&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mf"&gt;0.07&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;// 122GB/16 * (1 - 0.07) = 28G
+// Leave some leeway, to 24-26G
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;em&gt;This directly affects how many executors that can be deployed per instance and also affects the
+memory available for each task, and consequently for each shuffle operation.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: In the example above, 4 executors of 4 cores each will run on each instance of &lt;code&gt;r3.8xlarge&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Task / Partition Size&lt;/h3&gt;
+
+&lt;p&gt;Another critical configuration is the task size; it is something that I think 
+should be considered carefully because the task &lt;em&gt;will slow down&lt;/em&gt; by quite a bit if it starts to spill to disk.&lt;/p&gt;
+
+&lt;p&gt;Initially, I just set the &lt;code&gt;default_parallelism&lt;/code&gt; in Spark and expected the system to automatically 
+handle the rest, and was surprised to see some stages spilling to disk causing the cluster to slow down. 
+I later found out that &lt;code&gt;default_parallelism&lt;/code&gt; is only used for certain operations and for the rest of the time, 
+Spark would infer the size by looking at the input from a previous stage, which happens to be the number of files
+it reads: 300. &lt;/p&gt;
+
+&lt;p&gt;Each of these files are roughly 800-900MB. And having that few paritions is not ideal since 
+each of these tasks / partitions will be too big to fit into memory. &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Well alright, this actually depends on your executor setup too.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;I had to force a repartition via &lt;code&gt;df.repartition(2000)&lt;/code&gt; right after the reading of the files. 
+This would immediately add a shuffle step but performs better later on in other tasks in my opinion, YMMV though.&lt;/p&gt;
+
+&lt;h3&gt;Shuffle Memory Usage, Executor Memory-to-CPU ratio&lt;/h3&gt;
+
+&lt;p&gt;In general, I tried to optimize the system to avoid any form of spilling, both memory and disk. If
+the entire shuffle operation can fit into memory, there will be no spilling.&lt;/p&gt;
+
+&lt;p&gt;Each core in an executor runs a single task at any one time. Hence, with 26GB per executor and 4 cores each executor, 
+the HEAP_SIZE allocated for each task is &lt;code&gt;26/4&lt;/code&gt; or &lt;code&gt;4G&lt;/code&gt;.  &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;However, not all the memory allocated to the executor is used for shuffle operations.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The memory available for shuffle can be calculated as such:&lt;/p&gt;
+&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="c1"&gt;// Per task
+&lt;/span&gt;&lt;span class="mi"&gt;24&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mf"&gt;0.2&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mf"&gt;0.8&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="mf"&gt;0.96&lt;/span&gt;&lt;span class="nc"&gt;GB&lt;/span&gt;
+
+&lt;span class="c1"&gt;// 0.2 -&amp;gt; spark.shuffle.memoryFraction
+// 0.8 -&amp;gt; spark.shuffle.safetyFraction
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If your task is already spilling to disk, you can use this formula to find out how much space it
+actually needs to better fine tune the RAM-to-CPU ratio for ur executor tasks.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;shuffle_write &lt;span class="k"&gt;*&lt;/span&gt; shuffle_spill_mem &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;4&lt;span class="o"&gt;)&lt;/span&gt;executor_cores
+—————————————————————————————————————————————————————————————————————
+shuffle_spill_disk &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;24&lt;span class="o"&gt;)&lt;/span&gt;executor_mem &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;0.2&lt;span class="o"&gt;)&lt;/span&gt;shuffle_mem_fraction &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;0.8&lt;span class="o"&gt;)&lt;/span&gt;shuffle_safety_fraction
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Splitting the task size properly is probably one of the bigger improvements while tuning my cluster. 
+&lt;strong&gt;Key takeaway:&lt;/strong&gt; It is definitely better to err on a higher number of partitions, which results in a smaller task bite size.&lt;/p&gt;
+
+&lt;h3&gt;Counter Example&lt;/h3&gt;
+
+&lt;p&gt;To quickly illustrate how things can go wrong in a problematic configuration, 
+I&amp;rsquo;ll use one of my iterations as an example.&lt;/p&gt;
+
+&lt;p&gt;I first used &lt;code&gt;c3&lt;/code&gt; &amp;amp; &lt;code&gt;m3&lt;/code&gt; instances and only allocated &lt;code&gt;10G&lt;/code&gt; per 3 cores. This works out
+to be about 500MB for shuffling each task. I had only 300 partitions and my task sizes were well beyond 850MB. &lt;/p&gt;
+
+&lt;p&gt;It resulted in a ton more needless computations:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-shuffle-spill.png"&gt;&lt;img src="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-shuffle-spill-small.png" alt="Shuffle Spills" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Getting the Right Partition Size and Instance Type&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;It is crucial to get the partition size right for it to run smoothly, but getting the right instance type
+makes it much more efficient.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Back to my setup, with about 2000 paritions and 250GB data, each partition or task works out to be 
+only about 125MB, which is close to the 128MB that is recommended in the official docs. &lt;/p&gt;
+
+&lt;p&gt;At that partition size, it is more efficient to run &lt;code&gt;c3.8xlarge&lt;/code&gt; instances with 
+a lower memory to core ratio. I did choose to use &lt;code&gt;i2.2xlarge&lt;/code&gt; memory instances to
+eliminate any possibility of a memory constraint issue but the &lt;code&gt;c3.8xlarge&lt;/code&gt; would&amp;rsquo;ve been much faster.&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# c3.8xlarge: 32 VCPUS, 60GB Memory&lt;/span&gt;
+&lt;span class="nv"&gt;$CORES_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
+&lt;span class="nv"&gt;$MEMORY_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;6.5G
+
+&lt;span class="c"&gt;# Available memory for shuffle, more than enough for 125mb&lt;/span&gt;
+6.5 / 4 &lt;span class="k"&gt;*&lt;/span&gt; 0.2 &lt;span class="k"&gt;*&lt;/span&gt; 0.8 &lt;span class="o"&gt;=&lt;/span&gt; 0.26G
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Spot Instances and HDFS&lt;/h3&gt;
+
+&lt;p&gt;Amazon EMR allows you to bid for spot instances at a &lt;em&gt;fraction of the cost&lt;/em&gt; of the original instance
+price. I use them frequently and have found them to be massively discounted during some hours. &lt;/p&gt;
+
+&lt;p&gt;I had HDFS running for the cluster and the results of each &lt;code&gt;result stage&lt;/code&gt; are stored into the HDFS for future use. 
+At first, I ran a test using spot instances completely, even for the CORE instance group, which turned out to be
+a big mistake.&lt;/p&gt;
+
+&lt;p&gt;When I lose the instances, inevitably, from getting outbidded during peak hours, the cluster loses data. 
+In my experience, Spark is unable to fully recover from the lost data, even after taking extra time for 
+stage-retries.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;With everything taken into consideration, I found it easier to just use on-demand instances 
+for the CORE instance group entirely.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;Instance Setup&lt;/h3&gt;
+
+&lt;p&gt;I recommend using non-spot, disk-optimized instances for the CORE instance group. For example, I got two 800GB SSDs 
+with an &lt;code&gt;i2.2xlarge&lt;/code&gt; which costs only ~$1.70 per hour. In comparison, &lt;code&gt;c3&lt;/code&gt; or &lt;code&gt;r3&lt;/code&gt; instances 
+give you way lesser disk space.&lt;/p&gt;
+
+&lt;p&gt;For the actual computation in the task instance group, I would switch to using only spot instances 
+(&lt;code&gt;r3.8xlarge&lt;/code&gt; or &lt;code&gt;c3.8xlarge&lt;/code&gt;). I&amp;rsquo;ve found that this was the most cost-efficient to run my task.&lt;/p&gt;
+
+&lt;p&gt;To bring it all together, I used 20 spot instances of &lt;code&gt;r3.8xlarge&lt;/code&gt;. Mentioned this above, but I&amp;rsquo;ll say it again.
+Memory instances were used just to eliminate any potential issue of shuffle spills but &lt;code&gt;c3.8xlarge&lt;/code&gt; would&amp;rsquo;ve been more efficient
+definitely as I&amp;rsquo;ve showned above. For the core group, there were 3 &lt;code&gt;i2.2xlarge&lt;/code&gt; on-demand instances for the HDFS.&lt;/p&gt;
+
+&lt;h3&gt;To Persist or Not?&lt;/h3&gt;
+
+&lt;p&gt;In some of the heavy shuffles, I found that it was faster to persist them on disk to 
+prevent re-calculations. This is especially true if you&amp;rsquo;re re-using scala variables further
+down the chain. Obviously, you&amp;rsquo;ll need to look into the total calculation time and compare it with
+the network read bytes (divided by an average network throughput) to see if it is worth while to
+persist. &lt;/p&gt;
+
+&lt;p&gt;One good thing is that the Amazon EMR handles the HDFS integrations seamlessly which makes
+it effortless to do a &lt;code&gt;DISK_ONLY&lt;/code&gt; persistance. One thing to note is that since I was doing some disk persistance, 
+I do end up using more disk space than the total data size. This is also why I chose to use the &lt;code&gt;i2&lt;/code&gt; instances
+for HDFS.&lt;/p&gt;
+
+&lt;h3&gt;Recalculations vs Persistence&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;Recalculations will yield different sequences every time.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;In my case, having to generate a key for each row was the one requirement I couldn&amp;rsquo;t remove. &lt;/p&gt;
+
+&lt;p&gt;Without persisting it to disk first, using the variable again would cause a re-calculation 
+through the stages and &lt;code&gt;zipWithIndex&lt;/code&gt; could potentially produce results which are 
+different each time and be rendered absolutely useless. &lt;/p&gt;
+
+&lt;p&gt;I was forced to persist them to disk but either way, since they were heavy operations, persisting
+them to disk made sense too.&lt;/p&gt;
+
+&lt;h3&gt;Resources&lt;/h3&gt;
+
+&lt;p&gt;All of the information has been sourced from multiple sources including, but not limited to:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/"&gt;Cloudera, How to tune your Apache Spark Jobs Part 1&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-1/"&gt;Cloudera, How to tune your Apache Spark Jobs Part 2&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details"&gt;Mastering Apache Spark&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.linkedin.com/pulse/tune-spark-jobs-2-chaaranpall-lambba"&gt;Tune Spark Jobs 2&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.slideshare.net/cloudera/top-5-mistakes-to-avoid-when-writing-apache-spark-applications"&gt;Top 5 Mistakes while writing Apache Spark Applications&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
   <entry>
     <title>How I Deployed My Golang Telegram Bot</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"/>
@@ -1097,101 +1335,6 @@ roughly half the size of the hard memory limit in ECS to prevent the above scena
 &lt;p&gt;Feel free to checkout &lt;a href="https://github.com/aranair/docker-elasticsearch-ecs"&gt;this github repository&lt;/a&gt; that I&amp;rsquo;ve put together the code I&amp;rsquo;ve talked about!&lt;/p&gt;
 
 &lt;p&gt;Do check back in a week or two!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>AWS Elasticsearch, Elastic Cloud vs Self-managed</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"/>
-    <id>http://blog.url.com/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</id>
-    <published>2016-11-22T00:00:00+08:00</published>
-    <updated>2016-12-14T21:13:53+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;From past experience, I found the maintenance and tuning of a Elastisearch cluster to be
-a little troublesome overtime. So it isn&amp;rsquo;t surprising to see hosted Elasticsearch services pop up
-one after another. Ok, to be fair, there are hosted services for nearly everything nowadays, from
-Kafka to Wordpress lol. There is really no shortage of them. Most of them provides hassle-free launching
-of entire clusters within minutes and promises to offload management of the clusters along popular
-plugins pre-installed.&lt;/p&gt;
-
-&lt;p&gt;Quite frankly, they&amp;rsquo;re welcomed services, but they do come with some caveats and I found these the hard way
-when I was evaluating the services when setting up a Elasticsearch cluster at Pocketmath.&lt;/p&gt;
-
-&lt;h3&gt;Cluster Node Discovery&lt;/h3&gt;
-
-&lt;p&gt;With both Elastic cloud and Amazon Elasticsearch Service, and quite possibly others too, one of the problems
-I quickly ran into is that they hide all nodes in the cluster except for the publicly accessible gateway.&lt;/p&gt;
-
-&lt;p&gt;What this means is that, you&amp;rsquo;ll need to disable discovery and only connect through the declared
-&lt;code&gt;es.nodes.wan.only&lt;/code&gt; mode, as described below in the Elasticsearch documentation.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;es.nodes.wan.only (default false)
-Whether the connector is used against an Elasticsearch instance in a cloud/restricted environment
-over the WAN, such as Amazon Web Services. In this mode, the connector disables discovery and
-only connects through the declared es.nodes during all operations, including reads and writes.
-
-Note that in this mode, performance is highly affected.
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on
-indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing
-to Elastic Cloud is &lt;em&gt;orders of magnitudes&lt;/em&gt; slower than indexing among Amazon web services.&lt;/p&gt;
-
-&lt;h3&gt;AWS ElasticSearch Service and IAM Roles&lt;/h3&gt;
-
-&lt;p&gt;Unfortunately, with AWS, I encountered more problems.&lt;/p&gt;
-
-&lt;p&gt;AWS Elasticsearch Service currently does not allow any of the commercial plugins like Shield, Watcher
-and it also lacks a good access control mechanism and/or VPC access. While there are some
-alternative mechanisms to control resource access but for my use-case, none of them were ideal.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Whitelisting of IPs:&lt;/strong&gt;
- This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However
-for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances
-with random IPs. As you might imagine, whitelisting &lt;code&gt;54.0.0.0/8&lt;/code&gt; isn&amp;rsquo;t exactly safe :P&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;IAM roles:&lt;/strong&gt;
- I could restrict access via IAM roles. However, all requests have to be signed individually,
-and at the time of this writing, there isn&amp;rsquo;t any Pig or Hive scripts available to do that yet. To
-be honest, I don&amp;rsquo;t think there are many libraries that support this right now. This has been
-confirmed by AWS.&lt;/p&gt;
-
-&lt;h3&gt;Proxy Server&lt;/h3&gt;
-
-&lt;p&gt;To work around this, one way is to set up a reverse proxy, which is then whitelisted via its IP
-in Access Policies in AWS ElasticSearch Service. This instance will then proxy all requests from the
-indexing instance, in my case- Amazon Elastic MapReduce (EMR) cluster, to the AWS ElasticSearch Service.
-It would also require an Elastic IP, so that the IP in the whitelist does not need to be constantly changed.&lt;/p&gt;
-
-&lt;p&gt;The upside to this is that it requires relatively few changes in the code, but the problem is,
-there is a single point of weakness &amp;amp; failure- the proxy server. It does not scale well and would
-also require constant monitoring to ensure that it is not the bottleneck in performance.&lt;/p&gt;
-
-&lt;p&gt;This method is well explained and walked-through in this &lt;a href="https://eladnava.com/secure-aws-elasticsearch-service-behind-vpc/#theworkaround"&gt;blog post&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h3&gt;Application or Local Proxy&lt;/h3&gt;
-
-&lt;p&gt;This &lt;a href="https://github.com/abutaha/aws-es-proxy"&gt;github repo&lt;/a&gt; allows you to setup a small web application
-layer that sits between your code and Elasticsearch. It exposes &lt;code&gt;localhost:9200&lt;/code&gt; to your app
-on every instance it is running on and signs every request (based on IAM roles) before relaying
-it to Elasticsearch. This removes the need for IP-based access control and helps with the
-scaling issues by eliminating the single point of failure.&lt;/p&gt;
-
-&lt;p&gt;A bootstrap action (for the EMR cluster) could be added to install this and run in the background:&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/bash&lt;/span&gt;
-wget https://github.com/abutaha/aws-es-proxy/releases/download/v0.2/aws-es-proxy-0.2-linux-amd64
-
-chmod +x aws-es-proxy-0.2-linux-amd64
-./aws-es-proxy-0.2-linux-amd64 -endpoint https://elasticsearch.endpoint.hostname /dev/null &amp;amp;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;With that the remote endpoint would be available via:&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XGET &lt;span class="s1"&gt;'http://localhost:9200'&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Choices&lt;/h3&gt;
-
-&lt;p&gt;While the second method is definitely feasible, in the end, in view of the issues (and workarounds)
-and the cost of equivalent instances in AWS vs AWS ElasticSearch Service and the lack of support for
-plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would
-probably be much more flexible for us in future than a hosted service with a bunch of restrictions.&lt;/p&gt;
 </content>
   </entry>
 </feed>
