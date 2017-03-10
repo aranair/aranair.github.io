@@ -1,5 +1,5 @@
 ---
-title: 'How I Tuned My Apache Spark Data Processing Task on Amazon EMR'
+title: 'Tuning My Apache Spark Data Processing Cluster on Amazon EMR'
 description: 'I talk about some of the issues I faced while setting up a Spark cluster to run some
 data processing tasks, and some choices and considerations I made while trying to tune the performance
 of the cluster.'
