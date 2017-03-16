@@ -9,35 +9,33 @@ disqus_identifier: 2017/tuning-apache-spark-cluster-on-amazon-emr
 disqus_title: Data Processing with Apache Spark Cluster on Amazon EMR
 ---
 
-Lately, I worked on some data integration at Pocketmath where I wrote a 
+Lately, I had the chance to work on some data integration at Pocketmath where I wrote a 
 bunch of Spark scripts in Scala to run some transformations on a data set of about 
-250GB on a monthly basis. In this post, I'll talk about some of the 
-problems I encountered, and some considerations while setting up the cluster and running
-the Spark tasks.
+250GB that will run on a monthly basis. In this post, I talk about some of the 
+problems I encountered, and some considerations while setting up the cluster and also how I improved
+the performance of the the Spark tasks.
 
 ### Dataset Size
 
-The size of the data set is about 250GB, which isn't quite close to the scale other data 
-scientist/engineers handle, but is easily one of the bigger ones for me. Nonetheless, I do think the 
+The size of the data set is only 250GB, which probably isn't even close to the scale other data 
+engineers handle, but is easily one of the bigger sets for me. Nonetheless, I do think the 
 transformations are on the heavy side; it involves a chain of rather expensive operations. 
-
-Because of the sensitive nature of the data, I'm going to skip the nitty-gritty details of the task.
-I'll run through the kind of steps that were included in the script.
 
 ### Multiple Shuffle Operations
 
-The script starts off with multiple `JOIN`s into a `UNION`, `EXPLODE`, `SORT` within partition, 
-then `GROUP` and `COLLECT` into another `SORT` eventually. They're 
-_pretty_ expensive shuffle operations and as you might imagine, doing this on this data size did
-pose some problems at first when I wasn't so familar with the details of how Spark handles
-memory allocations.
+The sequence of execution is something like `JOIN`, `JOIN`, `UNION`, `EXPLODE`, `SORT` within partition,
+then `GROUP`, `COLLECT` and finally another `SORT` eventually. 
+
+Each of these are *pretty* expensive shuffle operations. Not surprisingly, these operations posed some problems
+even at this moderate data size.
 
 [![Spark Flow Chart](https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow-small.png)](https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow.png)
 
-### Second Difficulty
+### Another Difficulty
 
-Secondly, I also had to split a file that looks like the examples below. Essentially, you can imagine 
-them to be ranks or row numbers (of course, with a bunch of other data transformations)
+On top of that, I also had to split a file that looks like the examples below. 
+
+Essentially, I think of it as generating ranks or row numbers (of course, with a bunch of other data transformations)
 
 From this format:
 
@@ -59,34 +57,35 @@ Into these two files:
 ```bash
 1 8,120,384,898 
 2 1,9,1214,8827 
+
 ...
 ```
 
-It turns out that generating a consistent row number like this is a difficult operation for Spark to handle. 
-Matter of fact, it is probably an expensive task for any distributed system to perform. Also, 
-I was working mostly with `Dataframes` in Spark 2.0 and the only way that I know of currently to 
-generate these row numbers is to first convert into an RDD and do a `zipWithIndex` on it. 
+It turns out that generating a consistent row number like this is a difficult operation for Spark to handle.
+**Matter of fact**, it is probably an expensive task for any distributed system to perform. 
+
+`Dataframes` are available in Spark 2.0 and I mainly use that data structure. The only way that I know of currently to 
+generate these row numbers with a Dataframe is to first convert into an RDD and do a `zipWithIndex` on it. 
 
 ```scala
 val segRdd = segmentIdGroups.rdd
 val rows = segRdd.zipWithIndex.map { case (r: Row, id: Long) => Row.fromSeq((id+1) +: r.toSeq) }
 ```
 
-*Well, there is another method that involves windows and partitions but unfortunately it basically 
+*Okay, there is actually another method that involves windows and partitions but unfortunately it basically 
 moves all the data into one partition, which isn't feasible for me.*
 
 
 ### Executer Cores and Memory Allocation
 
-For the Spark task that I send to Amazon EMR, I manually set the 
-`--executor-cores` and `--executor-memory` configurations. The calculation is somewhat 
-non-intuitive because I had to manually take into account the overheads of `YARN`, 
-the application master/driver cores and memory usage et cetera.
+While starting the Spark task in Amazon EMR, I manually set the `--executor-cores` and `--executor-memory` 
+configurations. The calculation is somewhat non-intuitive at first because I have to manually take into account 
+the overheads of YARN, the application master/driver cores and memory usage et cetera.
 
-In general, YARN overheads take roughly `7%` and reducing some from there is good practice, to ensure enough
-is left for system processes and Hadoop e.g.
+As a guideline, YARN overheads take roughly `7%` and allocating more from there is generally good practice. This
+ensures enough is left for system processes and Hadoop e.g.
   
-Say for an instance of `r3.8xlarge`
+Using an instance of `r3.8xlarge` as an example:
 
 ```bash
 # 122GB RAM, 16 cores
@@ -98,13 +97,16 @@ $CORES_PER_EXECUTOR=4
 $MEMORY_PER_EXECUTOR=24G
 ```
 
-With 4 cores per executor, each instance could *potentially* run 4 executors. To account for the overhead,
-I multiply the memory by `93%`, which works out to be `28G`. In the end, I used `24G` just 
-to account for overheads for the driver, Hadoop processes, the UI and the OS but on hindsight, 
-`26G` probably would've worked too.
+Each instance could potentially run 4 executors, with 4 cores per executor. Available memory for the HEAP is 122/4 = 30.5G.
+
+To account for the overheads, I multiply the available memory by **0.93**. This works out to be **28G**.
+For my experiment, I used **24G** just to account for the overheads but on hindsight, **26G** should be enough too.
+
+Recap: 
 
 ```scala
 total_memory_available / total_cores_available * (1 - 0.07)
+
 // 122GB/16 * (1 - 0.07) = 28G
 // Leave some leeway, to 24-26G
 ```
@@ -112,12 +114,10 @@ total_memory_available / total_cores_available * (1 - 0.07)
 *This directly affects how many executors that can be deployed per instance and also affects the
 memory available for each task, and consequently for each shuffle operation.*
 
-**Note**: In the example above, 4 executors of 4 cores each will run on each instance of `r3.8xlarge`.
-
 ### Task / Partition Size
 
-Another critical configuration is the task size; it is something that I think 
-should be considered carefully because the task *will slow down* by quite a bit if it starts to spill to disk.
+Another critical configuration is the task size; it is something that I think should be considered carefully 
+because the task **will slow down** by quite a bit if it starts to spill to disk.
 
 Initially, I just set the `default_parallelism` in Spark and expected the system to automatically 
 handle the rest, and was surprised to see some stages spilling to disk causing the cluster to slow down. 
@@ -139,7 +139,7 @@ In general, I tried to optimize the system to avoid any form of spilling, both m
 the entire shuffle operation can fit into memory, there will be no spilling.
 
 Each core in an executor runs a single task at any one time. Hence, with 26GB per executor and 4 cores each executor, 
-the HEAP_SIZE allocated for each task is `26/4` or `4G`.  
+the HEAP_SIZE allocated for each task is **26G/4** or **4G**.  
 
 **However, not all the memory allocated to the executor is used for shuffle operations.**
   
@@ -153,8 +153,8 @@ The memory available for shuffle can be calculated as such:
 // 0.8 -> spark.shuffle.safetyFraction
 ```
 
-If your task is already spilling to disk, you can use this formula to find out how much space it
-actually needs to better fine tune the RAM-to-CPU ratio for ur executor tasks.
+If your task is already spilling to disk, try using this formula to find out how much space it
+actually needs. This might help you to better fine tune the RAM-to-CPU ratio for ur executor tasks.
 
 ```bash
 shuffle_write * shuffle_spill_mem * (4)executor_cores
