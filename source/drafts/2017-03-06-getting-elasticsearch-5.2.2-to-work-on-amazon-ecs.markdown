@@ -42,8 +42,6 @@ a few instances and leave them there for awhile, then this hiccup would deal no 
 
 I will be basing this off my [Dockerfile][3] for ElasticSearch 2.3.5 in the [docker-elasticsearch-ecs repo][4].
 
-First, I bumped the version.
-
 ```Dockerfile
 FROM elasticsearch:5.2.2
 
@@ -53,6 +51,9 @@ COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
 
 RUN bin/elasticsearch-plugin install discovery-ec2
 ```
+
+Notable changes include bumping the version and changing `cloud-aws` plugin to `discovery-ec2` which
+is the new plugin for the same purpose of node discovery in cloud environments.
 
 [1]: https://github.com/docker-library/elasticsearch/issues/111
 [2]: https://github.com/aws/amazon-ecs-agent/issues/502
