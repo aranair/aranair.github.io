@@ -16,6 +16,8 @@ description: 'The list of articles that I have written'
     <h2 class="article-summary__article-title">
       <%= link_to article.title, article %><br>
       <span class="article-summary__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
         <%= article.date.strftime("%b %d, %Y") %>
         <span class="article__middle-dot"></span>
         <%= reading_time article.body %> read
