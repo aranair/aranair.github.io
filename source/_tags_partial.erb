@@ -1,4 +1,5 @@
 <div class="tags">
+  Tag Cloud </br>
   <% blog.articles.map(&:tags).flatten.uniq.each do |tag| %>
     <%= link_to tag, tag_path(tag), class: 'tags-link' %>
   <% end %>

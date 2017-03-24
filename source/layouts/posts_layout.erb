@@ -1,29 +1,33 @@
 <% wrap_layout :layout do %>
-  <div class="article row">
-    <h1 class="page-header article__article-title">
-      <%= current_article.title %><br>
-    </h1>
-    <div class="article__published-date">
-      <%= current_article.date.strftime("%b %d, %Y") %>
-      <span class="article__middle-dot"></span>
-      <%= reading_time current_article.body %> read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-      <% current_article.tags.each do |tag| %>
-        <li class="article__tag">
-          <%= link_to tag, tag_path(tag), class: 'article__tag-link' %>
-        </li>
-      <% end %>
-      </ul>
-    </div>
-    <hr>
+  <h1 class="page-header article__article-title">
+    <%= current_article.title %><br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        <%= current_article.date.strftime("%b %d, %Y") %>
+        <span class="article__middle-dot"></span>
+        <%= reading_time current_article.body %> read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+        <% current_article.tags.each do |tag| %>
+          <li class="article__tag">
+            <%= link_to tag, tag_path(tag), class: 'article__tag-link' %>
+          </li>
+        <% end %>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <%= yield %>
-    </div>
+      <div class="article__content">
+        <%= yield %>
+      </div>
 
-    <%= disqus %>
-    <%= disqus_count %>
+      <%= disqus %>
+      <%= disqus_count %>
+    </div>
   </div>
 <% end %>

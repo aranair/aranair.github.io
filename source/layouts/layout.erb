@@ -29,10 +29,8 @@
   <body class="<%= page_classes %>">
     <%= partial "navbar" %>
     <div class="wrapper">
-      <div class="container">
-        <%= partial "tags_partial" %>
+      <%= partial "tags_partial" %>
         <%= yield %>
-      </div>
     </div>
   </body>
 </html>
