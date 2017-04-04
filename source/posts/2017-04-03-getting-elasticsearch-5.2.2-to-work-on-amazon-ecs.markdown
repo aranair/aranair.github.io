@@ -3,7 +3,7 @@ title: 'Upgrading to ElasticSearch 5.2.2 on Amazon ECS'
 description: 'I talk about some of the configuration changes that were required to bump the version of a ElasticSearch cluster
 running in ECS from 2.3.5 to 5.2.2. I also talk about the massive caveat of the sysctl config issue in ECS that currently
 makes this a less-than-ideal combination at the moment.'
-date: 2017-04-05
+date: 2017-04-03
 tags: elasticsearch, aws, ecs
 disqus_identifier: 2017/elasticsearch-5-2-2-amazon-ecs
 disqus_title: Elasticsearch 5.2.2 Cluster in ECS
