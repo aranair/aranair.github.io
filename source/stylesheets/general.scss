@@ -46,7 +46,8 @@ p {
   margin-top: 1em;
 
   a {
-    border-bottom: 1px dotted #333;
+    // border-bottom: 1px dotted #333;
+    border-bottom: 1px solid rgba(0, 0, 0, .4);
   }
   
   a.fa {
@@ -67,7 +68,8 @@ a:focus,
 a:hover {
   color: #444;
   text-decoration: none;
-  border-bottom: 1px solid rgba(0, 0, 0, .4);
+  border-bottom: 1px solid #333;
+  // border-bottom: 1px solid rgba(0, 0, 0, .4);
 }
 
 .wrapper {

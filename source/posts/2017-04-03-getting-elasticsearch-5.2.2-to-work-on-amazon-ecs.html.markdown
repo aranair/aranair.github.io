@@ -11,10 +11,14 @@ disqus_title: Elasticsearch 5.2.2 Cluster in ECS
 
 In [one of my previous post][1], I talked about how I set up Elasticsearch 2.3.5 on ECS. I got a comment in
 that post that prompted me to update the setup for Elasticsearch 5. It's been awhile, but better late than never right?
-I gave it a go, and in this post I'll like to share what I found in the process.
+So I gave it a go! In this post I'll like to share what I found in the process.
 
 There were a couple of other configuration changes that were required to upgrade to 5.2.2 from 2.3.5 but they weren't
-difficult, except one. At this point, I'll mention a caveat that will likely save you an hour of headache and trouble.
+difficult, except one that may potentially deter you from using ECS with Elasticsearch 5, for the time being at least.
+
+### Main Caveat
+
+At this point, I'll mention a caveat that will likely save you an hour of headache and trouble.
 
 *Long story short, You will need to SSH into the ECS instances to run the command on the parent to 
 get past the error message below. I am not aware of any other solutions but if you do, feel free to
@@ -24,24 +28,42 @@ let me know in the comments section below!*
 elasticsearch:5.2.2 max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
 ```
 
-This [github issue][1] suggests running `sudo sysctl -w vm.max_map_count=262144` or run the docker 
-container with the `--sysctl` option. 
+This [docker-library/elasticsearch github issue][1] suggests running `sudo sysctl -w vm.max_map_count=262144` or run the docker 
+container with the `--sysctl` option to fix this problem.
 
-**However**, because of how ECS has implemented the agents, many of the docker run options are not available. 
-This [github issue][2] under amazon-ecs-agent documents this and it seems like there are a few others who
-are encountering the same issue.
+**However**, because of how ECS implements the agents currently, many of the docker run options are not available. 
+This is well-documented over at the [amazon-ecs-agent Github repository][2] so I won't echo them here. But it does 
+seem like there are a bunch of others who are encountering the same issue.
+
+### Continuing..
 
 In my opinion, this makes the combination slightly less-than-ideal because the manual configuration work that is required 
 on the EC2 instances takes away some of the benefits of implementing ElasticSearch in ECS.
 
-### Continuing..
-
 If you're okay with the manual configuration running that command on the instances, or for example, if you plan to provision
-a few instances and leave them there for awhile, then this hiccup would deal no damage. Let's move on.
+a few instances and leave them there for awhile, then this hiccup would deal no damage. 
+
+*Let's forge on.*
 
 ### Configuration Changes
 
-The starting point is the [Dockerfile][3] for ElasticSearch 2.3.5 in my [docker-elasticsearch-ecs repo][4].
+The starting point is the [Dockerfile][3] for ElasticSearch 2.3.5 in my [docker-elasticsearch-ecs repo][4]:
+
+```Dockerfile
+FROM elasticsearch:2.3
+
+WORKDIR /usr/share/elasticsearch
+
+RUN bin/plugin install cloud-aws
+RUN bin/plugin install mobz/elasticsearch-head
+RUN bin/plugin install analysis-phonetic
+
+COPY elasticsearch.yml config/elasticsearch.yml
+COPY logging.yml config/logging.yml
+COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
+```
+
+**And modified to:**
 
 ```Dockerfile
 FROM elasticsearch:5.2.2
@@ -96,23 +118,23 @@ discovery.zen.hosts_provider: ec2
 discovery.ec2.groups: dockerecs
 ```
 
-### Heap Size
+### Task Definition / Heap Size
 
 In Elasticsearch 5, the heap size is also a mandatory configuration. For this, I set it directly in ECS via 
-the JSON task definition. You can either set the `ES_HEAP_SIZE` or the `ES_JAVA_OPTS`. 
+the JSON task definition. I had to set the `ES_JAVA_OPTS` for it to work.
 
-```
-ES_HEAP_SIZE="1g"
-# or
+```bash
 ES_JAVA_OPTS="-Xms1g -Xmx1g"
 ```
 
 ### Wrapping up
 
 It isn't a whole lot of changes but it did take some time googling each of the issues that came up as I tried to start
-the services on ECS and also eventually had to SSH into the instance to set the `vm.max_map_count` which really is
-less than ideal in a deployment process otherwise full-automated. But if you're still looking ahead to use ElasticSearch 5
-in ECS, the above steps should serve you well.
+the services on ECS and also eventually had to SSH into the instance to set the `vm.max_map_count` before I managed to
+get the cluster up.
+
+This is obviously less than ideal in a deployment process which otherwise could be full-automated. But if you're 
+still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve you well!
 
 [1]: https://github.com/docker-library/elasticsearch/issues/111
 [2]: https://github.com/aws/amazon-ecs-agent/issues/502
