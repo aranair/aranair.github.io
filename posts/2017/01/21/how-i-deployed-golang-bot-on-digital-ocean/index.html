@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -106,44 +106,47 @@
 </div>
 
 
-          <div class="article row">
-    <h1 class="page-header article__article-title">
-      How I Deployed My Golang Telegram Bot<br>
-    </h1>
-    <div class="article__published-date">
-      Jan 21, 2017
-      <span class="article__middle-dot"></span>
-      13  minutes read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-        <li class="article__tag">
-          <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/telegram/" class="article__tag-link">telegram</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/bot/" class="article__tag-link">bot</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/webhooks/" class="article__tag-link">webhooks</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/ssl/" class="article__tag-link">ssl</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/nginx/" class="article__tag-link">nginx</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/digital-ocean/" class="article__tag-link">digital-ocean</a>
-        </li>
-      </ul>
-    </div>
-    <hr>
+          <h1 class="page-header article__article-title">
+    How I Deployed My Golang Telegram Bot<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jan 21, 2017
+        <span class="article__middle-dot"></span>
+        13  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/telegram/" class="article__tag-link">telegram</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/bot/" class="article__tag-link">bot</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/webhooks/" class="article__tag-link">webhooks</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/ssl/" class="article__tag-link">ssl</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/nginx/" class="article__tag-link">nginx</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/digital-ocean/" class="article__tag-link">digital-ocean</a>
+          </li>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <p>Continuing where I left off in the <a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/">first part</a> of my <code>Golang Telegram Bot</code>, in this post I go through all the
+      <div class="article__content">
+        <p>Continuing where I left off in the <a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/">first part</a> of my <code>Golang Telegram Bot</code>, in this post I go through all the
 steps I took to get to a one command deployment of my Telegram bot into a Digital Ocean Ubuntu 16.04
 instance. A number of components were involved: dockerizing the app, setting up a self-signed SSL cert,
 get the Nginx to work as a reverse proxy with that, submitting the SSL to Telegram, and finally setting up
@@ -392,9 +395,9 @@ chats in Telegram and helps me to manage my ever-growing list of responsibilitie
 
 <p>Feel free to star it or fork it or leave comments below!</p>
 
-    </div>
+      </div>
 
-    <div id='disqus_thread'></div>
+      <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
@@ -411,7 +414,7 @@ chats in Telegram and helps me to manage my ever-growing list of responsibilitie
 <noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
 <a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
 
-    <script type="text/javascript">
+      <script type="text/javascript">
 //<![CDATA[
     var disqus_shortname = 'homan-gh-blog';
     (function () {
@@ -423,9 +426,9 @@ chats in Telegram and helps me to manage my ever-growing list of responsibilitie
 //]]>
 </script>
 
+    </div>
   </div>
 
-      </div>
     </div>
   </body>
 </html>

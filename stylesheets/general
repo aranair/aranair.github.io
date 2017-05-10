@@ -38,7 +38,7 @@ p {
   margin-bottom: 1em;
   margin-top: 1em; }
   p a {
-    border-bottom: 1px dotted #333; }
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
   p a.fa {
     border-bottom: none; }
 
@@ -53,13 +53,13 @@ a:focus,
 a:hover {
   color: #444;
   text-decoration: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
+  border-bottom: 1px solid #333; }
 
 .wrapper {
   margin: 0 0.5%; }
 
 .container {
-  max-width: 550px;
+  max-width: 635px;
   margin: auto; }
 
 ul li,

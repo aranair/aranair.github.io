@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -122,33 +122,58 @@
 </div>
 
 
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/">Capistrano, Postgres, Rails, Nginx & Puma on DigitalOcean</a><br>
-      <span class="article-summary__published-date">
-        Jan 22, 2016
-        <span class="article__middle-dot"></span>
-        10  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>Recently, I’ve been working on my squash club, <a href="http://www.ucsc.sg">UCSC’s new site</a>. And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.</p>
+<div class="container">
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2016/04/27/golang-docker-postgres-digital-ocean/">Setting up Dockerized Golang + Postgres on Digital Ocean</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          Apr 27, 2016
+          <span class="article__middle-dot"></span>
+          5  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.</p>
+
+<p>But with the rise in popularity of Docker recently, I’ve been wanting to deploy something into production with Docker but never found the right app for it until this one.</p>
+
+<p>It was a simple Golang...</p>
+      </div>
+      <a href="/posts/2016/04/27/golang-docker-postgres-digital-ocean/" class="article-summary__readmore">Read more &#8594;</a>
+    </div>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/">Capistrano, Postgres, Rails, Nginx & Puma on DigitalOcean</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          Jan 22, 2016
+          <span class="article__middle-dot"></span>
+          10  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>Recently, I’ve been working on my squash club, <a href="http://www.ucsc.sg">UCSC’s new site</a>. And of course, being slightly short of time, I kinda just fell back on Rails to quickly get something up for the club.</p>
 
 <p>Before Heroku decided to put a 7 USD price on their free tier, it was an easy default for hosting any mini prototypes or projects. Ok I admit, I’ve historically used...</p>
+      </div>
+      <a href="/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2015/07/04/heka-bigquery-realtime-log/">Kafka + Heka to Bigquery Setup for Realtime Logs</a><br>
-      <span class="article-summary__published-date">
-        Jul 04, 2015
-        <span class="article__middle-dot"></span>
-        4  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2015/07/04/heka-bigquery-realtime-log/">Kafka + Heka to Bigquery Setup for Realtime Logs</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          Jul 04, 2015
+          <span class="article__middle-dot"></span>
+          4  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
 
 <p>The packages allows us to process 2 different modes of communication protocol with just one set of schema defined in proto files:</p>
 
@@ -156,36 +181,40 @@
 <li>
 <code>json</code> package...</li>
 </ul>
+      </div>
+      <a href="/posts/2015/07/04/heka-bigquery-realtime-log/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2015/07/04/heka-bigquery-realtime-log/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2015/05/05/golang-protobuf/">Golang + Protobuf</a><br>
-      <span class="article-summary__published-date">
-        May 05, 2015
-        <span class="article__middle-dot"></span>
-        6  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)</p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2015/05/05/golang-protobuf/">Golang + Protobuf</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 05, 2015
+          <span class="article__middle-dot"></span>
+          6  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)</p>
 
 <p>Recently, I’ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing,...</p>
+      </div>
+      <a href="/posts/2015/05/05/golang-protobuf/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2015/05/05/golang-protobuf/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/21/predefined-structs-vs-type-assertion-go/">Predefined Structs vs Type Assertion in Go</a><br>
-      <span class="article-summary__published-date">
-        May 21, 2014
-        <span class="article__middle-dot"></span>
-        5  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>Suppose you have a JSON of this format:</p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/21/predefined-structs-vs-type-assertion-go/">Predefined Structs vs Type Assertion in Go</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 21, 2014
+          <span class="article__middle-dot"></span>
+          5  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>Suppose you have a JSON of this format:</p>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="s2">"results"</span><span class="p">:</span><span class="w"> 
     </span><span class="s2">"collection"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
@@ -203,106 +232,102 @@
 <h3>Similarities</h3>
 
 <p>There are essentially 2 methods to do this, using pre...</p>
+      </div>
+      <a href="/posts/2014/05/21/predefined-structs-vs-type-assertion-go/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2014/05/21/predefined-structs-vs-type-assertion-go/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/20/vim-toggle-background-scheme/">VIM Toggle Background Scheme</a><br>
-      <span class="article-summary__published-date">
-        May 20, 2014
-        <span class="article__middle-dot"></span>
-        less than a minute read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/20/vim-toggle-background-scheme/">VIM Toggle Background Scheme</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 20, 2014
+          <span class="article__middle-dot"></span>
+          less than a minute read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>Have you ever wanted BOTH the dark and the light background schemes in VIM? Perhaps in the day, you feel that you can concentrate better with a light background and at night, the dark. I did! So I bound one of my Fn keys to do just that. </p>
 
 <p>This works well for color schemes that offer both dark and light versions, for example Solarized.</p>
 <pre class="highlight plaintext"><code>let g:scheme_bg...</code></pre>
+      </div>
+      <a href="/posts/2014/05/20/vim-toggle-background-scheme/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2014/05/20/vim-toggle-background-scheme/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/12/opt-arrow-navigation-in-iterm2/">Opt-Arrow Navigation in iTerm2</a><br>
-      <span class="article-summary__published-date">
-        May 12, 2014
-        <span class="article__middle-dot"></span>
-        1  minute read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>Something that most people use frequently but take for granted for sure is the use of Option + Arrow keys to navgiate between words in Mac OS X. Its just something you use and not think about much and it becomes second nature almost. So when I moved to iTerm, I’m sure a couple of you would have wanted to maintain the the same behaviour of that in...</p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/12/opt-arrow-navigation-in-iterm2/">Opt-Arrow Navigation in iTerm2</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 12, 2014
+          <span class="article__middle-dot"></span>
+          1  minute read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>Something that most people use frequently but take for granted for sure is the use of Option + Arrow keys to navgiate between words in Mac OS X. Its just something you use and not think about much and it becomes second nature almost. So when I moved to iTerm, I’m sure a couple of you would have wanted to maintain the the same behaviour of that in...</p>
+      </div>
+      <a href="/posts/2014/05/12/opt-arrow-navigation-in-iterm2/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2014/05/12/opt-arrow-navigation-in-iterm2/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/07/block-scope-in-javascript/">Block Scope in Javascript</a><br>
-      <span class="article-summary__published-date">
-        May 07, 2014
-        <span class="article__middle-dot"></span>
-        2  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>I do abit of development work using plain Javascript on and off. I’ve written OOP modular Javascript for Wego as well but my development work is never really deep enough to encounter all the classic “noob” problems. </p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/07/block-scope-in-javascript/">Block Scope in Javascript</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 07, 2014
+          <span class="article__middle-dot"></span>
+          2  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>I do abit of development work using plain Javascript on and off. I’ve written OOP modular Javascript for Wego as well but my development work is never really deep enough to encounter all the classic “noob” problems. </p>
 
 <p>Today I came across one. It was something that got me a little mind-blown because it is something that I have entirely taken for granted...</p>
+      </div>
+      <a href="/posts/2014/05/07/block-scope-in-javascript/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2014/05/07/block-scope-in-javascript/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/04/emberjs-jqueryui-date-momentjs/">EmberJS + JQueryUI Date + Moment.js</a><br>
-      <span class="article-summary__published-date">
-        May 04, 2014
-        <span class="article__middle-dot"></span>
-        4  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with <code>jQuery UI's date picker</code> + <code>moment.js</code> for the parsing/display of the dates.</p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/04/emberjs-jqueryui-date-momentjs/">EmberJS + JQueryUI Date + Moment.js</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 04, 2014
+          <span class="article__middle-dot"></span>
+          4  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>When handling the dates in one of my EmberJS apps, I had to find a date picker to work with. In the end, with the recommendation from my fellow colleagues, I went with <code>jQuery UI's date picker</code> + <code>moment.js</code> for the parsing/display of the dates.</p>
 
 <h3>The Issues</h3>
 
 <p>There were a few things that kinda put me off guard. The first: when deserializing/serializing...</p>
+      </div>
+      <a href="/posts/2014/05/04/emberjs-jqueryui-date-momentjs/" class="article-summary__readmore">Read more &#8594;</a>
     </div>
-    <a href="/posts/2014/05/04/emberjs-jqueryui-date-momentjs/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/05/04/emberjs-computed-properties-vs-manual-filter/">EmberJS Computed Properties vs Manual Filter</a><br>
-      <span class="article-summary__published-date">
-        May 04, 2014
-        <span class="article__middle-dot"></span>
-        2  minutes read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>The problem begins when one of my ‘filter functions’ for the my model (delayed/active tasks lists from all tasks) wasn’t getting reactively updated when the store gets new entries or updates. When I found out why, I thought to myself that this is actually a pretty easy scenario to fall into IMHO.</p>
+    <div class="article-list__article-summary">
+      <h2 class="article-summary__article-title">
+        <a href="/posts/2014/05/04/emberjs-computed-properties-vs-manual-filter/">EmberJS Computed Properties vs Manual Filter</a><br>
+        <span class="article-summary__published-date">
+          Written by Ho Man
+          <span class="article__middle-dot"></span>
+          May 04, 2014
+          <span class="article__middle-dot"></span>
+          2  minutes read
+        </span>
+      </h2>
+      <div class="article-summary__article-content">
+        <p>The problem begins when one of my ‘filter functions’ for the my model (delayed/active tasks lists from all tasks) wasn’t getting reactively updated when the store gets new entries or updates. When I found out why, I thought to myself that this is actually a pretty easy scenario to fall into IMHO.</p>
 
 <p>I realised that I wasn’t actually utilising ember...</p>
-    </div>
-    <a href="/posts/2014/05/04/emberjs-computed-properties-vs-manual-filter/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-  <div class="article-list__article-summary">
-    <h2 class="article-summary__article-title">
-      <a href="/posts/2014/04/29/cmd-function-to-browse-git-branch-compare/">CMD Function to Browse Git Branch/Compare</a><br>
-      <span class="article-summary__published-date">
-        Apr 29, 2014
-        <span class="article__middle-dot"></span>
-        1  minute read
-      </span>
-    </h2>
-    <div class="article-summary__article-content">
-      <p>While I am doing development work on projects, be it at work or at home, I find that something that I do at least a couple of times (or more) daily. After commiting and pushing the changes, sometimes I want to go to the branch on github from the terminal to either create a pull request or to just view all the commits/diffs altogether. It gets a little...</p>
-    </div>
-    <a href="/posts/2014/04/29/cmd-function-to-browse-git-branch-compare/" class="article-summary__readmore">Read more &#8594;</a>
-  </div>
-
       </div>
+      <a href="/posts/2014/05/04/emberjs-computed-properties-vs-manual-filter/" class="article-summary__readmore">Read more &#8594;</a>
+    </div>
+</div>
+
     </div>
   </body>
 </html>

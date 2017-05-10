@@ -121,6 +121,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -301,6 +305,14 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2017/04/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/04/03/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2017/03/</loc>
     <priority>0.7</priority>
   </url>
@@ -425,7 +437,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/29/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -489,7 +501,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/29/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>

@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -106,26 +106,29 @@
 </div>
 
 
-          <div class="article row">
-    <h1 class="page-header article__article-title">
-      Emberjs Model RestAdapter Conventions<br>
-    </h1>
-    <div class="article__published-date">
-      Aug 04, 2013
-      <span class="article__middle-dot"></span>
-      2  minutes read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-        <li class="article__tag">
-          <a href="/posts/tags/emberjs/" class="article__tag-link">emberjs</a>
-        </li>
-      </ul>
-    </div>
-    <hr>
+          <h1 class="page-header article__article-title">
+    Emberjs Model RestAdapter Conventions<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Aug 04, 2013
+        <span class="article__middle-dot"></span>
+        2  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/emberjs/" class="article__tag-link">emberjs</a>
+          </li>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
+      <div class="article__content">
+        <p>After I was done with exploring with local fixtures data, its time to experiment with using the RestAdapter provided by Emberjs to call the appropriate json data from the rails backend.</p>
 
 <p>It was pretty simple and straightforward mostly. You basically just change the store to have &ldquo;adapter: DS.RESTAdapter&rdquo; and extend the model to have the appropriate attribute names from the server. (I&rsquo;m using ActiveModel serializers) It then automagically works. Emberjs helps to figure out all the paths it needs to get the appropriate data.  </p>
 
@@ -151,9 +154,9 @@
 <p>Apparently not so!  It turns out that Emberjs expects snake case in the JSON when the attribute name is camelized! So the correct format that you should be sending from the server should be like this!</p>
 <pre class="highlight json"><code><span class="p">{</span><span class="w"> </span><span class="err">name</span><span class="p">:</span><span class="w"> </span><span class="err">'test'</span><span class="p">,</span><span class="w"> </span><span class="err">task_details</span><span class="p">:</span><span class="w"> </span><span class="err">'details'</span><span class="p">,</span><span class="w"> </span><span class="err">is_completed</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">}</span><span class="w">
 </span></code></pre>
-    </div>
+      </div>
 
-    <div id='disqus_thread'></div>
+      <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
@@ -168,7 +171,7 @@
 <noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
 <a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
 
-    <script type="text/javascript">
+      <script type="text/javascript">
 //<![CDATA[
     var disqus_shortname = 'homan-gh-blog';
     (function () {
@@ -180,9 +183,9 @@
 //]]>
 </script>
 
+    </div>
   </div>
 
-      </div>
     </div>
   </body>
 </html>

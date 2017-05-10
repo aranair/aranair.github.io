@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -106,66 +106,67 @@
 </div>
 
 
-          <div class="article row">
-    <h1 class="page-header article__article-title">
-      Tuning My Apache Spark Data Processing Cluster on Amazon EMR<br>
-    </h1>
-    <div class="article__published-date">
-      Mar 10, 2017
-      <span class="article__middle-dot"></span>
-      14  minutes read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-        <li class="article__tag">
-          <a href="/posts/tags/apache-spark/" class="article__tag-link">apache spark</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/scala/" class="article__tag-link">scala</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/aws/" class="article__tag-link">AWS</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/emr/" class="article__tag-link">EMR</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/hadoop/" class="article__tag-link">hadoop</a>
-        </li>
-      </ul>
-    </div>
-    <hr>
+          <h1 class="page-header article__article-title">
+    Tuning My Apache Spark Data Processing Cluster on Amazon EMR<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Mar 10, 2017
+        <span class="article__middle-dot"></span>
+        14  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/apache-spark/" class="article__tag-link">apache spark</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/scala/" class="article__tag-link">scala</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/aws/" class="article__tag-link">AWS</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/emr/" class="article__tag-link">EMR</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/hadoop/" class="article__tag-link">hadoop</a>
+          </li>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <p>Lately, I worked on some data integration at Pocketmath where I wrote a 
+      <div class="article__content">
+        <p>Lately, I had the chance to work on some data integration at Pocketmath where I wrote a 
 bunch of Spark scripts in Scala to run some transformations on a data set of about 
-250GB on a monthly basis. In this post, I&rsquo;ll talk about some of the 
-problems I encountered, and some considerations while setting up the cluster and running
-the Spark tasks.</p>
+250GB that will run on a monthly basis. In this post, I talk about some of the 
+problems I encountered, and some considerations while setting up the cluster and also how I improved
+the performance of the the Spark tasks.</p>
 
 <h3>Dataset Size</h3>
 
-<p>The size of the data set is about 250GB, which isn&rsquo;t quite close to the scale other data 
-scientist/engineers handle, but is easily one of the bigger ones for me. Nonetheless, I do think the 
+<p>The size of the data set is only 250GB, which probably isn&rsquo;t even close to the scale other data 
+engineers handle, but is easily one of the bigger sets for me. Nonetheless, I do think the 
 transformations are on the heavy side; it involves a chain of rather expensive operations. </p>
-
-<p>Because of the sensitive nature of the data, I&rsquo;m going to skip the nitty-gritty details of the task.
-I&rsquo;ll run through the kind of steps that were included in the script.</p>
 
 <h3>Multiple Shuffle Operations</h3>
 
-<p>The script starts off with multiple <code>JOIN</code>s into a <code>UNION</code>, <code>EXPLODE</code>, <code>SORT</code> within partition, 
-then <code>GROUP</code> and <code>COLLECT</code> into another <code>SORT</code> eventually. They&rsquo;re 
-<em>pretty</em> expensive shuffle operations and as you might imagine, doing this on this data size did
-pose some problems at first when I wasn&rsquo;t so familar with the details of how Spark handles
-memory allocations.</p>
+<p>The sequence of execution is something like <code>JOIN</code>, <code>JOIN</code>, <code>UNION</code>, <code>EXPLODE</code>, <code>SORT</code> within partition,
+then <code>GROUP</code>, <code>COLLECT</code> and finally another <code>SORT</code> eventually. </p>
+
+<p>Each of these are <em>pretty</em> expensive shuffle operations. Not surprisingly, these operations posed some problems
+even at this moderate data size.</p>
 
 <p><a href="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow.png"><img src="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow-small.png" alt="Spark Flow Chart" /></a></p>
 
-<h3>Second Difficulty</h3>
+<h3>Another Difficulty</h3>
 
-<p>Secondly, I also had to split a file that looks like the examples below. Essentially, you can imagine 
-them to be ranks or row numbers (of course, with a bunch of other data transformations)</p>
+<p>On top of that, I also had to split a file that looks like the examples below. </p>
+
+<p>Essentially, I think of it as generating ranks or row numbers (of course, with a bunch of other data transformations)</p>
 
 <p>From this format:</p>
 <pre class="highlight plaintext"><code>51abebcfab2ef2abeed2f 8,120,384,898 
@@ -179,29 +180,30 @@ them to be ranks or row numbers (of course, with a bunch of other data transform
 ...
 </code></pre><pre class="highlight shell"><code>1 8,120,384,898 
 2 1,9,1214,8827 
+
 ...
 </code></pre>
-<p>It turns out that generating a consistent row number like this is a difficult operation for Spark to handle. 
-Matter of fact, it is probably an expensive task for any distributed system to perform. Also, 
-I was working mostly with <code>Dataframes</code> in Spark 2.0 and the only way that I know of currently to 
-generate these row numbers is to first convert into an RDD and do a <code>zipWithIndex</code> on it. </p>
+<p>It turns out that generating a consistent row number like this is a difficult operation for Spark to handle.
+<strong>Matter of fact</strong>, it is probably an expensive task for any distributed system to perform. </p>
+
+<p><code>Dataframes</code> are available in Spark 2.0 and I mainly use that data structure. The only way that I know of currently to 
+generate these row numbers with a Dataframe is to first convert into an RDD and do a <code>zipWithIndex</code> on it. </p>
 <pre class="highlight scala"><code><span class="k">val</span> <span class="n">segRdd</span> <span class="k">=</span> <span class="n">segmentIdGroups</span><span class="o">.</span><span class="n">rdd</span>
 <span class="k">val</span> <span class="n">rows</span> <span class="k">=</span> <span class="n">segRdd</span><span class="o">.</span><span class="n">zipWithIndex</span><span class="o">.</span><span class="n">map</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">r</span><span class="k">:</span> <span class="kt">Row</span><span class="o">,</span> <span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Row</span><span class="o">.</span><span class="n">fromSeq</span><span class="o">((</span><span class="n">id</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span> <span class="o">+:</span> <span class="n">r</span><span class="o">.</span><span class="n">toSeq</span><span class="o">)</span> <span class="o">}</span>
 </code></pre>
-<p><em>Well, there is another method that involves windows and partitions but unfortunately it basically 
+<p><em>Okay, there is actually another method that involves windows and partitions but unfortunately it basically 
 moves all the data into one partition, which isn&rsquo;t feasible for me.</em></p>
 
 <h3>Executer Cores and Memory Allocation</h3>
 
-<p>For the Spark task that I send to Amazon EMR, I manually set the 
-<code>--executor-cores</code> and <code>--executor-memory</code> configurations. The calculation is somewhat 
-non-intuitive because I had to manually take into account the overheads of <code>YARN</code>, 
-the application master/driver cores and memory usage et cetera.</p>
+<p>While starting the Spark task in Amazon EMR, I manually set the <code>--executor-cores</code> and <code>--executor-memory</code> 
+configurations. The calculation is somewhat non-intuitive at first because I have to manually take into account 
+the overheads of YARN, the application master/driver cores and memory usage et cetera.</p>
 
-<p>In general, YARN overheads take roughly <code>7%</code> and reducing some from there is good practice, to ensure enough
-is left for system processes and Hadoop e.g.</p>
+<p>As a guideline, YARN overheads take roughly <code>7%</code> and allocating more from there is generally good practice. This
+ensures enough is left for system processes and Hadoop e.g.</p>
 
-<p>Say for an instance of <code>r3.8xlarge</code></p>
+<p>Using an instance of <code>r3.8xlarge</code> as an example:</p>
 <pre class="highlight shell"><code><span class="c"># 122GB RAM, 16 cores</span>
 
 <span class="nv">$CORES_PER_DRIVER</span><span class="o">=</span>4
@@ -210,23 +212,24 @@ is left for system processes and Hadoop e.g.</p>
 <span class="nv">$CORES_PER_EXECUTOR</span><span class="o">=</span>4
 <span class="nv">$MEMORY_PER_EXECUTOR</span><span class="o">=</span>24G
 </code></pre>
-<p>With 4 cores per executor, each instance could <em>potentially</em> run 4 executors. To account for the overhead,
-I multiply the memory by <code>93%</code>, which works out to be <code>28G</code>. In the end, I used <code>24G</code> just 
-to account for overheads for the driver, Hadoop processes, the UI and the OS but on hindsight, 
-<code>26G</code> probably would&rsquo;ve worked too.</p>
+<p>Each instance could potentially run 4 executors, with 4 cores per executor. Available memory for the HEAP is 122/4 = 30.5G.</p>
+
+<p>To account for the overheads, I multiply the available memory by <strong>0.93</strong>. This works out to be <strong>28G</strong>.
+For my experiment, I used <strong>24G</strong> just to account for the overheads but on hindsight, <strong>26G</strong> should be enough too.</p>
+
+<p>Recap: </p>
 <pre class="highlight scala"><code><span class="n">total_memory_available</span> <span class="o">/</span> <span class="n">total_cores_available</span> <span class="o">*</span> <span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.07</span><span class="o">)</span>
+
 <span class="c1">// 122GB/16 * (1 - 0.07) = 28G
 // Leave some leeway, to 24-26G
 </span></code></pre>
 <p><em>This directly affects how many executors that can be deployed per instance and also affects the
 memory available for each task, and consequently for each shuffle operation.</em></p>
 
-<p><strong>Note</strong>: In the example above, 4 executors of 4 cores each will run on each instance of <code>r3.8xlarge</code>.</p>
-
 <h3>Task / Partition Size</h3>
 
-<p>Another critical configuration is the task size; it is something that I think 
-should be considered carefully because the task <em>will slow down</em> by quite a bit if it starts to spill to disk.</p>
+<p>Another critical configuration is the task size; it is something that I think should be considered carefully 
+because the task <strong>will slow down</strong> by quite a bit if it starts to spill to disk.</p>
 
 <p>Initially, I just set the <code>default_parallelism</code> in Spark and expected the system to automatically 
 handle the rest, and was surprised to see some stages spilling to disk causing the cluster to slow down. 
@@ -248,7 +251,7 @@ This would immediately add a shuffle step but performs better later on in other 
 the entire shuffle operation can fit into memory, there will be no spilling.</p>
 
 <p>Each core in an executor runs a single task at any one time. Hence, with 26GB per executor and 4 cores each executor, 
-the HEAP_SIZE allocated for each task is <code>26/4</code> or <code>4G</code>.  </p>
+the HEAP_SIZE allocated for each task is <strong>26G/4</strong> or <strong>4G</strong>.  </p>
 
 <p><strong>However, not all the memory allocated to the executor is used for shuffle operations.</strong></p>
 
@@ -259,8 +262,8 @@ the HEAP_SIZE allocated for each task is <code>26/4</code> or <code>4G</code>.  
 <span class="c1">// 0.2 -&gt; spark.shuffle.memoryFraction
 // 0.8 -&gt; spark.shuffle.safetyFraction
 </span></code></pre>
-<p>If your task is already spilling to disk, you can use this formula to find out how much space it
-actually needs to better fine tune the RAM-to-CPU ratio for ur executor tasks.</p>
+<p>If your task is already spilling to disk, try using this formula to find out how much space it
+actually needs. This might help you to better fine tune the RAM-to-CPU ratio for ur executor tasks.</p>
 <pre class="highlight shell"><code>shuffle_write <span class="k">*</span> shuffle_spill_mem <span class="k">*</span> <span class="o">(</span>4<span class="o">)</span>executor_cores
 —————————————————————————————————————————————————————————————————————
 shuffle_spill_disk <span class="k">*</span> <span class="o">(</span>24<span class="o">)</span>executor_mem <span class="k">*</span> <span class="o">(</span>0.2<span class="o">)</span>shuffle_mem_fraction <span class="k">*</span> <span class="o">(</span>0.8<span class="o">)</span>shuffle_safety_fraction
@@ -365,9 +368,9 @@ them to disk made sense too.</p>
 <li><a href="https://www.slideshare.net/cloudera/top-5-mistakes-to-avoid-when-writing-apache-spark-applications">Top 5 Mistakes while writing Apache Spark Applications</a></li>
 </ul>
 
-    </div>
+      </div>
 
-    <div id='disqus_thread'></div>
+      <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
@@ -384,7 +387,7 @@ them to disk made sense too.</p>
 <noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
 <a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
 
-    <script type="text/javascript">
+      <script type="text/javascript">
 //<![CDATA[
     var disqus_shortname = 'homan-gh-blog';
     (function () {
@@ -396,9 +399,9 @@ them to disk made sense too.</p>
 //]]>
 </script>
 
+    </div>
   </div>
 
-      </div>
     </div>
   </body>
 </html>

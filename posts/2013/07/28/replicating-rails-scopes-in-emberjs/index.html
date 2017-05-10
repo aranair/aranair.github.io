@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -106,26 +106,29 @@
 </div>
 
 
-          <div class="article row">
-    <h1 class="page-header article__article-title">
-      Replicating Rails 'scopes' in Emberjs<br>
-    </h1>
-    <div class="article__published-date">
-      Jul 28, 2013
-      <span class="article__middle-dot"></span>
-      2  minutes read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-        <li class="article__tag">
-          <a href="/posts/tags/emberjs/" class="article__tag-link">emberjs</a>
-        </li>
-      </ul>
-    </div>
-    <hr>
+          <h1 class="page-header article__article-title">
+    Replicating Rails 'scopes' in Emberjs<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jul 28, 2013
+        <span class="article__middle-dot"></span>
+        2  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/emberjs/" class="article__tag-link">emberjs</a>
+          </li>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <p>After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. </p>
+      <div class="article__content">
+        <p>After setting up all the boilerplate stuff and a quick mock up for the new Task project, I went on to the more dynamic code in Emberjs. </p>
 
 <p>So basically, today I wanted to have tasks displayed out in the /tasks page separated into a few different &lsquo;categories&rsquo; - delayed, active, completed, and coming soon etc. Something so simple would probably be done in Rails views via a few different variables set in the controller that calls the model&rsquo;s pre-defined scopes. Nothing more than a few minutes work. It shouldn&rsquo;t be too difficult in Ember too, right? &hellip;Well if the final solution was pretty damn easy but I had to scourage quite a few places to be able to get to that and the solution was quite a surprise lol. I&rsquo;ll cut to the chase and just begin with the solution.</p>
 
@@ -143,9 +146,9 @@
 </code></pre>
 <p>To pull the data from the model in whatever way I want, it is fed to the template, good ol&rsquo; Rails fasion! I suppose this is what Emberjs pros meant when they said the controllers were something like a proxy to the underlying data models. </p>
 
-    </div>
+      </div>
 
-    <div id='disqus_thread'></div>
+      <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
@@ -162,7 +165,7 @@
 <noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
 <a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
 
-    <script type="text/javascript">
+      <script type="text/javascript">
 //<![CDATA[
     var disqus_shortname = 'homan-gh-blog';
     (function () {
@@ -174,9 +177,9 @@
 //]]>
 </script>
 
+    </div>
   </div>
 
-      </div>
     </div>
   </body>
 </html>

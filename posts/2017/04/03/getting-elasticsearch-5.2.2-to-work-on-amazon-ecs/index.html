@@ -7,11 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <!-- Use title if it's in the page YAML frontmatter -->
-    <title>AWS Elasticsearch, Elastic Cloud vs Self-managed</title>
+    <title>Upgrading to ElasticSearch 5.2.2 on Amazon ECS</title>
 
-    <meta name="description" content="In this post, I compare between using the AWS ElasticSearch service, Elastic Cloud vs self-managed cluster in EC2 or ECS." />
+    <meta name="description" content="I talk about some of the configuration changes that were required to bump the version of a ElasticSearch cluster running in ECS from 2.3.5 to 5.2.2. I also talk about the massive caveat of the sysc..." />
 <meta property="og:site_name" content="aranair.github.io" />
-<meta property="og:title" content="AWS Elasticsearch, Elastic Cloud vs Self-managed" />
+<meta property="og:title" content="Upgrading to ElasticSearch 5.2.2 on Amazon ECS" />
 
     <!-- Bootstrap Stuff -->
     <link href=rel="stylesheet" type="text/css">
@@ -30,7 +30,7 @@
 </script>
 
   </head>
-  <body class="posts posts_2016 posts_2016_11 posts_2016_11_22 posts_2016_11_22_aws-elasticsearch-elastic-cloud-self-managed posts_2016_11_22_aws-elasticsearch-elastic-cloud-self-managed_index">
+  <body class="posts posts_2017 posts_2017_04 posts_2017_04_03 posts_2017_04_03_getting-elasticsearch-5">
     <header id="header" class="header header--fixed" role="banner">
   <nav class="navbar navbar-default">
     <div class="navbar-header">
@@ -107,14 +107,14 @@
 
 
           <h1 class="page-header article__article-title">
-    AWS Elasticsearch, Elastic Cloud vs Self-managed<br>
+    Upgrading to ElasticSearch 5.2.2 on Amazon ECS<br>
   </h1>
   <div class="container">
     <div class="article row">
       <div class="article__published-date">
         Written by Ho Man
         <span class="article__middle-dot"></span>
-        Nov 22, 2016
+        Apr 03, 2017
         <span class="article__middle-dot"></span>
         5  minutes read
       </div>
@@ -127,100 +127,121 @@
             <a href="/posts/tags/aws/" class="article__tag-link">aws</a>
           </li>
           <li class="article__tag">
-            <a href="/posts/tags/found-io/" class="article__tag-link">found.io</a>
-          </li>
-          <li class="article__tag">
-            <a href="/posts/tags/elastic-cloud/" class="article__tag-link">elastic-cloud</a>
+            <a href="/posts/tags/ecs/" class="article__tag-link">ecs</a>
           </li>
         </ul>
       </div>
       <hr>
 
       <div class="article__content">
-        <p>From past experience, I found the maintenance and tuning of a Elastisearch cluster to be
-a little troublesome overtime. So it isn&rsquo;t surprising to see hosted Elasticsearch services pop up
-one after another. Ok, to be fair, there are hosted services for nearly everything nowadays, from
-Kafka to Wordpress lol. There is really no shortage of them. Most of them provides hassle-free launching
-of entire clusters within minutes and promises to offload management of the clusters along popular
-plugins pre-installed.</p>
+        <p>In <a href="https://github.com/docker-library/elasticsearch/issues/111">one of my previous post</a>, I talked about how I set up Elasticsearch 2.3.5 on ECS. I got a comment in
+that post that prompted me to update the setup for Elasticsearch 5. It&rsquo;s been awhile, but better late than never right?
+So I gave it a go! In this post I&rsquo;ll like to share what I found in the process.</p>
 
-<p>Quite frankly, they&rsquo;re welcomed services, but they do come with some caveats and I found these the hard way
-when I was evaluating the services when setting up a Elasticsearch cluster at Pocketmath.</p>
+<p>There were a couple of other configuration changes that were required to upgrade to 5.2.2 from 2.3.5 but they weren&rsquo;t
+difficult, except one that may potentially deter you from using ECS with Elasticsearch 5, for the time being at least.</p>
 
-<h3>Cluster Node Discovery</h3>
+<h3>Main Caveat</h3>
 
-<p>With both Elastic cloud and Amazon Elasticsearch Service, and quite possibly others too, one of the problems
-I quickly ran into is that they hide all nodes in the cluster except for the publicly accessible gateway.</p>
+<p>At this point, I&rsquo;ll mention a caveat that will likely save you an hour of headache and trouble.</p>
 
-<p>What this means is that, you&rsquo;ll need to disable discovery and only connect through the declared
-<code>es.nodes.wan.only</code> mode, as described below in the Elasticsearch documentation.</p>
-<pre class="highlight plaintext"><code>es.nodes.wan.only (default false)
-Whether the connector is used against an Elasticsearch instance in a cloud/restricted environment
-over the WAN, such as Amazon Web Services. In this mode, the connector disables discovery and
-only connects through the declared es.nodes during all operations, including reads and writes.
-
-Note that in this mode, performance is highly affected.
+<p><em>Long story short, You will need to SSH into the ECS instances to run the command on the parent to 
+get past the error message below. I am not aware of any other solutions but if you do, feel free to
+let me know in the comments section below!</em></p>
+<pre class="highlight plaintext"><code>elasticsearch:5.2.2 max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
 </code></pre>
-<p>With Elastic Cloud, the problems ended here. Although, as a side note: if you are planning on
-indexing from an AWS instance to Elastic Cloud though, re-consider that. The speed of indexing
-to Elastic Cloud is <em>orders of magnitudes</em> slower than indexing among Amazon web services.</p>
+<p>This <a href="https://github.com/docker-library/elasticsearch/issues/111">docker-library/elasticsearch github issue</a> suggests running <code>sudo sysctl -w vm.max_map_count=262144</code> or run the docker 
+container with the <code>--sysctl</code> option to fix this problem.</p>
 
-<h3>AWS ElasticSearch Service and IAM Roles</h3>
+<p><strong>However</strong>, because of how ECS implements the agents currently, many of the docker run options are not available. 
+This is well-documented over at the <a href="https://github.com/aws/amazon-ecs-agent/issues/502">amazon-ecs-agent Github repository</a> so I won&rsquo;t echo them here. But it does 
+seem like there are a bunch of others who are encountering the same issue.</p>
 
-<p>Unfortunately, with AWS, I encountered more problems.</p>
+<h3>Continuing..</h3>
 
-<p>AWS Elasticsearch Service currently does not allow any of the commercial plugins like Shield, Watcher
-and it also lacks a good access control mechanism and/or VPC access. While there are some
-alternative mechanisms to control resource access but for my use-case, none of them were ideal.</p>
+<p>In my opinion, this makes the combination slightly less-than-ideal because the manual configuration work that is required 
+on the EC2 instances takes away some of the benefits of implementing ElasticSearch in ECS.</p>
 
-<p><strong>Whitelisting of IPs:</strong>
- This could work if the instance, which is indexing the Elasticsearch, has a static IP.  However
-for my case, I was using Apache Pig in Amazon Elastic MapReduce (EMR). It spins up task instances
-with random IPs. As you might imagine, whitelisting <code>54.0.0.0/8</code> isn&rsquo;t exactly safe :P</p>
+<p>If you&rsquo;re okay with the manual configuration running that command on the instances, or for example, if you plan to provision
+a few instances and leave them there for awhile, then this hiccup would deal no damage. </p>
 
-<p><strong>IAM roles:</strong>
- I could restrict access via IAM roles. However, all requests have to be signed individually,
-and at the time of this writing, there isn&rsquo;t any Pig or Hive scripts available to do that yet. To
-be honest, I don&rsquo;t think there are many libraries that support this right now. This has been
-confirmed by AWS.</p>
+<p><em>Let&rsquo;s forge on.</em></p>
 
-<h3>Proxy Server</h3>
+<h3>Configuration Changes</h3>
 
-<p>To work around this, one way is to set up a reverse proxy, which is then whitelisted via its IP
-in Access Policies in AWS ElasticSearch Service. This instance will then proxy all requests from the
-indexing instance, in my case- Amazon Elastic MapReduce (EMR) cluster, to the AWS ElasticSearch Service.
-It would also require an Elastic IP, so that the IP in the whitelist does not need to be constantly changed.</p>
+<p>The starting point is the <a href="https://github.com/aranair/docker-elasticsearch-ecs/blob/master/docker-elasticsearch/Dockerfile">Dockerfile</a> for ElasticSearch 2.3.5 in my <a href="https://github.com/aranair/docker-elasticsearch-ecs">docker-elasticsearch-ecs repo</a>:</p>
+<pre class="highlight plaintext"><code>FROM elasticsearch:2.3
 
-<p>The upside to this is that it requires relatively few changes in the code, but the problem is,
-there is a single point of weakness &amp; failure- the proxy server. It does not scale well and would
-also require constant monitoring to ensure that it is not the bottleneck in performance.</p>
+WORKDIR /usr/share/elasticsearch
 
-<p>This method is well explained and walked-through in this <a href="https://eladnava.com/secure-aws-elasticsearch-service-behind-vpc/#theworkaround">blog post</a>.</p>
+RUN bin/plugin install cloud-aws
+RUN bin/plugin install mobz/elasticsearch-head
+RUN bin/plugin install analysis-phonetic
 
-<h3>Application or Local Proxy</h3>
-
-<p>This <a href="https://github.com/abutaha/aws-es-proxy">github repo</a> allows you to setup a small web application
-layer that sits between your code and Elasticsearch. It exposes <code>localhost:9200</code> to your app
-on every instance it is running on and signs every request (based on IAM roles) before relaying
-it to Elasticsearch. This removes the need for IP-based access control and helps with the
-scaling issues by eliminating the single point of failure.</p>
-
-<p>A bootstrap action (for the EMR cluster) could be added to install this and run in the background:</p>
-<pre class="highlight shell"><code><span class="c">#!/bin/bash</span>
-wget https://github.com/abutaha/aws-es-proxy/releases/download/v0.2/aws-es-proxy-0.2-linux-amd64
-
-chmod +x aws-es-proxy-0.2-linux-amd64
-./aws-es-proxy-0.2-linux-amd64 -endpoint https://elasticsearch.endpoint.hostname /dev/null &amp;
+COPY elasticsearch.yml config/elasticsearch.yml
+COPY logging.yml config/logging.yml
+COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
 </code></pre>
-<p>With that the remote endpoint would be available via:</p>
-<pre class="highlight shell"><code>curl -XGET <span class="s1">'http://localhost:9200'</span>
-</code></pre>
-<h3>Choices</h3>
+<p><strong>And modified to:</strong></p>
+<pre class="highlight plaintext"><code>FROM elasticsearch:5.2.2
 
-<p>While the second method is definitely feasible, in the end, in view of the issues (and workarounds)
-and the cost of equivalent instances in AWS vs AWS ElasticSearch Service and the lack of support for
-plugins and later versions of Elasticsearch, I decided that managing a cluster by ourselves would
-probably be much more flexible for us in future than a hosted service with a bunch of restrictions.</p>
+COPY elasticsearch.yml config/elasticsearch.yml
+COPY logging.yml config/logging.yml
+COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
+
+RUN bin/elasticsearch-plugin install discovery-ec2
+</code></pre>
+<p>Notable changes include bumping the version and changing <code>cloud-aws</code> plugin to <code>discovery-ec2</code> which
+is the new plugin for the same purpose of node discovery in cloud environments.</p>
+
+<h3>File Descriptors and Ulimits</h3>
+
+<p>I needed to change the docker-compose file slightly to include the <code>ulimits</code>. It is a new mandatory configuration item.
+You can find out more in <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setting-system-settings.html">this documentation</a>.</p>
+<pre class="highlight plaintext"><code>version: '2'
+services:
+  data:
+    build: ./docker-data/
+    volumes:
+      - /usr/share/elasticsearch/data
+
+  search:
+    build: ./docker-elasticsearch/
+    volumes_from:
+      - data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+        nofile:
+           soft: 65536
+           hard: 65536
+</code></pre>
+<h3>elasticsearch.yml</h3>
+
+<p><code>plugin.mandatory: cloud-aws</code> and <code>discovery.type: EC2</code> and <code>discovery.zen.ping.multicast.enabled: false</code> has been
+removed or modified to the following below.</p>
+<pre class="highlight yaml"><code><span class="s">script.inline</span><span class="pi">:</span> <span class="s">true</span>
+<span class="s">bootstrap.memory_lock</span><span class="pi">:</span> <span class="s">false</span>
+<span class="s">network.host</span><span class="pi">:</span> <span class="s">0.0.0.0</span>
+<span class="s">network.publish_host</span><span class="pi">:</span> <span class="s">_ec2:privateIp_</span>
+<span class="s">discovery.zen.hosts_provider</span><span class="pi">:</span> <span class="s">ec2</span>
+<span class="s">discovery.ec2.groups</span><span class="pi">:</span> <span class="s">dockerecs</span>
+</code></pre>
+<h3>Task Definition / Heap Size</h3>
+
+<p>In Elasticsearch 5, the heap size is also a mandatory configuration. For this, I set it directly in ECS via 
+the JSON task definition. I had to set the <code>ES_JAVA_OPTS</code> for it to work.</p>
+<pre class="highlight shell"><code><span class="nv">ES_JAVA_OPTS</span><span class="o">=</span><span class="s2">"-Xms1g -Xmx1g"</span>
+</code></pre>
+<h3>Wrapping up</h3>
+
+<p>It isn&rsquo;t a whole lot of changes but it did take some time googling each of the issues that came up as I tried to start
+the services on ECS and also eventually had to SSH into the instance to set the <code>vm.max_map_count</code> before I managed to
+get the cluster up.</p>
+
+<p>This is obviously less than ideal in a deployment process which otherwise could be full-automated. But if you&rsquo;re 
+still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve you well!</p>
 
       </div>
 
@@ -228,8 +249,8 @@ probably be much more flexible for us in future than a hosted service with a bun
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
-                        var disqus_identifier = '2016/aws-es-elastic-cloud-self-manage';
-                        var disqus_title = 'AWS ElasticSearch Service, Elastic Cloud vs Self-Manage';
+                        var disqus_identifier = '2017/elasticsearch-5-2-2-amazon-ecs';
+                        var disqus_title = 'Elasticsearch 5.2.2 Cluster in ECS';
           
     (function() {
         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

@@ -17,7 +17,7 @@
     <link href=rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
     <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
-    <link href="/stylesheets/blog-1fe4e2c3.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-d78c05d0.css" rel="stylesheet" />
     <script src="/javascripts/all-6e6341dd.js" async="true"></script>
     <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -59,8 +59,11 @@
 </header>
 
     <div class="wrapper">
-      <div class="container">
-        <div class="tags">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
     <a href="/posts/tags/scala/" class="tags-link">scala</a>
     <a href="/posts/tags/aws/" class="tags-link">AWS</a>
@@ -73,12 +76,9 @@
     <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
     <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
     <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
-    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
-    <a href="/posts/tags/aws/" class="tags-link">aws</a>
     <a href="/posts/tags/emr/" class="tags-link">emr</a>
     <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
     <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
-    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
     <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
     <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
     <a href="/posts/tags/rails/" class="tags-link">rails</a>
@@ -106,35 +106,38 @@
 </div>
 
 
-          <div class="article row">
-    <h1 class="page-header article__article-title">
-      Kafka + Heka to Bigquery Setup for Realtime Logs<br>
-    </h1>
-    <div class="article__published-date">
-      Jul 04, 2015
-      <span class="article__middle-dot"></span>
-      4  minutes read
-    </div>
-    <div class="article__tags-container">
-      <ul class="article__tags">
-        <li class="article__tag">
-          <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/heka/" class="article__tag-link">heka</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/bigquery/" class="article__tag-link">bigquery</a>
-        </li>
-        <li class="article__tag">
-          <a href="/posts/tags/kafka/" class="article__tag-link">kafka</a>
-        </li>
-      </ul>
-    </div>
-    <hr>
+          <h1 class="page-header article__article-title">
+    Kafka + Heka to Bigquery Setup for Realtime Logs<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jul 04, 2015
+        <span class="article__middle-dot"></span>
+        4  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/heka/" class="article__tag-link">heka</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/bigquery/" class="article__tag-link">bigquery</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/kafka/" class="article__tag-link">kafka</a>
+          </li>
+        </ul>
+      </div>
+      <hr>
 
-    <div class="article__content">
-      <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
+      <div class="article__content">
+        <p>This is part 2 of the 3 part series of a quick intro of the realtime logging system in Wego. In <a href="/posts/2015/05/05/golang-protobuf" title="Golang with Protobuf">Part 1 of this series</a>, I talked about how we generated Go packages for Protobuf (protocol buffers) in Wego. </p>
 
 <p>The packages allows us to process 2 different modes of communication protocol with just one set of schema defined in proto files:</p>
 
@@ -200,9 +203,9 @@
 
 <p>Stay tuned for the 3rd part of this series where I will go into details and discuss how the <a href="https://github.com/aranair/heka-bigquery">heka-bigquery plugin</a> works!</p>
 
-    </div>
+      </div>
 
-    <div id='disqus_thread'></div>
+      <div id='disqus_thread'></div>
 <script type='text/javascript'>
 //<![CDATA[
                   var disqus_shortname = 'homan-gh-blog';
@@ -219,7 +222,7 @@
 <noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
 <a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
 
-    <script type="text/javascript">
+      <script type="text/javascript">
 //<![CDATA[
     var disqus_shortname = 'homan-gh-blog';
     (function () {
@@ -231,9 +234,9 @@
 //]]>
 </script>
 
+    </div>
   </div>
 
-      </div>
     </div>
   </body>
 </html>
