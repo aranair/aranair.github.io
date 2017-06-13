@@ -42,8 +42,8 @@ h1.page-header {
 p {
   font-size: $p-font-size;
   line-height: $p-line-height;
-  margin-bottom: 1em;
-  margin-top: 1em;
+  margin-bottom: $p-margin-bottom;
+  margin-top: $p-margin-top;
 
   a {
     // border-bottom: 1px dotted #333;

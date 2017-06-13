@@ -1,6 +1,8 @@
-$p-font-size: 1.05em;
+$p-font-size: 1.00em;
 $p-line-height: 1.6em;
 $p-date-font-multiplication: 0.6;
+$p-margin-bottom: 1.5em;
+$p-margin-top: 1em;
 
 $red: #c7254e;
 $maroon: #B02B2C;
@@ -9,7 +11,7 @@ $darkgrey: #333;
 $midnightblue: rgb(44, 62, 80);
 $darkblue: rgb(52, 73, 94);
 
-$body-font: 'Source Sans Pro';
+$body-font: 'Lato';
 $body-letter-spacing: -1px;
 
 $index-heading-font: 'Montserrat';
@@ -28,4 +30,4 @@ $article-summary-title-date-font: 'Lato';
 $article-summary-title-date-multiplication: 0.5;
 $article-summary-title-font: 'Source Sans Pro';
 
-$container-width: 635px;
+$container-width: 700px;

@@ -2,7 +2,11 @@
 
 ul li { font-size: $p-font-size; line-height: 1.5em }
 pre code { line-height: 1.5em; }
-code { font-size: 80%; }
+code { 
+  font-size: 80%; 
+  background: #F7F7F7;
+  color: inherit;
+}
 
 .article-list__article-summary {
   border-bottom: 1px solid;
@@ -43,7 +47,7 @@ code { font-size: 80%; }
 }
 
 .article-summary__article-content p {
-  text-align: justify;
+  text-align: left;
 }
 
 .article-summary__article-content h3 {
@@ -98,6 +102,7 @@ h1.article__article-title {
 }
 
 .article__content p {
+  text-align: left;
 }
 
 .article__tags {
