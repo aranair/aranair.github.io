@@ -9,23 +9,23 @@ disqus_identifier: 2017/cli-stock-ticker-python-urwid
 disqus_title: CLI Stock Ticker with Python and Urwid
 ---
 
-I do some investing in equities on the side and I've always wanted to build a simple stock ticker in the form of a
-CLI app that runs in my terminal setup. There were a few out there but none that would should show 
-just the information I needed, in a minimalistic fashion. So I thought it would be a fun project 
+A bit of context - I do some investing in equities on the side and I've always wanted to build a simple stock ticker in the form of a
+CLI app that runs in my terminal setup. There were a few out there but none that would show 
+just the information I needed, in a minimalistic fashion. And I thought it would be a fun project 
 for me since I don't have much prior experience building a CLI app. 
   
-So last weekend, I decided to just build one for fun! Here is the quick image of it running and 
-you can find the code discussed here over at [https://github.com/aranair/rtscli][gh].
+So last weekend, I decided to build one for fun! Here is the quick image of it running and 
+you can find the code over at [https://github.com/aranair/rtscli][gh].
 
 [![Demo](https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png)](https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png)
 
-### CLI Libraries
+### Python & CLI Libraries
 
-I've been starting to work with Python more now that I'm doing more data-related work at Pocketmath 
-so language-wise, Python was a natural choice. But many other languages do offer packages that 
-can achieve the same result - like the [ccurses][1] library in C.
+I've been starting to work with Python recently - due to the data-related work at Pocketmath.
+So language-wise, Python was a natural choice. But honestly, many other languages offer packages that 
+can achieve the same result or more - like the [ccurses][1] library in C.
 
-For Python, I found a number of different CLI libraries:
+But for Python, I found a number of different libraries for CLIs:
 
 - [curses][2]
 - [urwid][3]
@@ -35,8 +35,8 @@ For Python, I found a number of different CLI libraries:
 ### Urwid
 
 Eventually I went with [urwid][3] because it seems easier to just jump in and get started with it instantly.
-[Urwid][3] is an alternative to the [curses][2] library in Python and it implements a variety of boilerplate
-functions. You can find a list of them at their [documentation][6]. 
+Urwid is an alternative to the [curses][2] library in Python and it implements sort of like a layer
+ontop of boilerplate stuff that turns out to be really productive for me.
 
 ### Stock Ticker - Details
 
@@ -59,9 +59,9 @@ The basic functionalities I wanted was:
 
 ### Implementation - MainLoop
 
-I imagined the app to be a long-running CLI that continuously accepts commands, on top of 
-re-painting the information on screen of course. That can be modelled with a loop and 
-it's exactly what Urwid calls it - a `MainLoop`.
+I imagined the app to be a long-running CLI that continuously accepts commands, while at the same time
+pulling the stock information at an interval, on top of re-painting the information on screen. That 
+can be modelled with a loop - a `MainLoop` as urwid calls it.
 
 ```python
 import urwid
@@ -70,19 +70,17 @@ main_loop.set_alarm_in(0, refresh)
 main_loop.run()
 ```
 
-The code above basically creates a `MainLoop` which ties together a display module, some widgets
+The code above instantiates a `MainLoop` which ties together a display module, some widgets
 and an event loop. Quoting the documentation: *It handles passing input from the display module to the 
 widgets, rendering the widgets and passing the rendered canvas to the display module to be drawn.* 
 
 **I think of it as a controller of sorts.**
 
-`set_alarm_in` is like `setTimeout` in the JavaScript world; it just calls the `refresh` method instantly
-in this case. 
-
 ### Implementation - Refresh Mechanism 
 
-Within the refresh function above, I would set another alarm that goes off in `10s`, 
-that is the time between each data pull from Google Finance.
+`set_alarm_in` is like `setTimeout` in the JavaScript world; it just calls the `refresh` method instantly
+in this case. In the refresh method I set another alarm that goes off in `10s`, that is as good as 
+telling it to do one data pull from Google Finance every 10 seconds.
 
 ```python
 def refresh(_loop, _data):
@@ -91,13 +89,15 @@ def refresh(_loop, _data):
     main_loop.set_alarm_in(10, refresh)
 ```
 
-This calls the `get_update()` method that spits out an array of tuples of `(color_scheme, text)`.
+It calls the `get_update()` method that spits out an array of tuples of `(color_scheme, text)`. I'll
+skip the details of the method but it is basically just calling a REST api that replies with JSON and
+parsing the response into a long string for display.
+
+**This method kind of interrupts the event loop every 10 seconds.**
 
 ### Color Palette
 
-That palette in the MainLoop section above? That's where I define a color scheme that can be used
-throughout the app. It's kind of like, when a web designer sets aside 5 colors for the entire
-site to use.
+I also define a color scheme that can be used throughout the app.
 
 ```python
 # Tuples of (Key, font color, background color)
@@ -111,8 +111,8 @@ palette = [
   ('change negative', 'dark red', '')]
 ```
 
-In other parts of the app where text is displayed, those keys will be used to tell the app
-what color / background the text span should be.
+In other parts of the app where text is displayed, those keys can be used to tell the app
+what color / background the text span should be rendered in.
 
 ```python
 # Notice "refresh button" and "quit button" keys were defined above in the color scheme.
@@ -121,6 +121,8 @@ menu = urwid.Text([
     u'Press (', ('quit button', u'Q'), u') to quit.'
 ])
 ```
+
+**This is just like a color palette of a site**
 
 ### Layout
 
@@ -133,9 +135,6 @@ header = urwid.AttrMap(header_text, 'titlebar')
 
 Same for `quote_text`, except this time a bunch of other widgets were used.
 
-A [filler][filler] will maximise itself to the screen and the [padding][padding] widget is self-explanatory;
-it keeps one column open on each side. And finally the `LineBox` leaves a border around the main area.
-
 ```python
 quote_text = urwid.Text(u'Press (R) to get your first quote!')
 quote_filler = urwid.Filler(quote_text, valign='top', top=1, bottom=1)
@@ -143,7 +142,9 @@ v_padding = urwid.Padding(quote_filler, left=1, right=1)
 quote_box = urwid.LineBox(v_padding)
 ```
 
-Finally, the `Frame` ties it all up into a layout for my app and it is used in the initialization
+A [Filler][filler] widget will maximise itself to the screen and the [Padding][padding] one is self-explanatory;
+it sets padding in terms of columns. And finally the `LineBox` leaves a border around the components nested in it.
+Finally, the [Frame][frame] ties it all up into a layout for my app and it is used in the initialization
 of the `MainLoop`.
 
 ```python
@@ -153,7 +154,7 @@ layout = urwid.Frame(header=header, body=quote_box, footer=menu)
 ```
 
 There are a ton of other ways you can structure the main components of the app and there are so many widgets
-implemented in the library. One example are the [container widgets][container widgets] like 
+implemented in the library like the [container widgets][container widgets] - where you have 
 Piles(stacking vertically) or ListBox (for menus) for example.
 
 ### Implementation - User Interaction 
@@ -172,7 +173,6 @@ def handle_input(key):
 ```
 
 **Note:** The method has to accept the 2 keys. That's the contract of the `main_loop.set_alarm_in()`
-I believe.
 
 ### Preparing the Package for Pypi
 
@@ -230,5 +230,7 @@ If you have any suggestions, feel free to let me know below!
 [6]: http://urwid.org/manual/index.html
 [7]: http://urwid.org/tutorial/index.html
 [container widgets]: http://urwid.org/manual/widgets.html#container-widgets
-[filler]: http://urwid.org/reference/widget.html?highlight=frame#filler
+[filler]: http://urwid.org/reference/widget.html?highlight=filler#filler
+[padding]: http://urwid.org/reference/widget.html?highlight=padding#padding
+[frame]: http://urwid.org/reference/widget.html?highlight=frame#frame
 [pypi]: https://pypi.python.org/pypi
