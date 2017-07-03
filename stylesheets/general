@@ -1,6 +1,6 @@
 body {
   font-weight: 400;
-  font-family: "Source Sans Pro", Arial, Helvetica, Geneva, sans-serif;
+  font-family: "Lato", Arial, Helvetica, Geneva, sans-serif;
   font-smooth: always;
   -webkit-font-smoothing: antialiased;
   color: rgba(0, 0, 0, 0.7);
@@ -27,16 +27,16 @@ h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover, h5 a:hover, h6 a:hover {
   border-color: rgba(0, 0, 0, 0.4); }
 
 h1.page-header {
-  font-size: 2.625em;
+  font-size: 2.5em;
   font-weight: 600;
   color: #2c3e50;
   border-bottom: none; }
 
 p {
-  font-size: 1.05em;
+  font-size: 1em;
   line-height: 1.6em;
-  margin-bottom: 1em;
-  margin-top: 1em; }
+  margin-bottom: 1.1em;
+  margin-top: 1.1em; }
   p a {
     border-bottom: 1px solid rgba(0, 0, 0, 0.4); }
   p a.fa {
@@ -59,7 +59,7 @@ a:hover {
   margin: 0 0.5%; }
 
 .container {
-  max-width: 635px;
+  max-width: 700px;
   margin: auto; }
 
 ul li,

@@ -125,6 +125,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -301,7 +305,27 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/python/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/cli/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/urwid/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2017/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/06/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/06/28/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -433,7 +457,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/05/04/</loc>
+    <loc>https://aranair.github.io/posts/2014/04/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -501,7 +525,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/</loc>
+    <loc>https://aranair.github.io/posts/2014/05/04/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>

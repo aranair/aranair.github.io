@@ -5,10 +5,214 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2017-04-03T00:00:00+08:00</updated>
+  <updated>2017-06-28T00:00:00+08:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Building a Python CLI Stock Ticker with Urwid</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/"/>
+    <id>http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</id>
+    <published>2017-06-28T00:00:00+08:00</published>
+    <updated>2017-07-04T00:00:24+08:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;A bit of context - I do some investing in equities on the side and I&amp;rsquo;ve always wanted to build a simple stock ticker in the form of a
+CLI app that runs in my terminal setup. There were a few out there but none that would show 
+just the information I needed, in a minimalistic fashion. And I thought it would be a fun project 
+for me since I don&amp;rsquo;t have much prior experience building a CLI app. &lt;/p&gt;
+
+&lt;p&gt;So last weekend, I decided to build one for fun! Here is the quick image of it running and 
+you can find the code over at &lt;a href="https://github.com/aranair/rtscli"&gt;https://github.com/aranair/rtscli&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png"&gt;&lt;img src="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png" alt="Demo" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Python &amp;amp; CLI Libraries&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve been starting to work with Python recently - due to the data-related work at Pocketmath.
+So language-wise, Python was a natural choice. But honestly, many other languages offer packages that 
+can achieve the same result or more - like the &lt;a href="http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/intro.html#WHATIS"&gt;ccurses&lt;/a&gt; library in C.&lt;/p&gt;
+
+&lt;p&gt;But for Python, I found a number of different libraries for CLIs:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://docs.python.org/2/howto/curses.html"&gt;curses&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://urwid.org/"&gt;urwid&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://click.pocoo.org/5/"&gt;click&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/thomasballinger/curtsies"&gt;curtsies&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Urwid&lt;/h3&gt;
+
+&lt;p&gt;Eventually I went with &lt;a href="http://urwid.org/"&gt;urwid&lt;/a&gt; because it seems easier to just jump in and get started with it instantly.
+Urwid is an alternative to the &lt;a href="https://docs.python.org/2/howto/curses.html"&gt;curses&lt;/a&gt; library in Python and it implements sort of like a layer
+ontop of boilerplate stuff that turns out to be really productive for me.&lt;/p&gt;
+
+&lt;h3&gt;Stock Ticker - Details&lt;/h3&gt;
+
+&lt;p&gt;Okay, this section is mainly describing some of the functionalities I wanted and strictly
+speaking, has nothing to do with urwid nor python nor code so feel free to skip if you&amp;rsquo;re not into this ;)&lt;/p&gt;
+
+&lt;p&gt;The basic functionalities I wanted was:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Read a list of stock tickers that contain the following:
+
+&lt;ul&gt;
+&lt;li&gt;Name of the Stock&lt;/li&gt;
+&lt;li&gt;Symbol (google symbol - &lt;code&gt;HKG:0005&lt;/code&gt; e.g.)&lt;/li&gt;
+&lt;li&gt;Buy-in price&lt;/li&gt;
+&lt;li&gt;Number of shares held&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Display key information per stock:
+
+&lt;ul&gt;
+&lt;li&gt;Change (day)&lt;/li&gt;
+&lt;li&gt;% Change (day)&lt;/li&gt;
+&lt;li&gt;Gain (overall)&lt;/li&gt;
+&lt;li&gt;% Gain (overall)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Display a portfolio wide change&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Implementation - MainLoop&lt;/h3&gt;
+
+&lt;p&gt;I imagined the app to be a long-running CLI that continuously accepts commands, while at the same time
+pulling the stock information at an interval, on top of re-painting the information on screen. That 
+can be modelled with a loop - a &lt;code&gt;MainLoop&lt;/code&gt; as urwid calls it.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urwid&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;MainLoop&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;layout&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;palette&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unhandled_input&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;handle_input&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_alarm_in&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The code above instantiates a &lt;code&gt;MainLoop&lt;/code&gt; which ties together a display module, some widgets
+and an event loop. Quoting the documentation: &lt;em&gt;It handles passing input from the display module to the 
+widgets, rendering the widgets and passing the rendered canvas to the display module to be drawn.&lt;/em&gt; &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I think of it as a controller of sorts.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Implementation - Refresh Mechanism&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;set_alarm_in&lt;/code&gt; is like &lt;code&gt;setTimeout&lt;/code&gt; in the JavaScript world; it just calls the &lt;code&gt;refresh&lt;/code&gt; method instantly
+in this case. In the refresh method I set another alarm that goes off in &lt;code&gt;10s&lt;/code&gt;, that is as good as 
+telling it to do one data pull from Google Finance every 10 seconds.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;_loop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_data&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;draw_screen&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;quote_box&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;base_widget&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;get_update&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_alarm_in&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;It calls the &lt;code&gt;get_update()&lt;/code&gt; method that spits out an array of tuples of &lt;code&gt;(color_scheme, text)&lt;/code&gt;. I&amp;rsquo;ll
+skip the details of the method but it is basically just calling a REST api that replies with JSON and
+parsing the response into a long string for display.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;This method kind of interrupts the event loop every 10 seconds.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Color Palette&lt;/h3&gt;
+
+&lt;p&gt;I also define a color scheme that can be used throughout the app.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c"&gt;# Tuples of (Key, font color, background color)&lt;/span&gt;
+&lt;span class="n"&gt;palette&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'titlebar'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'refresh button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark green,bold'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'quit button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'getting quote'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark blue'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'headers'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'white,bold'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'change '&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark green'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'change negative'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In other parts of the app where text is displayed, those keys can be used to tell the app
+what color / background the text span should be rendered in.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c"&gt;# Notice "refresh button" and "quit button" keys were defined above in the color scheme.&lt;/span&gt;
+&lt;span class="n"&gt;menu&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+    &lt;span class="s"&gt;u'Press ('&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'refresh button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;u'R'&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="s"&gt;u') to manually refresh. '&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s"&gt;u'Press ('&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'quit button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;u'Q'&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="s"&gt;u') to quit.'&lt;/span&gt;
+&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;This is just like a color palette of a site&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Layout&lt;/h3&gt;
+
+&lt;p&gt;This creates a header and assigns the &lt;code&gt;titlebar&lt;/code&gt; key color scheme to it.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="n"&gt;header_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;u' Stock Quotes'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;header&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AttrMap&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;header_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'titlebar'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Same for &lt;code&gt;quote_text&lt;/code&gt;, except this time a bunch of other widgets were used.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="n"&gt;quote_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;u'Press (R) to get your first quote!'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;quote_filler&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Filler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;quote_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;valign&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'top'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;top&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;bottom&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;v_padding&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Padding&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;quote_filler&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;left&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;right&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;quote_box&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;LineBox&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;v_padding&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;A &lt;a href="http://urwid.org/reference/widget.html?highlight=filler#filler"&gt;Filler&lt;/a&gt; widget will maximise itself to the screen and the &lt;a href="http://urwid.org/reference/widget.html?highlight=padding#padding"&gt;Padding&lt;/a&gt; one is self-explanatory;
+it sets padding in terms of columns. And finally the &lt;code&gt;LineBox&lt;/code&gt; leaves a border around the components nested in it.
+Finally, the &lt;a href="http://urwid.org/reference/widget.html?highlight=frame#frame"&gt;Frame&lt;/a&gt; ties it all up into a layout for my app and it is used in the initialization
+of the &lt;code&gt;MainLoop&lt;/code&gt;.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c"&gt;# Assemble the widgets&lt;/span&gt;
+&lt;span class="n"&gt;layout&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Frame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;header&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;header&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;quote_box&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;footer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;menu&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c"&gt;# main_loop = urwid.MainLoop(layout, palette, unhandled_input=handle_input)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;There are a ton of other ways you can structure the main components of the app and there are so many widgets
+implemented in the library like the &lt;a href="http://urwid.org/manual/widgets.html#container-widgets"&gt;container widgets&lt;/a&gt; - where you have 
+Piles(stacking vertically) or ListBox (for menus) for example.&lt;/p&gt;
+
+&lt;h3&gt;Implementation - User Interaction&lt;/h3&gt;
+
+&lt;p&gt;I didn&amp;rsquo;t really need much user interaction so that made things alot easier; the only interaction 
+was basically just 2 keys: &lt;code&gt;R&lt;/code&gt; - which forces a refresh of the data and &lt;code&gt;Q&lt;/code&gt; - which exits the program.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c"&gt;# Handle key presses&lt;/span&gt;
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;handle_input&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'R'&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'r'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'Q'&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'q'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ExitMainLoop&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; The method has to accept the 2 keys. That&amp;rsquo;s the contract of the &lt;code&gt;main_loop.set_alarm_in()&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3&gt;Preparing the Package for Pypi&lt;/h3&gt;
+
+&lt;p&gt;I added a &lt;code&gt;setup.py&lt;/code&gt;, this is sort of like the &lt;code&gt;gemspec&lt;/code&gt; of ruby gems where metadata and dependencies
+are stated. I didn&amp;rsquo;t use any folders because the script is so short already.&lt;/p&gt;
+&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;setuptools&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;setup&lt;/span&gt;
+&lt;span class="n"&gt;setup&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'rtscli'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'0.3'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;description&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'A realtime stocks ticker that runs in CLI'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'http://github.com/aranair/rtscli'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;author&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'Boa Ho Man'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;author_email&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'boa.homan@gmail.com'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;license&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'MIT'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s"&gt;'urwid'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s"&gt;'HTMLParser'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s"&gt;'simplejson'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;zip_safe&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;py_modules&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;'rtscli'&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;entry_points&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="s"&gt;'console_scripts'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;'rtscli=rtscli:cli'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Of course, you do have to setup a &lt;a href="https://pypi.python.org/pypi"&gt;pypi&lt;/a&gt; account and have the credentials in the &lt;code&gt;.pypirc&lt;/code&gt; file.
+After that, all that was left was:&lt;/p&gt;
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;python setup.py register -r pypi
+&lt;span class="gp"&gt;$ &lt;/span&gt;python setup.py sdist upload -r pypi
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;That&amp;rsquo;s it; All ready for &lt;code&gt;pip install rtscli&lt;/code&gt;!&lt;/p&gt;
+
+&lt;h3&gt;Next Iteration&lt;/h3&gt;
+
+&lt;p&gt;There are a bunch of improvements I can think of, but for a start:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Perhaps, most importantly, I would like to refactor this into using proper widgets 
+instead of appending texts into the quote_box.&lt;/li&gt;
+&lt;li&gt;Grab news from Google related to the stock tickers and displays them in a separate window OR&lt;/li&gt;
+&lt;li&gt;Track transactions (but this is a lot more complicated that I have time for :P)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If you have any suggestions, feel free to let me know below!&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Upgrading to ElasticSearch 5.2.2 on Amazon ECS</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/"/>
@@ -1069,219 +1273,6 @@ You can read more about them in &lt;a href="http://docs.aws.amazon.com/ElasticMa
 
 &lt;p&gt;I hope my learnings can help anyone out there facing a similar issue; do let me know in the comments
 if you have any questions!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>How to set up Amazon EMR Hadoop with Pig to index to Elasticsearch</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"/>
-    <id>http://blog.url.com/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</id>
-    <published>2016-12-14T00:00:00+08:00</published>
-    <updated>2016-12-14T21:54:42+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;In one of my &lt;a href="https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/"&gt;recent posts&lt;/a&gt;, I briefly talked about using &lt;code&gt;Apache Pig&lt;/code&gt;, to index an
-Elasticsearch cluster. In this post, I do a walkthrough of the DevOps configurations and steps I took, along with the code
-that was required to get it work at the start (barring some issues that I&amp;rsquo;ll talk about in the next post).&lt;/p&gt;
-
-&lt;h3&gt;Production Setup&lt;/h3&gt;
-
-&lt;p&gt;The process starts with &lt;code&gt;Jenkins&lt;/code&gt;; it uses &lt;code&gt;aws-cli&lt;/code&gt; to build an &lt;code&gt;AWS DataPipeLine&lt;/code&gt; with config variables. This DataPipeline,
-with the loaded &lt;code&gt;JSON&lt;/code&gt; configurations, would then provision an Amazon EMR Hadoop cluster for the actual task.&lt;/p&gt;
-
-&lt;p&gt;While &lt;code&gt;Jenkins&lt;/code&gt; could probably be entirely removed and a build be just triggered via DataPipeline or even EMR directly,
-I feel that, this way, other devs don&amp;rsquo;t have to know about certain services in AWS?&lt;/p&gt;
-
-&lt;p&gt;Most importantly, this abstraction takes some cognitive load off them.&lt;/p&gt;
-
-&lt;h3&gt;Jenkins&lt;/h3&gt;
-
-&lt;p&gt;This line in &lt;code&gt;Jenkins&lt;/code&gt; creates a &lt;code&gt;DataPipeLine&lt;/code&gt; using json config files in the code.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;aws datapipeline put-pipeline-definition &lt;span class="se"&gt;\&lt;/span&gt;
-  --region &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;AWS_REGION&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
-  --pipeline-id &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PIPELINE_ID&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
-  --pipeline-definition file://pipeline/emr_cluster_pipeline.json &lt;span class="se"&gt;\&lt;/span&gt;
-  --parameter-values-uri &lt;span class="s1"&gt;'file://'&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PROPS_FILE&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You can read more about &lt;code&gt;pipeline-definition&lt;/code&gt; and &lt;code&gt;--parameter-values-uri&lt;/code&gt; in the &lt;a href="http://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/dp-custom-templates.html"&gt;AWS documentation&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h3&gt;DataPipeLine&lt;/h3&gt;
-
-&lt;p&gt;Let&amp;rsquo;s move on to the pipeline definition files. I used something similar to this (obviously stripping away the sensitive data):&lt;/p&gt;
-&lt;pre class="highlight json"&gt;&lt;code&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-  &lt;/span&gt;&lt;span class="s2"&gt;"objects"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Default"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Default"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"failureAndRerunMode"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"CASCADE"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"resourceRole"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DataPipelineDefaultResourceRole"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"role"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DataPipelineDefaultRole"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"scheduleType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"cron"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"pipelineLogUri"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"#{myLogsFolder}"&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"RunJobs"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"Run the Jobs"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"type"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"ShellCommandActivity"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"command"&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"runsOn"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR_Cluster"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR_Cluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"name"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EMR Cluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"type"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"EmrCluster"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"masterInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"m3.xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"coreInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"m3.xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"coreInstanceCount"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"5"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceType"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"r3.2xlarge"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceCount"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"5"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"taskInstanceBidPrice"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mf"&gt;0.3&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"region"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"us-east-1"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"subnetId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"subnet-xxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"keyPair"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"some-keypair "&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"emrManagedMasterSecurityGroupId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"sg-xxxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"emrManagedSlaveSecurityGroupId"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"sg-xxxxxx"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"terminateAfter"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"6 HOURS"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"enableDebugging"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"actionOnTaskFailure"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"terminate"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"actionOnResourceFailure"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="s2"&gt;"retrynone"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="s2"&gt;"schedule"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="w"&gt;
-        &lt;/span&gt;&lt;span class="s2"&gt;"ref"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;"DefaultSchedule"&lt;/span&gt;&lt;span class="w"&gt;
-      &lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="p"&gt;},&lt;/span&gt;&lt;span class="w"&gt;
-    &lt;/span&gt;&lt;span class="err"&gt;...&lt;/span&gt;&lt;span class="w"&gt;
-  &lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;&lt;span class="w"&gt;
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The config above tells &lt;code&gt;DataPipeLine&lt;/code&gt; to launch the EMR cluster with the id &lt;code&gt;EMR_Cluster&lt;/code&gt; that contains one &lt;code&gt;m3.xlarge&lt;/code&gt; master instance
-and five &lt;code&gt;m3.xlarge&lt;/code&gt; core instances.&lt;/p&gt;
-
-&lt;h4&gt;Task Instances&lt;/h4&gt;
-
-&lt;p&gt;For the task instances, it bids for up to 5 &lt;code&gt;r3.2xlarge&lt;/code&gt; spot instances with a cost of &lt;code&gt;$0.30&lt;/code&gt;
-per instance hour. That&amp;rsquo;s a discount of approximately &lt;code&gt;$0.088&lt;/code&gt;?&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Do note that, not all instances are available as task instances&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;The EMR pipeline will eventually execute the command below; it first copies essential libraries like 
-maven jar files that into S3. As you&amp;rsquo;ll see later, these libraries will be used in the task instances later.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;aws s3 cp #{s3SoftwareFolder} . --recursive; sh init-script.sh --verbose --run-es-pig --es-endpoint #{myEsEndpoint}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;The Bash Script&lt;/h3&gt;
-
-&lt;p&gt;It also executes &lt;code&gt;init-script.sh&lt;/code&gt;. I had a bunch of other variable preparation in there but most importantly,
-I pre-created the Elasticsearch index because the index that is automatically created by Pig Script
-doesn&amp;rsquo;t match what I want.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XPUT &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/data_&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/"&lt;/span&gt; -d &lt;span class="s1"&gt;'{
-  "mappings":{
-     "publisher":{
-        "properties":{
-           "country":{ "type":"string" },
-           ...
-        }
-     }
-   }
-}'&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;It also handles some miscellaneous tasks like swapping of the Elasticsearch aliases and deleting old ones.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -XPOST &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/_aliases"&lt;/span&gt; -d &lt;span class="s1"&gt;'
-{
-  "actions" : [
-    { "remove" : { "index" : "data_*", "alias" : "data_latest" } },
-    { "add" : { "index" : "data_'&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s1"&gt;'", "alias" : "data_latest" } }
-  ]
-}'&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Running the Pig Script&lt;/h3&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;pig -F -param &lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;ES_ENDPOINT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
-       -param &lt;span class="nv"&gt;INPUT&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;INPUT&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="se"&gt;\&lt;/span&gt;
-       -param &lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;DAY_EPOCH&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; -f &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="k"&gt;${&lt;/span&gt;&lt;span class="nv"&gt;PHYS_DIR&lt;/span&gt;&lt;span class="k"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;/index-data.q"&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;These would automatically run in the spot instances for non-group operations. One thing to note, is that the &lt;code&gt;INPUT&lt;/code&gt; variable
-is where I define the S3 path to the Hadoop hdfs files to be ingested and indexed.&lt;/p&gt;
-
-&lt;p&gt;This &lt;strong&gt;should not&lt;/strong&gt; be a local folder because the spot instances do not have access to them at runtime and will fail.&lt;/p&gt;
-
-&lt;h3&gt;Inside the Pig Script&lt;/h3&gt;
-
-&lt;p&gt;Next, I register the required jar files; these are actually just maven files.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;REGISTER piggybank.jar;
-REGISTER s3://S3_BUCKET_NAME/software/libs/elasticsearch-hadoop-pig-2.3.4.jar;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Set the parallelism for this pig script to run in (given the right resources via the EMR cluster).&lt;/p&gt;
-
-&lt;p&gt;To be fair, in this particular example, this parallelism is not used.
-It is only really taken into consideration for group, co-group and join operations.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;SET default_parallel 20;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Initialize the libraries and start the ingesting of the data.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;DEFINE CsvLoader org.apache.pig.piggybank.storage.CSVExcelStorage(',');
-DEFINE EsStorage org.elasticsearch.hadoop.pig.EsStorage('es.nodes=$ES_ENDPOINT','es.http.timeout=5m');
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The &lt;code&gt;$ES_ENDPOINT&lt;/code&gt; variable is a comma delimited variable that has the ports included as well, e.g. &lt;code&gt;52.167.183.192:9200&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;There are other variables that you can define here such as &lt;code&gt;es.mapping.id&lt;/code&gt; that defines the id for the Elasticsearch for example,
-instead of automatically letting Elasticsearch generate one.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;raw_data = LOAD '$INPUT'
-           USING CsvLoader AS (
-             bundle_id:chararray,
-             publisher:chararray,
-             exchange_id:int,
-             country:chararray,
-             categories:chararray,
-             ad_size:chararray,
-             interstitial:int,
-             apis:chararray,
-             platform_id:int,
-             device_os_id:int,
-             video_type:int,
-             ad_type:int,
-             app_id:chararray,
-             publisher_id:chararray,
-             assets:chararray,
-             frequency:long);
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h4&gt;Extract, Transform, Load&lt;/h4&gt;
-
-&lt;p&gt;This last step runs through each of the rows of the data and generates a subset of the data to be indexed into Elasticsearch.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;filtered_data = FOREACH raw_data
-                GENERATE $0, $1, $2, $3, $4, $5, $7, $8, $9, $10, $11, $14, $15;
-
-STORE filtered_data INTO 'data_$DAY_EPOCH/publisher' USING EsStorage();
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;You could do many different variations of ETL in Pig Script. For instance, you can combine some of the columns
-into one column.&lt;/p&gt;
-
-&lt;p&gt;I&amp;rsquo;ve found that in Pig &lt;code&gt;v0.12.0&lt;/code&gt;, concatenation of multiple columns is quite finicky because you can&amp;rsquo;t
-combine multiple columns at one time; it has to be sequential like this:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;d = FOREACH raw_data
-    GENERATE
-      CONCAT($0, (chararray)CONCAT($1, (chararray)CONCAT($2, $3))) as id, $4, $5, $6;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Note that, without the &lt;code&gt;(chararray)&lt;/code&gt;, you quickly run into errors about forcing an explicit type cast.&lt;/p&gt;
-
-&lt;h3&gt;Summary&lt;/h3&gt;
-
-&lt;p&gt;I&amp;rsquo;ve done an run-through of each of the components in a production setup: &lt;code&gt;Jenkins&lt;/code&gt;, &lt;code&gt;DataPipeline&lt;/code&gt;, &lt;code&gt;EMR/Pig&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I hope this helps people out there figure out how to spin up, either periodically or on-demand, 
-an Amazon EMR cluster running Hadoop to do some basic ETL to then index into an Elasticsearch cluster.&lt;/p&gt;
-
-&lt;p&gt;In the next post, I shall discuss some of the pitfalls, EMR / Elasticsearch performance tuning 
-issues that leads to random failures in the EMR cluster. All of them could cause some rather tricky issues 
-in the indexing task; one of the ones that I have personally experienced myself is having 
-duplicated documents in the Elasticsearch cluster despite having only processed a correct number of them.&lt;/p&gt;
-
-&lt;p&gt;If you have any questions, feel free to comment below!&lt;/p&gt;
 </content>
   </entry>
 </feed>

@@ -1,0 +1,369 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Building a Python CLI Stock Ticker with Urwid</title>
+
+    <meta name="description" content="In this post, I run through how I built a python CLI with the urwid package - a realtime updated stock ticker.  I also talk about how I published it to Pypi so that others can install it easily via..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Building a Python CLI Stock Ticker with Urwid" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-49fdbb13.css" rel="stylesheet" />
+    <script src="/javascripts/all-6e6341dd.js" async="true"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2017 posts_2017_06 posts_2017_06_28 posts_2017_06_28_building-a-python-cli-stock-ticker-with-urwid posts_2017_06_28_building-a-python-cli-stock-ticker-with-urwid_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+
+          <h1 class="page-header article__article-title">
+    Building a Python CLI Stock Ticker with Urwid<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jun 28, 2017
+        <span class="article__middle-dot"></span>
+        11  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/python/" class="article__tag-link">python</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/cli/" class="article__tag-link">cli</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/urwid/" class="article__tag-link">urwid</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>A bit of context - I do some investing in equities on the side and I&rsquo;ve always wanted to build a simple stock ticker in the form of a
+CLI app that runs in my terminal setup. There were a few out there but none that would show 
+just the information I needed, in a minimalistic fashion. And I thought it would be a fun project 
+for me since I don&rsquo;t have much prior experience building a CLI app. </p>
+
+<p>So last weekend, I decided to build one for fun! Here is the quick image of it running and 
+you can find the code over at <a href="https://github.com/aranair/rtscli">https://github.com/aranair/rtscli</a>.</p>
+
+<p><a href="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png"><img src="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png" alt="Demo" /></a></p>
+
+<h3>Python &amp; CLI Libraries</h3>
+
+<p>I&rsquo;ve been starting to work with Python recently - due to the data-related work at Pocketmath.
+So language-wise, Python was a natural choice. But honestly, many other languages offer packages that 
+can achieve the same result or more - like the <a href="http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/intro.html#WHATIS">ccurses</a> library in C.</p>
+
+<p>But for Python, I found a number of different libraries for CLIs:</p>
+
+<ul>
+<li><a href="https://docs.python.org/2/howto/curses.html">curses</a></li>
+<li><a href="http://urwid.org/">urwid</a></li>
+<li><a href="http://click.pocoo.org/5/">click</a></li>
+<li><a href="https://github.com/thomasballinger/curtsies">curtsies</a></li>
+</ul>
+
+<h3>Urwid</h3>
+
+<p>Eventually I went with <a href="http://urwid.org/">urwid</a> because it seems easier to just jump in and get started with it instantly.
+Urwid is an alternative to the <a href="https://docs.python.org/2/howto/curses.html">curses</a> library in Python and it implements sort of like a layer
+ontop of boilerplate stuff that turns out to be really productive for me.</p>
+
+<h3>Stock Ticker - Details</h3>
+
+<p>Okay, this section is mainly describing some of the functionalities I wanted and strictly
+speaking, has nothing to do with urwid nor python nor code so feel free to skip if you&rsquo;re not into this ;)</p>
+
+<p>The basic functionalities I wanted was:</p>
+
+<ul>
+<li>Read a list of stock tickers that contain the following:
+
+<ul>
+<li>Name of the Stock</li>
+<li>Symbol (google symbol - <code>HKG:0005</code> e.g.)</li>
+<li>Buy-in price</li>
+<li>Number of shares held</li>
+</ul></li>
+<li>Display key information per stock:
+
+<ul>
+<li>Change (day)</li>
+<li>% Change (day)</li>
+<li>Gain (overall)</li>
+<li>% Gain (overall)</li>
+</ul></li>
+<li>Display a portfolio wide change</li>
+</ul>
+
+<h3>Implementation - MainLoop</h3>
+
+<p>I imagined the app to be a long-running CLI that continuously accepts commands, while at the same time
+pulling the stock information at an interval, on top of re-painting the information on screen. That 
+can be modelled with a loop - a <code>MainLoop</code> as urwid calls it.</p>
+<pre class="highlight python"><code><span class="kn">import</span> <span class="nn">urwid</span>
+<span class="n">main_loop</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">MainLoop</span><span class="p">(</span><span class="n">layout</span><span class="p">,</span> <span class="n">palette</span><span class="p">,</span> <span class="n">unhandled_input</span><span class="o">=</span><span class="n">handle_input</span><span class="p">)</span>
+<span class="n">main_loop</span><span class="o">.</span><span class="n">set_alarm_in</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">refresh</span><span class="p">)</span>
+<span class="n">main_loop</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre>
+<p>The code above instantiates a <code>MainLoop</code> which ties together a display module, some widgets
+and an event loop. Quoting the documentation: <em>It handles passing input from the display module to the 
+widgets, rendering the widgets and passing the rendered canvas to the display module to be drawn.</em> </p>
+
+<p><strong>I think of it as a controller of sorts.</strong></p>
+
+<h3>Implementation - Refresh Mechanism</h3>
+
+<p><code>set_alarm_in</code> is like <code>setTimeout</code> in the JavaScript world; it just calls the <code>refresh</code> method instantly
+in this case. In the refresh method I set another alarm that goes off in <code>10s</code>, that is as good as 
+telling it to do one data pull from Google Finance every 10 seconds.</p>
+<pre class="highlight python"><code><span class="k">def</span> <span class="nf">refresh</span><span class="p">(</span><span class="n">_loop</span><span class="p">,</span> <span class="n">_data</span><span class="p">):</span>
+    <span class="n">main_loop</span><span class="o">.</span><span class="n">draw_screen</span><span class="p">()</span>
+    <span class="n">quote_box</span><span class="o">.</span><span class="n">base_widget</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">get_update</span><span class="p">())</span>
+    <span class="n">main_loop</span><span class="o">.</span><span class="n">set_alarm_in</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">refresh</span><span class="p">)</span>
+</code></pre>
+<p>It calls the <code>get_update()</code> method that spits out an array of tuples of <code>(color_scheme, text)</code>. I&rsquo;ll
+skip the details of the method but it is basically just calling a REST api that replies with JSON and
+parsing the response into a long string for display.</p>
+
+<p><strong>This method kind of interrupts the event loop every 10 seconds.</strong></p>
+
+<h3>Color Palette</h3>
+
+<p>I also define a color scheme that can be used throughout the app.</p>
+<pre class="highlight python"><code><span class="c"># Tuples of (Key, font color, background color)</span>
+<span class="n">palette</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">(</span><span class="s">'titlebar'</span><span class="p">,</span> <span class="s">'dark red'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'refresh button'</span><span class="p">,</span> <span class="s">'dark green,bold'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'quit button'</span><span class="p">,</span> <span class="s">'dark red'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'getting quote'</span><span class="p">,</span> <span class="s">'dark blue'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'headers'</span><span class="p">,</span> <span class="s">'white,bold'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'change '</span><span class="p">,</span> <span class="s">'dark green'</span><span class="p">,</span> <span class="s">''</span><span class="p">),</span>
+  <span class="p">(</span><span class="s">'change negative'</span><span class="p">,</span> <span class="s">'dark red'</span><span class="p">,</span> <span class="s">''</span><span class="p">)]</span>
+</code></pre>
+<p>In other parts of the app where text is displayed, those keys can be used to tell the app
+what color / background the text span should be rendered in.</p>
+<pre class="highlight python"><code><span class="c"># Notice "refresh button" and "quit button" keys were defined above in the color scheme.</span>
+<span class="n">menu</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Text</span><span class="p">([</span>
+    <span class="s">u'Press ('</span><span class="p">,</span> <span class="p">(</span><span class="s">'refresh button'</span><span class="p">,</span> <span class="s">u'R'</span><span class="p">),</span> <span class="s">u') to manually refresh. '</span><span class="p">,</span>
+    <span class="s">u'Press ('</span><span class="p">,</span> <span class="p">(</span><span class="s">'quit button'</span><span class="p">,</span> <span class="s">u'Q'</span><span class="p">),</span> <span class="s">u') to quit.'</span>
+<span class="p">])</span>
+</code></pre>
+<p><strong>This is just like a color palette of a site</strong></p>
+
+<h3>Layout</h3>
+
+<p>This creates a header and assigns the <code>titlebar</code> key color scheme to it.</p>
+<pre class="highlight python"><code><span class="n">header_text</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="s">u' Stock Quotes'</span><span class="p">)</span>
+<span class="n">header</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">AttrMap</span><span class="p">(</span><span class="n">header_text</span><span class="p">,</span> <span class="s">'titlebar'</span><span class="p">)</span>
+</code></pre>
+<p>Same for <code>quote_text</code>, except this time a bunch of other widgets were used.</p>
+<pre class="highlight python"><code><span class="n">quote_text</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Text</span><span class="p">(</span><span class="s">u'Press (R) to get your first quote!'</span><span class="p">)</span>
+<span class="n">quote_filler</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Filler</span><span class="p">(</span><span class="n">quote_text</span><span class="p">,</span> <span class="n">valign</span><span class="o">=</span><span class="s">'top'</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">v_padding</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Padding</span><span class="p">(</span><span class="n">quote_filler</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">quote_box</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">LineBox</span><span class="p">(</span><span class="n">v_padding</span><span class="p">)</span>
+</code></pre>
+<p>A <a href="http://urwid.org/reference/widget.html?highlight=filler#filler">Filler</a> widget will maximise itself to the screen and the <a href="http://urwid.org/reference/widget.html?highlight=padding#padding">Padding</a> one is self-explanatory;
+it sets padding in terms of columns. And finally the <code>LineBox</code> leaves a border around the components nested in it.
+Finally, the <a href="http://urwid.org/reference/widget.html?highlight=frame#frame">Frame</a> ties it all up into a layout for my app and it is used in the initialization
+of the <code>MainLoop</code>.</p>
+<pre class="highlight python"><code><span class="c"># Assemble the widgets</span>
+<span class="n">layout</span> <span class="o">=</span> <span class="n">urwid</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">quote_box</span><span class="p">,</span> <span class="n">footer</span><span class="o">=</span><span class="n">menu</span><span class="p">)</span>
+<span class="c"># main_loop = urwid.MainLoop(layout, palette, unhandled_input=handle_input)</span>
+</code></pre>
+<p>There are a ton of other ways you can structure the main components of the app and there are so many widgets
+implemented in the library like the <a href="http://urwid.org/manual/widgets.html#container-widgets">container widgets</a> - where you have 
+Piles(stacking vertically) or ListBox (for menus) for example.</p>
+
+<h3>Implementation - User Interaction</h3>
+
+<p>I didn&rsquo;t really need much user interaction so that made things alot easier; the only interaction 
+was basically just 2 keys: <code>R</code> - which forces a refresh of the data and <code>Q</code> - which exits the program.</p>
+<pre class="highlight python"><code><span class="c"># Handle key presses</span>
+<span class="k">def</span> <span class="nf">handle_input</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">'R'</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="s">'r'</span><span class="p">:</span>
+        <span class="n">refresh</span><span class="p">(</span><span class="n">main_loop</span><span class="p">,</span> <span class="s">''</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s">'Q'</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="s">'q'</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">urwid</span><span class="o">.</span><span class="n">ExitMainLoop</span><span class="p">()</span>
+</code></pre>
+<p><strong>Note:</strong> The method has to accept the 2 keys. That&rsquo;s the contract of the <code>main_loop.set_alarm_in()</code></p>
+
+<h3>Preparing the Package for Pypi</h3>
+
+<p>I added a <code>setup.py</code>, this is sort of like the <code>gemspec</code> of ruby gems where metadata and dependencies
+are stated. I didn&rsquo;t use any folders because the script is so short already.</p>
+<pre class="highlight python"><code><span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span>
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s">'rtscli'</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s">'0.3'</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s">'A realtime stocks ticker that runs in CLI'</span><span class="p">,</span>
+    <span class="n">url</span><span class="o">=</span><span class="s">'http://github.com/aranair/rtscli'</span><span class="p">,</span>
+    <span class="n">author</span><span class="o">=</span><span class="s">'Boa Ho Man'</span><span class="p">,</span>
+    <span class="n">author_email</span><span class="o">=</span><span class="s">'boa.homan@gmail.com'</span><span class="p">,</span>
+    <span class="n">license</span><span class="o">=</span><span class="s">'MIT'</span><span class="p">,</span>
+    <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span>
+        <span class="s">'urwid'</span><span class="p">,</span>
+        <span class="s">'HTMLParser'</span><span class="p">,</span>
+        <span class="s">'simplejson'</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="n">zip_safe</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+    <span class="n">py_modules</span><span class="o">=</span><span class="p">[</span><span class="s">'rtscli'</span><span class="p">],</span>
+    <span class="n">entry_points</span><span class="o">=</span><span class="p">{</span> <span class="s">'console_scripts'</span><span class="p">:</span> <span class="p">[</span><span class="s">'rtscli=rtscli:cli'</span><span class="p">]</span> <span class="p">},</span>
+<span class="p">)</span>
+</code></pre>
+<p>Of course, you do have to setup a <a href="https://pypi.python.org/pypi">pypi</a> account and have the credentials in the <code>.pypirc</code> file.
+After that, all that was left was:</p>
+<pre class="highlight shell"><code><span class="gp">$ </span>python setup.py register -r pypi
+<span class="gp">$ </span>python setup.py sdist upload -r pypi
+</code></pre>
+<p>That&rsquo;s it; All ready for <code>pip install rtscli</code>!</p>
+
+<h3>Next Iteration</h3>
+
+<p>There are a bunch of improvements I can think of, but for a start:</p>
+
+<ol>
+<li>Perhaps, most importantly, I would like to refactor this into using proper widgets 
+instead of appending texts into the quote_box.</li>
+<li>Grab news from Google related to the stock tickers and displays them in a separate window OR</li>
+<li>Track transactions (but this is a lot more complicated that I have time for :P)</li>
+</ol>
+
+<p>If you have any suggestions, feel free to let me know below!</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2017/cli-stock-ticker-python-urwid';
+                        var disqus_title = 'CLI Stock Ticker with Python and Urwid';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>
