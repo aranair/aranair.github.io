@@ -1,11 +1,11 @@
 ---
-title: 'Golang Telegram Bot & Cronjobs'
+title: 'Golang Telegram Bot - Migrations, Cronjobs & Refactors'
 description: 'In this post, I talk about how I added timed executions or cronjobs to my telegram bot.
 I also run through some of the code organizational changes I made to the previous versions.'
 date: 2017-08-20
 tags: golang, telegram, bot
-disqus_identifier: 2017/golang-telegram-bot-cron
-disqus_title: Golang Telegram Bot & Cronjobs
+disqus_identifier: 2017/golang-telegram-bot-migrations-crons-refactors
+disqus_title: Golang Telegram Bot Migrations, Cronjobs & Refactors
 ---
 
 This post is kind of like a continuation from the previous posts of my Golang Telegram Bot, so if you
@@ -65,9 +65,9 @@ remindbot/
   migrations/
 ```
 
-### Cron
+### Cron / Scheduled Task
 
-So, I needed a cron that would run perpetually and schedules a task every 5 minutes.
+I needed a cron that would run perpetually and schedules a task every 5 minutes.
 
 I feel that this cron job and my webapp should be in somewhat separated. While they are somewhat
 related in terms of configs, commands and databases,I felt that they have two rather different
@@ -83,14 +83,17 @@ code inside, you probably can do without the package if you're afraid of adding 
 
 ### Migrations
 
-I use `rubenv/sql-migrate` for doing migrations (goose was finicky at best for me). They're manual
-for now since I don't forsee that many migrations to happen but if they start to become more
-frequent, I would definitely move them out into a separate docker container that runs on every
-deploy (and kills itself after of course).
+I needed to make changes to the database schema; I think there isn't a defacto package for handling
+that out there? There are a couple of them out there like goose for example.
+
+I ended up using [rubenv/sql-migrate][sql-migrate] though; goose was slightly finicky for me, YMMV.
+They're also run manually for now since I don't forsee that many migrations to happen but if they start to
+become more frequent, I would definitely move them out into a separate docker container that runs
+briefly on every deploy.
 
 ### Docker Setup
 
-There were minimal changes to my Dockerfile and docker-compose config files honestly.
+There were minimal changes to my Dockerfile and docker-compose config files.
 
 For the `docker-compose.yml`, I've added a `base` key that builds the Dockerfile in the root
 folder. And then each of the other 2 services would just define a different entrypoint. I could
@@ -120,17 +123,18 @@ services:
       - timer
 ```
 
-I've also setup Godep to deal with external package version control. So the Dockerfile would have
-just one package to grab and restore all the package locally, instead of getting it via `go get`.
+I've also setup [Godep][godep] to deal with external package version control. It does a simple job -
+save the external packages into the vendor folder so that they can be restored easily the next time.
 
-The Dockerfile basically remains unchanged other than the Godep stuff and moving the entrypoint
-from before into the docker-compose instead.
+That way, the Dockerfile would have just one package to grab and restore all the package locally,
+instead of getting all of them via `go get`. Other than that, the Dockerfile basically remains
+unchanged other than the Godep stuff and moving the entrypoint from before into the docker-compose
+instead.
 
 ```
 FROM golang:1.6
 
 ADD configs.toml /go/bin/
-
 ADD . /go/src/github.com/aranair/remindbot
 WORKDIR /go/src/github.com/aranair/remindbot
 
@@ -146,15 +150,16 @@ WORKDIR /go/bin/
 
 - I want to be able to use "today" / "tomorrow" / "next week" instead of having to put in a date
 manually; this probably just means better datetime parsing.
-- Ideally, I also want a snooze function, where you can postpone the notifications by X number of hours.
+- Ideally, I also want a snooze function, where you can postpone the notifications by X number of
+hours.
 
 [![Demo]()]()
 
 ### Timer
 
-[1]:
-[2]:
-[so post]:
+[1]: https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/
+[2]: https://aranair.github.io/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/
 [blog post]: https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091
+[godep]: https://github.com/tools/godep
 [gocron]: https://github.com/jasonlvhit/gocron
-[sql-migrate]:
+[sql-migrate]: https://github.com/rubenv/sql-migrate
