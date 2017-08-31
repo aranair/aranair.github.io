@@ -2,7 +2,7 @@
 title: 'Golang Telegram Bot & Cronjobs'
 description: 'In this post, I talk about how I added timed executions or cronjobs to my telegram bot.
 I also run through some of the code organizational changes I made to the previous versions.'
-date: 2017-08-06
+date: 2017-08-20
 tags: golang, telegram, bot
 disqus_identifier: 2017/golang-telegram-bot-cron
 disqus_title: Golang Telegram Bot & Cronjobs
@@ -40,8 +40,8 @@ me.
 
 ### CMD Folder
 
-Anyway, so one of the things that was recommended, is to a `cmd` folder to contain
-the main packages (those that actually run and have a main.go), thereby removing the main.go
+Anyway, so one of the things that was recommended, is to use a `cmd` folder to contain
+the main running packages (those that actually need a `main.go`), thereby removing the main.go
 from the root folder. It also satisfies my other criteria of not needing to change my docker
 setup drastically, so that's all good.
 
@@ -67,8 +67,11 @@ remindbot/
 
 ### Cron
 
-The reason why this should be a separate app is because I feel that, while they are somewhat
-related in terms of configs, commands and databases, they have two rather different responsibilities.
+So, I needed a cron that would run perpetually and schedules a task every 5 minutes.
+
+I feel that this cron job and my webapp should be in somewhat separated. While they are somewhat
+related in terms of configs, commands and databases,I felt that they have two rather different
+responsibilities.
 
 I could use a single app, with background tasks or threads running the cron that does exactly
 what the timer app does but I've done them in a way that they run in separate containers,
