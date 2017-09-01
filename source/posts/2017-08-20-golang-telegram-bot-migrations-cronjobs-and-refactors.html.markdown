@@ -153,10 +153,6 @@ manually; this probably just means better datetime parsing.
 - Ideally, I also want a snooze function, where you can postpone the notifications by X number of
 hours.
 
-[![Demo]()]()
-
-### Timer
-
 [1]: https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/
 [2]: https://aranair.github.io/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/
 [blog post]: https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091
