@@ -9,7 +9,7 @@ gem "middleman-syntax"
 gem 'middleman-deploy', github: 'middleman-contrib/middleman-deploy', branch: 'master'
 gem "middleman-sprockets", github: 'middleman/middleman-sprockets', branch: 'master'
 gem "redcarpet"
-gem "therubyracer"
+# gem "therubyracer"
 gem "oj"
 gem "nokogiri"
 gem "bootstrap-sass", require: false
