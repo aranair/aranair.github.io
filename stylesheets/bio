@@ -2,6 +2,3 @@ h1.bio__header {
   font-size: 2.75em;
   font-weight: 900;
   color: #333; }
-
-.bio {
-  text-align: center; }

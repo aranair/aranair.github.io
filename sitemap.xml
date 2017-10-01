@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://aranair.github.io/bio/</loc>
+    <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -129,7 +129,11 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/</loc>
+    <loc>https://aranair.github.io/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/bio/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -321,6 +325,14 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2017/08/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/08/20/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2017/06/</loc>
     <priority>0.7</priority>
   </url>
@@ -457,6 +469,10 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2014/05/04/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2014/04/</loc>
     <priority>0.7</priority>
   </url>
@@ -521,11 +537,11 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/page/2/</loc>
+    <loc>https://aranair.github.io/posts/page/4/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/05/04/</loc>
+    <loc>https://aranair.github.io/posts/2014/page/2/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>

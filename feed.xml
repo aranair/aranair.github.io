@@ -5,16 +5,166 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2017-06-28T00:00:00+08:00</updated>
+  <updated>2017-08-19T12:00:00-04:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
   <entry>
+    <title>Golang Telegram Bot - Migrations, Cronjobs &amp; Refactors</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/"/>
+    <id>http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</id>
+    <published>2017-08-19T12:00:00-04:00</published>
+    <updated>2017-09-30T20:53:21-04:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;This post is kind of like a continuation from the previous posts of my Golang Telegram Bot, so if you
+haven&amp;rsquo;t seen that yet, it&amp;rsquo;s probably better to start with those first: &lt;a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"&gt;part 1&lt;/a&gt; and &lt;a href="https://aranair.github.io/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"&gt;part 2&lt;/a&gt;. I
+basically wanted my telegram bot to be able to remember dated / timed reminders and send messages to
+notify me when that time comes (like a calendar). Furthermore, just to force me to complete the tasks
+quickly, I also make it repeat the notifications until its cleared.&lt;/p&gt;
+
+&lt;h3&gt;Code Organization&lt;/h3&gt;
+
+&lt;p&gt;Something that I&amp;rsquo;ve never really gotten right in Golang, is code organization.
+I find it hard to decide where each piece belongs; it almost feels like a naming- kind of problem to me
+and I wish there was a little more convention around this, or a generally accepted framework to think about how
+to arrange things.&lt;/p&gt;
+
+&lt;p&gt;When I realised I needed the web-app (for responding to messages/commands) and the timer-app (for
+periodically checking the time and sending overdue reminders etc) to run at the same time,
+a couple of questions came up:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Are these 2 related? (For which the answer is yes - configs, db, handlers)&lt;/li&gt;
+&lt;li&gt;Should these two be separate git repos? (No, because of the previous question)&lt;/li&gt;
+&lt;li&gt;Can they be run with just one &amp;lsquo;app&amp;rsquo;? (No, reasons in another section)&lt;/li&gt;
+&lt;li&gt;They are logically separate &amp;#39;apps&amp;rsquo;, so where should each &lt;code&gt;main.go&lt;/code&gt; be at?&lt;/li&gt;
+&lt;li&gt;How do I organise the shared packages and shared configurations?&lt;/li&gt;
+&lt;li&gt;How do I structure it such that my Dockerfile and docker-compose configs don&amp;rsquo;t require massive
+changes? Or even better, can they be shared? (Yes)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;While researching, I came across this &lt;a href="https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091"&gt;blog post&lt;/a&gt; that talks about code organization in
+Golang in general and thinking about the application from the perspective of a library, which
+all made a ton of sense to me. Head over there to check it out if you&amp;rsquo;re in the same situation as
+me.&lt;/p&gt;
+
+&lt;h3&gt;CMD Folder&lt;/h3&gt;
+
+&lt;p&gt;Anyway, so one of the things that was recommended, is to use a &lt;code&gt;cmd&lt;/code&gt; folder to contain
+the main running packages (those that actually need a &lt;code&gt;main.go&lt;/code&gt;), thereby removing the main.go
+from the root folder. It also satisfies my other criteria of not needing to change my docker
+setup drastically, so that&amp;rsquo;s all good.&lt;/p&gt;
+
+&lt;p&gt;Shared packages are left untouched under the root folder so that logically they&amp;rsquo;re like libraries
+and exist in some sort of a common area and they can also be easily imported in the timer/webapp packages.&lt;/p&gt;
+
+&lt;p&gt;The general structure comes up to something like this:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;remindbot/
+  cmd/
+    timer/
+      main.go
+      ...
+    webapp/
+      main.go
+      ...
+  config/
+  commands/
+  handlers/
+  migrations/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Cron / Scheduled Task&lt;/h3&gt;
+
+&lt;p&gt;I needed a cron that would run perpetually and schedules a task every 5 minutes.&lt;/p&gt;
+
+&lt;p&gt;I feel that this cron job and my webapp should be in somewhat separated. While they are somewhat
+related in terms of configs, commands and databases,I felt that they have two rather different
+responsibilities.&lt;/p&gt;
+
+&lt;p&gt;I could use a single app, with background tasks or threads running the cron that does exactly
+what the timer app does but I&amp;rsquo;ve done them in a way that they run in separate containers,
+almost like microservices. I feel that that is a better way of representing the clear distinction
+of their responsibilities.&lt;/p&gt;
+
+&lt;p&gt;I use &lt;a href="https://github.com/jasonlvhit/gocron"&gt;gocron&lt;/a&gt; to run a function in a shared package every 5 minutes but if you look at the
+code inside, you probably can do without the package if you&amp;rsquo;re afraid of adding dependencies.&lt;/p&gt;
+
+&lt;h3&gt;Migrations&lt;/h3&gt;
+
+&lt;p&gt;I needed to make changes to the database schema; I think there isn&amp;rsquo;t a defacto package for handling
+that out there? There are a couple of them out there like goose for example.&lt;/p&gt;
+
+&lt;p&gt;I ended up using &lt;a href="https://github.com/rubenv/sql-migrate"&gt;rubenv/sql-migrate&lt;/a&gt; though; goose was slightly finicky for me, YMMV.
+They&amp;rsquo;re also run manually for now since I don&amp;rsquo;t forsee that many migrations to happen but if they start to
+become more frequent, I would definitely move them out into a separate docker container that runs
+briefly on every deploy.&lt;/p&gt;
+
+&lt;h3&gt;Docker Setup&lt;/h3&gt;
+
+&lt;p&gt;There were minimal changes to my Dockerfile and docker-compose config files.&lt;/p&gt;
+
+&lt;p&gt;For the &lt;code&gt;docker-compose.yml&lt;/code&gt;, I&amp;rsquo;ve added a &lt;code&gt;base&lt;/code&gt; key that builds the Dockerfile in the root
+folder. And then each of the other 2 services would just define a different entrypoint. I could
+also have two separate Dockerfiles but at this point I think they&amp;rsquo;re still similar enough to just
+have one Dockerfile.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;2'&lt;/span&gt;
+&lt;span class="na"&gt;services&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="na"&gt;base&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;build&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;.&lt;/span&gt;
+  &lt;span class="na"&gt;hazel&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;extends&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;base&lt;/span&gt;
+    &lt;span class="na"&gt;ports&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080:8080"&lt;/span&gt;
+    &lt;span class="na"&gt;expose&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080"&lt;/span&gt;
+    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
+    &lt;span class="na"&gt;entrypoint&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;webapp&lt;/span&gt;
+  &lt;span class="na"&gt;timer&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;extends&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;base&lt;/span&gt;
+    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
+    &lt;span class="na"&gt;entrypoint&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;timer&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I&amp;rsquo;ve also setup &lt;a href="https://github.com/tools/godep"&gt;Godep&lt;/a&gt; to deal with external package version control. It does a simple job -
+save the external packages into the vendor folder so that they can be restored easily the next time.&lt;/p&gt;
+
+&lt;p&gt;That way, the Dockerfile would have just one package to grab and restore all the package locally,
+instead of getting all of them via &lt;code&gt;go get&lt;/code&gt;. Other than that, the Dockerfile basically remains
+unchanged other than the Godep stuff and moving the entrypoint from before into the docker-compose
+instead.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM golang:1.6
+
+ADD configs.toml /go/bin/
+ADD . /go/src/github.com/aranair/remindbot
+WORKDIR /go/src/github.com/aranair/remindbot
+
+RUN go get github.com/tools/godep
+RUN godep restore
+RUN go install ./...
+
+WORKDIR /go/src/github.com/aranair/remindbot
+WORKDIR /go/bin/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Next Iterations&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;I want to be able to use &amp;ldquo;today&amp;rdquo; / &amp;ldquo;tomorrow&amp;rdquo; / &amp;ldquo;next week&amp;rdquo; instead of having to put in a date
+manually; this probably just means better datetime parsing.&lt;/li&gt;
+&lt;li&gt;Ideally, I also want a snooze function, where you can postpone the notifications by X number of
+hours.&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
+  <entry>
     <title>Building a Python CLI Stock Ticker with Urwid</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/"/>
     <id>http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</id>
-    <published>2017-06-28T00:00:00+08:00</published>
-    <updated>2017-07-04T00:00:24+08:00</updated>
+    <published>2017-06-27T12:00:00-04:00</published>
+    <updated>2017-09-30T20:53:19-04:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -217,8 +367,8 @@ instead of appending texts into the quote_box.&lt;/li&gt;
     <title>Upgrading to ElasticSearch 5.2.2 on Amazon ECS</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/"/>
     <id>http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/</id>
-    <published>2017-04-03T00:00:00+08:00</published>
-    <updated>2017-05-10T15:53:26+08:00</updated>
+    <published>2017-04-02T12:00:00-04:00</published>
+    <updated>2017-09-30T20:53:19-04:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -336,8 +486,8 @@ still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve 
     <title>Tuning My Apache Spark Data Processing Cluster on Amazon EMR</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/"/>
     <id>http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</id>
-    <published>2017-03-10T00:00:00+08:00</published>
-    <updated>2017-03-18T09:55:52+08:00</updated>
+    <published>2017-03-09T11:00:00-05:00</published>
+    <updated>2017-09-30T20:53:19-04:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -574,8 +724,8 @@ them to disk made sense too.&lt;/p&gt;
     <title>How I Deployed My Golang Telegram Bot</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"/>
     <id>http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/</id>
-    <published>2017-01-21T00:00:00+08:00</published>
-    <updated>2017-01-21T22:17:58+08:00</updated>
+    <published>2017-01-20T11:00:00-05:00</published>
+    <updated>2017-09-30T20:53:19-04:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -833,8 +983,8 @@ chats in Telegram and helps me to manage my ever-growing list of responsibilitie
     <title>How I Built a Simple Telegram Bot in Go</title>
     <link rel="alternate" href="http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"/>
     <id>http://blog.url.com/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</id>
-    <published>2016-12-25T00:00:00+08:00</published>
-    <updated>2017-01-21T17:41:06+08:00</updated>
+    <published>2016-12-24T11:00:00-05:00</published>
+    <updated>2017-09-30T20:53:19-04:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -1126,153 +1276,6 @@ The text in this case, can contain codes like &lt;code&gt;\n&lt;/code&gt; and Un
 &lt;p&gt;In Part 2, I will talk about how I set up &lt;code&gt;Docker&lt;/code&gt; for the bot, and also
 the self-signed SSL cert with Nginx as the reverse proxy on a Digital Ocean instance. Finally, 
 I&amp;rsquo;ll also show how I set up the git webhooks so that I can deploy with just one command!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Preventing Duplicates: Amazon EMR Pig to Elasticsearch</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/"/>
-    <id>http://blog.url.com/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/</id>
-    <published>2016-12-24T00:00:00+08:00</published>
-    <updated>2016-12-25T21:19:25+08:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;In the &lt;a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"&gt;previous post&lt;/a&gt;, I went through some steps I took to set up the Amazon EMR Hadoop cluster
-to run Apache Pig scripts for indexing data to Elasticsearch. In today&amp;rsquo;s series, I walk through some of the
-problems I encountered when I set the system up and some of the configuration tweaks to both
-Elasticsearch and the EMR cluster that I feel you should consciously think about if you&amp;rsquo;re looking 
-to set it up in a similar way.&lt;/p&gt;
-
-&lt;h3&gt;Extra Documents in Elasticsearch&lt;/h3&gt;
-
-&lt;p&gt;With the set up in the &lt;a href="https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/"&gt;previous post&lt;/a&gt;, the EMR cluster starts the data ETL (Extract, Transform, Load) and indexes to
-the Elasticsearch cluster. I had already let it run for a day or two, before I noticed an issue. &lt;/p&gt;
-
-&lt;p&gt;I had finished one batch of data, which was about &lt;code&gt;20-25 million&lt;/code&gt; rows, I noticed that there were way 
-more indexed documents than actual data! There were consistently &lt;code&gt;2-3 million&lt;/code&gt; more rows
-than actual data. It certainly isn&amp;rsquo;t a neglible difference.&lt;/p&gt;
-
-&lt;p&gt;From EMR stats, I could see how many rows the cluster has processed and the number there was actually correct?!
-I was puzzled at why this was happening.&lt;/p&gt;
-
-&lt;h3&gt;Hypothesis&lt;/h3&gt;
-
-&lt;p&gt;I came up with a few hypothesis at first:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;EMR tasks consume too much memory, causing EMR jobs to fail and retry.
-causing EMR tasks to fail and retry.&lt;/li&gt;
-&lt;li&gt;Too little memory reserved for Elasticsearch heap size.&lt;/li&gt;
-&lt;li&gt;Pig script not handling rejection of documents properly, causing retries.&lt;/li&gt;
-&lt;li&gt;Pig script parallelism was too high; Elasticsearch cluster was getting overloaded by the indexing,&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;All of the above, technically, could cause duplicates to be sent to Elasticsearch. I did end up 
-making a few changes to configs before it eventually worked and learnt a few things along the way!&lt;/p&gt;
-
-&lt;p&gt;Below, I document some of the steps I took before I found out why. Some of these are actually
-helpful even if you don&amp;rsquo;t run into this issue but if you&amp;rsquo;ll like to skip right to the solution, fast-forward 
-to the last section ;)&lt;/p&gt;
-
-&lt;h3&gt;Tweaking Elasticsearch&lt;/h3&gt;
-
-&lt;p&gt;I increased the memory allocation in ECS for the Elasticsearch task, and made some temporary changes to the
-to the Elasticsearch index settings during the indexing phase:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"settings": {
-  "index": {
-    "number_of_shards":5,
-    "number_of_replicas":0,
-    "max_result_window":1,
-    "refresh_interval":"-1"
-  },
-  ...
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;This stops the &lt;code&gt;refresh&lt;/code&gt; of the index and stops &lt;code&gt;replica propagation&lt;/code&gt; during the indexing to reduce flow of
-data. After the indexing is done, I would revert it back to normal via:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"settings": {
-  "index": {
-      "number_of_replicas": 2,
-      "max_result_window": 10000,
-      "refresh_interval" : "30s"
-  },
-  ...
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The combination of the memory increase and the above tweaks did speed up the indexing process overall 
-but the duplicate documents were still getting indexed after. &lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Hypothesis rejected&lt;/em&gt;.&lt;/p&gt;
-
-&lt;h3&gt;Pig Script&lt;/h3&gt;
-
-&lt;p&gt;First, I lowered the parallelism in the Pig Script to get it to index slower (just to eliminate this as a problem).
-Unfortunately, later on I found out that the parallelism is only used for certain operations like group/join etc. &lt;em&gt;Dead-end&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Then I found out that the &lt;code&gt;elasticsearch-hadoop-pig-2.3.4&lt;/code&gt; plugin already handles document rejection 
-and retries properly. &lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Great, another dead-end!&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;EMR Memory Usage&lt;/h3&gt;
-
-&lt;p&gt;I then tried to change the EMR cluster&amp;rsquo;s task instance sizes to have about &lt;code&gt;60GB&lt;/code&gt; memory to get that possibility 
-out of the way. (It was also at that point, I learnt that only a few instance types are available for selection for spot 
-instance bidding). &lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;That too didn&amp;rsquo;t help.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;Hadoop Speculative Execution&lt;/h3&gt;
-
-&lt;p&gt;let me just quickly run through what is speculative execution; it is a feature built to 
-combat random delays and slowdowns in a distribution environment.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;As the EMR cluster processes data, some machines would naturally finish their task quicker than others.
-
-To prevent a system-wide slowdown because of the slower tasks, Hadoop always tries to detect slower-than-expected machines/jobs and assigns a replica of their tasks to other free nodes (or spins up new nodes), as a backup. 
-
-The node that finishes first, would be considered successful; the other slower ones would be killed.
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;This, as you might expect, would create a ton of problems for Elasticsearch indexing tasks.&lt;/p&gt;
-
-&lt;p&gt;Towards the end of each indexing cycle, Elasticsearch would slow down by a fraction and Hadoop 
-would detect the slowdown and spin up all those backup tasks that would be indexing the exact 
-same data at the same time! Since I left the &lt;code&gt;id&lt;/code&gt; generation to Elasticsearch (recommended), this would
-ultimately cause the duplicates I saw.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Finally!&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;How Do I Fix It Then?&lt;/h3&gt;
-
-&lt;p&gt;For me, there were 2 ways out.&lt;/p&gt;
-
-&lt;p&gt;I could generate a composite column to serve as an unique &lt;code&gt;id&lt;/code&gt; for each Elasticsearch row that is indexed, 
-so that even if they were duplicated, Elasticsearch would be able to throw away all the duplicate ones. 
-However, this was entirely not viable for the data I was indexing as the composite column would 
-take up so much space it wouldn&amp;rsquo;t really be worth it.&lt;/p&gt;
-
-&lt;p&gt;The way I chose was to disable the speculative execution in the Hadoop environment altogether. &lt;/p&gt;
-
-&lt;p&gt;For EMR software version 4 and below, you could re-define the bootstrap action for the Hadoop environment.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;"bootstrapAction": [
-  "s3://us-east-1.elasticmapreduce/bootstrap-actions/configure-hadoop,-m,mapred.map.tasks.speculative.execution=false,-m,mapred.reduce.tasks.speculative.execution=false"
-],
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;For API version 5+, you would need to do it via the &lt;code&gt;mapred-site&lt;/code&gt; classification via configuration JSON files.
-You can read more about them in &lt;a href="http://docs.aws.amazon.com/ElasticMapReduce/latest/ReleaseGuide/emr-configure-apps.html"&gt;this documentation&lt;/a&gt; for EMR V5.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;[
-  {
-    "Classification": "mapred-site",
-    "Properties": {
-      "mapred.map.tasks.speculative.execution": "false",
-      "mapred.reduce.tasks.speculative.execution": "false"
-    }
-  }
-]
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Round up&lt;/h3&gt;
-
-&lt;p&gt;I hope my learnings can help anyone out there facing a similar issue; do let me know in the comments
-if you have any questions!&lt;/p&gt;
 </content>
   </entry>
 </feed>
