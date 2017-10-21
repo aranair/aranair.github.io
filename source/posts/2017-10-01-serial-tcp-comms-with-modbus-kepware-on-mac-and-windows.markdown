@@ -1,14 +1,14 @@
 ---
-title: 'Hardware Programming with Modbus and Kepware on OSX Sierra and Win 10'
+title: 'Programming with the Modbus Protocol and Kepware on OSX Sierra and Win 10'
 description: ''
 date: 2017-10-01
 tags: modbus, kepware, c-programming
-disqus_identifier:
-disqus_title:
+disqus_identifier: 2017/hardware-programming-modbus-kepware-osx-win10
+disqus_title: Hardware Programming
 ---
 
 Today's post is in a very different segment - hardware programming; it's nowhere near the web projects that I've been
-doing so far but definitely a welcomed change at this time. This project mostly works with the modbus protocol,
+doing so far but definitely something I'm super interested in. This project mostly works with the modbus protocol,
 which is an open, communication protocol used for transmitting information over serial lines between hardware devices.
 Given that IoT is becoming more and more relevant and that the modbus protocol, while old, is still a very commonly used
 protocol in the IoT world. So, I hope people will find this post interesting. Let's begin.
@@ -28,7 +28,6 @@ You can find the reference code here: [https://github.com/aranair/modbus_adapter
 
 ### Architecture
 
-
 Spindle < hitachi wj200 < C program on windows > Kepware > OPC
 
 = Insert Architecture Diagram =
@@ -42,25 +41,30 @@ least for me. So I should probably define it here properly so that it's less con
 #### Master / Client
 
 The master in a modbus network is the brain that is in charge of controlling devices. They can read and write to
-slaves (devices). The concept of master and slave is pretty common in software engineering so I'm not going to elaborate
-more here.
+slaves (devices). The concept of master and slave is [pretty common][master-slave] in software engineering, so I
+won't elaborate more here.
 
-However, the master is also called the client and physical devices such as the inverter above, are considered servers, or slaves.
-The master would be the one that initiates the connection to the slaves, instead of the other way around that I had
-assumed before.
+However, in the case of the modbus protocol, the master is also called the client and physical
+devices such as the inverter above, are considered servers, or slaves.  The master would be the
+one that initiates the connection to the slaves. I had assumed it was the other way around.
+
+What remains the same is that, there can only be one master in a single modbus RTU network. (You can
+have multiple masters in a modbus TCP/IP network though I think.)
 
 #### Slaves / Server
 
 As I've mentioned above, the slaves are the physical devices that you're communicating with. They're also called servers.
 
 
+### Modbus Addressing
 
+### Kepware
 
-### Modbus
+### Configuring Kepware
 
-### Stages of Implementation
+### Controlling Spindle and Relaying
 
-
+[master-slave]: https://en.wikipedia.org/wiki/Master/slave_(technology)
 [code]: https://github.com/aranair/modbus_adapter
 [modbus]: http://www.simplymodbus.ca/FAQ.htm
 [opc]: https://opcfoundation.org/about/opc-technologies/opc-ua/
