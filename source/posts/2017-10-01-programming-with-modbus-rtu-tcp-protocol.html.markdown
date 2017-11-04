@@ -1,17 +1,20 @@
 ---
-title: 'Programming with the Modbus Protocol'
-description: ''
+title: 'Programming with the Modbus RTU & TCP/IP Protocol'
+description: 'In this post, I run through some of the gotchas I experienced and things I found useful while developing
+a program to talk to a spindle/inverter hitachi wj200 over the Modbus RTU protocol, while at the same time polling and
+relaying information from the spindle to another slave on Kepware using modbus TCP/IP.'
 date: 2017-10-01
-tags: modbus, kepware, c-programming
-disqus_identifier: 2017/hardware-programming-modbus-kepware-osx-win10
-disqus_title: Hardware Programming
+tags: modbus, kepware, c-programming, IoT
+disqus_identifier: 2017/programming-modbus-protocol
+disqus_title: Programming with Modbus Protocol
 ---
 
-Today's post is in a very different segment - hardware programming; it's nowhere near the web projects that I've been
-doing so far but definitely something I'm super interested in. This project mostly works with the modbus protocol,
+Today's post probably has a very different audience- modbus protocol; it's nowhere near the web projects that I've been
+doing so far but definitely something I'm super interested in. This project mostly works with the [modbus protocol][modbus],
 which is an open, communication protocol used for transmitting information over serial lines between hardware devices.
 Given that IoT is becoming more and more relevant and that the modbus protocol, while old, is still a very commonly used
-protocol in the IoT world. So, I hope people will find this post interesting. Let's begin.
+protocol in the IoT world. So, I hope people will find this post interesting, or even useful if you're attempting something
+similar.
 
 ### Backstory
 
@@ -28,24 +31,25 @@ You can find the reference code here: [https://github.com/aranair/modbus_adapter
 
 ### Simplified Demo
 
-If you're just here to find some code that runs a Modbus client and server, you can check out the `simplified` branch
-from the repo above.
+If you're just here to find some sample code that runs a Modbus client and server, you can check out the `simplified` branch
+from the repo above. The master and slave code should work with each other.
 
 ### Setup
 
 The hardware setup looks roughly like this:
 
-Spindle <> hitachi wj200 <> USB to COM converter <> C program on windows machine <> Kepware <> OPC/UA
+Spindle <> hitachi wj200 <> USB/COM converter <> C program <> Kepware <> OPC/UA
 
-In this post though, I'll focus on the first part (from the left) of the setup, up to the windows machine. The C program
+In this post though, I'll focus on the first part (from the left) of the setup, up to the C program. The C program
 was written and tested on my Mac at first so I'll talk a little bit on that. In the next post, I'll shift the focus to
-Kepware and how I compiled program in Windows 10, which turned out to be harder than I thought it should be because of
-some dependencies I used.
+Kepware and how I compiled the same program in Windows 10 (which turned out to be harder than I thought it should be because of
+some dependencies I used).
 
 ### Modbus Masters vs Slaves
 
-I am not going to explain what is a Modbus protocol, you can head over [here][modbus] if you want a quick overview of
-what it can do but I'll like to talk about something I was initially confused about.
+I am not going to go into details of the Modbus protocol, you can head over [here][modbus] if you want a quick overview of
+the actual protocol like how to `write_registers` and `write_coil` e.g. but I'll like to talk about something I was
+initially confused about.
 
 It was the concept of masters, slaves, clients and servers in Modbus. The two different ways of
 definition that are sometimes used interchangeably in documentations makes it harder to remember which is which, at
@@ -69,6 +73,21 @@ have multiple masters in a modbus TCP/IP network though I think.)
 
 The slaves are the physical devices that you're communicating with. They're also called servers. They
 accept connections from the masters.
+
+### Multiple Modbus Masters?
+
+For each of the connections defined in [config.cfg][code-configcfg], I created a Modbus connection.
+In this case, one was over RTU protocol and speaks over COM3 and one over TCP/IP.
+
+My spindle was obviously a slave, and it accepts connections / commands from a master. But, I also needed live
+information from the spindle at the windows machine with Kepware. At first, I was hoping that I could achieve
+that by having a single Modbus slave to multiple Modbus masters (program + kepware). Unfortunately, that isn't
+possible, at least over Modbus RTU.
+
+To get around that, I got my program to issue commands to the spindle as a master, while periodically polling
+whatever required data from it, and relaying that information as a master to another slave- the Kepware instance.
+
+Essentially, my program initiates and maintains two separate Modbus connections as a master.
 
 ### libconfig
 
@@ -118,24 +137,64 @@ struct ModbusDevice *plc = get_device(config, "hitachiwj200");
 struct ModbusDevice *kep = get_device(config, "kepware");
 ```
 
-### Multiple Modbus Masters?
+### libmodbus
 
-For each of the connections defined in [config.cfg][code-configcfg], I created a Modbus connection.
-In this case, one was over RTU protocol and speaks over COM3 and one over TCP/IP.
+The library that I was using to establish connections and construct the bytes to send to the devices was [libmodbus][libmodbus],
+a library in C.
 
-My spindle was obviously a slave, and it accepts connections / commands from a master. But, I also needed live
-information from the spindle at the windows machine with Kepware. At first, I was hoping that I could achieve
-that by having a single Modbus slave to multiple Modbus masters (program + kepware). Unfortunately, that isn't
-possible, at least over Modbus RTU.
+The gist of it is, you establish a connection.
 
-To get around that, I got my program to issue commands to the spindle as a master, while periodically polling
-whatever required data from it, and relaying that information as a master to another slave- the Kepware instance.
+```c
+if (modbus_connect(ctx) == -1) {
+  fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));
+  modbus_free(ctx);
+  exit(1);
+}
+```
 
-Essentially, my program initiates and maintains two separate Modbus connections as a master.
+And from there, by addressing directly to the register/coil memory locations you can set or read information through the
+protocol.
+
+```c
+void set_coil(modbus_t *ctx, uint16_t addr_offset, bool setting)
+{
+  printf("Setting coil to %d\n", setting);
+  if (modbus_write_bit(ctx, addr_offset, setting ? 1 : 0) != 1) {
+    fprintf(stderr, "Failed to write to coil: %s\n", modbus_strerror(errno));
+  }
+}
+```
+
+The library implements all of the commands the protocol provides. You can read more about the commands at [SimplyModbus][simplymodbus].
+Each of the commands can be represented via some bytes (as with all things CS lol).
+
+For instance, the `modbus_read_registers` method in [libmodbus][libmodbus], is essentially `Read Holding Registers`
+on [this page][simplymodbuspage]. The library helps you take care of
+
+- the slave address (which you do have to set beforehand),
+- the function code (that represents read_registers) and
+- the CRC.
+
+You also have to manually pass in the rest of the parameters such as the memory location and
+the number of registers requested.
+
+### Tricky Memory Addressing
+
+And this got a little tricky for me.
+
+Each type of register / coil also have their designated memory locations and depending on the implementation of the library.
+For instance, single register memory locations might start from 40000 or 400001 depending on which library you use, and this
+is obviously quite a source of problem.
+
+Something I found was useful with libmodbus is that it helps you with the first digit of the memory address if you point out
+which type it is. You could address a register at memory address 0 with libmodbus and I believe it would automatically map
+that to the appropriate memory address, say 400001 in the byte stream for the request it sends out to the slave.
+
+Do note that different libraries might implement it differently and this can be a source of error in particular.
 
 ### Configuring Kepware
 
-I'm not going to go into too much details with the configuration of Kepware since the vast majority of you who
+I'm (also) not going to go into too much details with the configuration of Kepware since the vast majority of you who
 happen to read this article will not be paying the price tag on Kepware. But, I think it's enough to say that,
 it is a piece of software that provides multiple drivers and UIs that come bundled with it to allow devices who might
 speak different protocols such as modbus, or OPC/UA (and a million others), to speak to each other without
@@ -164,8 +223,8 @@ $ cat < /dev/ttys035
 $ echo "Test" > /dev/ttys037 # on a separate terminal
 ```
 
-[Socat][socat] is a command line based utility that establishes two bi-directional byte streams and allows a
-transfer of data between them. The commands above, in combination, sets up a  byte stream across
+[Socat][socat] is a CLI toolt that allows you to establish two bi-directional byte streams and allows a
+transfer of data between them. The commands in the snippet above, in combination, sets up the byte stream across
 `/dev/ttys035` and `/dev/ttys037` (psuedo terminals) so that any data sent from one end of it will be transmitted
 over to the other.
 
@@ -189,7 +248,10 @@ to Part 2 instead. If you wanna skip ahead, the project files can be found in th
 [opc]: https://opcfoundation.org/about/opc-technologies/opc-ua/
 [kepware]: https://www.kepware.com/en-us/products/kepserverex/
 [libconfig]: https://github.com/hyperrealm/libconfig
-[libmodbus]: http://libmodbus.org/
+[libmodbus]: https://github.com/stephane/libmodbus
 [code-win32]: https://github.com/aranair/modbus_adapter/tree/master/win32
 [code-config]: https://github.com/aranair/modbus_adapter/tree/master/config.h
 [code-configcfg]: https://github.com/aranair/modbus_adapter/tree/master/config.cfg
+[socat]: http://www.dest-unreach.org/socat/doc/socat.html
+[simplymodbus]: https://github.com/stephane/libmodbus
+[simplymodbuspage]: http://www.simplymodbus.ca/FC03.htm
