@@ -1,0 +1,398 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Programming with the Modbus RTU & TCP/IP Protocol</title>
+
+    <meta name="description" content="In this post, I run through some of the gotchas I experienced and things I found useful while developing a program to talk to a spindle/inverter hitachi wj200 over the Modbus RTU protocol, while at..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Programming with the Modbus RTU &amp; TCP/IP Protocol" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-57fb223e.css" rel="stylesheet" />
+    <script src="/javascripts/all-50c17d63.js" async="true"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2017 posts_2017_10 posts_2017_10_30 posts_2017_10_30_programming-with-modbus-rtu-tcp-protocol posts_2017_10_30_programming-with-modbus-rtu-tcp-protocol_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Programming with the Modbus RTU & TCP/IP Protocol<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Oct 30, 2017
+        <span class="article__middle-dot"></span>
+        15  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/modbus/" class="article__tag-link">modbus</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/kepware/" class="article__tag-link">kepware</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/c-programming/" class="article__tag-link">c-programming</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/iot/" class="article__tag-link">IoT</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>Today&rsquo;s post probably has a very different audience- modbus protocol; it&rsquo;s nowhere near the web projects that I&rsquo;ve been
+doing so far but definitely something I&rsquo;m super interested in. This project mostly works with the <a href="http://www.simplymodbus.ca/FAQ.htm">modbus protocol</a>,
+which is an open, communication protocol used for transmitting information over serial lines between hardware devices.
+Given that IoT is becoming more and more relevant and that the modbus protocol, while old, is still a very commonly used
+protocol in the IoT world. So, I hope people will find this post interesting, or even useful if you&rsquo;re attempting something
+similar.</p>
+
+<h3>Backstory</h3>
+
+<p>The backstory of the project is that I needed a program to read some data from a spindle, as well as control it through an
+inverter- the hitachi wj200 over the <a href="http://www.simplymodbus.ca/FAQ.htm">Modbus</a> RTU protocol. At the same time, it also needs to relay some of this
+information to a <a href="https://www.kepware.com/en-us/products/kepserverex/">KepwareServer</a> that acts as both a Modbus TCP/IP slave and a <a href="https://opcfoundation.org/about/opc-technologies/opc-ua/">OPC/UA</a> server.
+This then, in turn allows communication with other OPC/UA clients.</p>
+
+<p>The project was initially developed and tested on OSX Sierra 10.12.6 but was eventually compiled and ran on a Windows 10
+so that the program can just talk to Kepware over modbus TCP instead of needing 2 machines: 1 linux/OSX + external cabling
+to a windows machine (Kepware only runs on windows), but it was also tested on OSX Sierra 10.12.6 first.</p>
+
+<p>You can find the reference code here: <a href="https://github.com/aranair/modbus_adapter">https://github.com/aranair/modbus_adapter</a>.</p>
+
+<h3>Simplified Demo</h3>
+
+<p>If you&rsquo;re just here to find some sample code that runs a Modbus client and server, you can check out the <code>simplified</code> branch
+from the repo above. The master and slave code should work with each other.</p>
+
+<h3>Setup</h3>
+
+<p>The hardware setup looks roughly like this:</p>
+
+<p>Spindle &lt;&gt; hitachi wj200 &lt;&gt; USB/COM converter &lt;&gt; C program &lt;&gt; Kepware &lt;&gt; OPC/UA</p>
+
+<p>In this post though, I&rsquo;ll focus on the first part (from the left) of the setup, up to the C program. The C program
+was written and tested on my Mac at first so I&rsquo;ll talk a little bit on that. In the next post, I&rsquo;ll shift the focus to
+Kepware and how I compiled the same program in Windows 10 (which turned out to be harder than I thought it should be because of
+some dependencies I used).</p>
+
+<h3>Modbus Masters vs Slaves</h3>
+
+<p>I am not going to go into details of the Modbus protocol, you can head over <a href="http://www.simplymodbus.ca/FAQ.htm">here</a> if you want a quick overview of
+the actual protocol like how to <code>write_registers</code> and <code>write_coil</code> e.g. but I&rsquo;ll like to talk about something I was
+initially confused about.</p>
+
+<p>It was the concept of masters, slaves, clients and servers in Modbus. The two different ways of
+definition that are sometimes used interchangeably in documentations makes it harder to remember which is which, at
+least for me. So, before moving ahead with the rest of the stuff, I should probably define it here again so that
+it&rsquo;s less confusing for the unfortunate souls who might read on lol.</p>
+
+<h4>Master / Client</h4>
+
+<p>The master in a modbus network is the brain that is in charge of controlling devices. They can read and write to
+slaves (devices). The concept of master and slave is <a href="https://en.wikipedia.org/wiki/Master/slave_(technology)">pretty common</a> in software engineering, so I
+won&rsquo;t elaborate more here.</p>
+
+<p>However, in the case of the modbus protocol, the master is also called the client and physical
+devices such as the inverter above, are considered servers, or slaves.  The master would be the
+one that initiates the connection to the slaves. I had assumed it was the other way around.</p>
+
+<p>What remains the same is that, there can only be one master in a single modbus RTU network. (You can
+have multiple masters in a modbus TCP/IP network though I think.)</p>
+
+<h4>Slaves / Server</h4>
+
+<p>The slaves are the physical devices that you&rsquo;re communicating with. They&rsquo;re also called servers. They
+accept connections from the masters.</p>
+
+<h3>Multiple Modbus Masters?</h3>
+
+<p>For each of the connections defined in <a href="https://github.com/aranair/modbus_adapter/tree/master/config.cfg">config.cfg</a>, I created a Modbus connection.
+In this case, one was over RTU protocol and speaks over COM3 and one over TCP/IP.</p>
+
+<p>My spindle was obviously a slave, and it accepts connections / commands from a master. But, I also needed live
+information from the spindle at the windows machine with Kepware. At first, I was hoping that I could achieve
+that by having a single Modbus slave to multiple Modbus masters (program + kepware). Unfortunately, that isn&rsquo;t
+possible, at least over Modbus RTU.</p>
+
+<p>To get around that, I got my program to issue commands to the spindle as a master, while periodically polling
+whatever required data from it, and relaying that information as a master to another slave- the Kepware instance.</p>
+
+<p>Essentially, my program initiates and maintains two separate Modbus connections as a master.</p>
+
+<h3>libconfig</h3>
+
+<p>With regards to config files setup in my C program, coming ƒrom ruby and the web environment, YAML seemed like a
+natural choice. But I soon learned that, that&rsquo;s not the case in C. I&rsquo;m not sure what is the de-facto solution here,
+or if people used config files at all, but I eventually settled on <code>libconfig</code>. It was fairly simple to use and
+the interface was semi-clean I guess, even if a little convoluted.</p>
+
+<p>It provides you a way to define nested lists and hashes.</p>
+<pre class="highlight plaintext"><code>connections = (
+  {
+    type = "rtu";
+    rtu_port = "COM3";
+    baud = 115200;
+  },
+  {
+    type = "tcp";
+    ip = "127.0.0.1";
+    port = 502;
+  }
+);
+</code></pre>
+<p>Which you can then get from the program via something like</p>
+<pre class="highlight plaintext"><code>setting = config_lookup(&amp;cfg, "connections");
+int connections_count = config_setting_length(setting);
+conn_arr = (struct ModbusConn *) malloc(sizeof(struct ModbusConn) * connections_count);
+
+const char *type;
+for (i = 0; i &lt; connections_count; i++) {
+  config_setting_t *connection = config_setting_get_elem(setting, i);
+  config_setting_lookup_string(connection, "type", &amp;type);
+  ...
+}
+</code></pre>
+<p>I know, it is a little long if you&rsquo;re coming from ruby since all of those would be a single line of code.
+But hey, at least I&rsquo;ve managed to encapsulate all the config stuff into <a href="https://github.com/aranair/modbus_adapter/tree/master/config.h">config.h</a>.
+From the main program, I just need to search/reference it for the configs!</p>
+<pre class="highlight plaintext"><code>struct ModbusDevice *plc = get_device(config, "hitachiwj200");
+struct ModbusDevice *kep = get_device(config, "kepware");
+</code></pre>
+<h3>libmodbus</h3>
+
+<p>The library that I was using to establish connections and construct the bytes to send to the devices was <a href="https://github.com/stephane/libmodbus">libmodbus</a>,
+a library in C.</p>
+
+<p>The gist of it is, you establish a connection.</p>
+<pre class="highlight c"><code><span class="k">if</span> <span class="p">(</span><span class="n">modbus_connect</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">"Connection failed: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">modbus_strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
+  <span class="n">modbus_free</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+  <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+<p>And from there, by addressing directly to the register/coil memory locations you can set or read information through the
+protocol.</p>
+<pre class="highlight c"><code><span class="kt">void</span> <span class="nf">set_coil</span><span class="p">(</span><span class="n">modbus_t</span> <span class="o">*</span><span class="n">ctx</span><span class="p">,</span> <span class="kt">uint16_t</span> <span class="n">addr_offset</span><span class="p">,</span> <span class="n">bool</span> <span class="n">setting</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">"Setting coil to %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">setting</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">modbus_write_bit</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">addr_offset</span><span class="p">,</span> <span class="n">setting</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">"Failed to write to coil: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">modbus_strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+<p>The library implements all of the commands the protocol provides. You can read more about the commands at <a href="https://github.com/stephane/libmodbus">SimplyModbus</a>.
+Each of the commands can be represented via some bytes (as with all things CS lol).</p>
+
+<p>For instance, the <code>modbus_read_registers</code> method in <a href="https://github.com/stephane/libmodbus">libmodbus</a>, is essentially <code>Read Holding Registers</code>
+on <a href="http://www.simplymodbus.ca/FC03.htm">this page</a>. The library helps you take care of</p>
+
+<ul>
+<li>the slave address (which you do have to set beforehand),</li>
+<li>the function code (that represents read_registers) and</li>
+<li>the CRC.</li>
+</ul>
+
+<p>You also have to manually pass in the rest of the parameters such as the memory location and
+the number of registers requested.</p>
+
+<h3>Tricky Memory Addressing</h3>
+
+<p>And this got a little tricky for me.</p>
+
+<p>Each type of register / coil also have their designated memory locations and depending on the implementation of the library.
+For instance, single register memory locations might start from 40000 or 400001 depending on which library you use, and this
+is obviously quite a source of problem.</p>
+
+<p>Something I found was useful with libmodbus is that it helps you with the first digit of the memory address if you point out
+which type it is. You could address a register at memory address 0 with libmodbus and I believe it would automatically map
+that to the appropriate memory address, say 400001 in the byte stream for the request it sends out to the slave.</p>
+
+<p>Do note that different libraries might implement it differently and this can be a source of error in particular.</p>
+
+<h3>Configuring Kepware</h3>
+
+<p>I&rsquo;m (also) not going to go into too much details with the configuration of Kepware since the vast majority of you who
+happen to read this article will not be paying the price tag on Kepware. But, I think it&rsquo;s enough to say that,
+it is a piece of software that provides multiple drivers and UIs that come bundled with it to allow devices who might
+speak different protocols such as modbus, or OPC/UA (and a million others), to speak to each other without
+needing another piece of software to translate.</p>
+
+<p>For the purpose of this project, it was set up on a Windows machine such that it would host a Modbus slave
+that accepts connections from my program, and would receive the data over Modbus TCP/IP as a slave and store the
+streamed byte data in an internal register that is universally accessible in Kepware by it&rsquo;s other services e.g.
+the OPC/UA driver.</p>
+
+<h3>Virtual Serial Ports Via Pseudo Terminal</h3>
+
+<p>The above sections kinda ran through the setup that I built. This section is mostly on a quick way to run it locally
+without needing a COM port connected to the actual device at first. I found it troublesome to have to test my program
+with the actual spindle/hardware connected all the time so I looked for a way to simulate the Modbus RTU locally.</p>
+
+<p>So far, I&rsquo;ve found that the pseudo terminal works pretty well, okay except when it randomly stops emiting the stream
+data mysteriously heh. But, a restart of the socat stuff below usually fixes that.</p>
+
+<p>I used virtual serial ports to test the program using the steps below:</p>
+<pre class="highlight plaintext"><code>$ brew install socat
+$ socat -d -d pty,raw,echo=0 pty,raw,echo=0  # to get two pseudo terminals assigned.
+$ cat &lt; /dev/ttys035
+$ echo "Test" &gt; /dev/ttys037 # on a separate terminal
+</code></pre>
+<p><a href="http://www.dest-unreach.org/socat/doc/socat.html">Socat</a> is a CLI toolt that allows you to establish two bi-directional byte streams and allows a
+transfer of data between them. The commands in the snippet above, in combination, sets up the byte stream across
+<code>/dev/ttys035</code> and <code>/dev/ttys037</code> (psuedo terminals) so that any data sent from one end of it will be transmitted
+over to the other.</p>
+
+<p>In other words, I could then get my program, which acts as a Modbus RTU master, to connect directly to <code>/dev/ttys035</code>
+that has a Modbus RTU slave connected to it. And they can talk to each other in the modbus protocol flawlessly.</p>
+
+<h3>Wrapping Up</h3>
+
+<p>I hope this helps anyone out there who is trying to achieve the same thing and like me, doesn&rsquo;t have a clue how or where
+to begin.</p>
+
+<p>Anyways, after finishing development of the program on my Macbook, I eventually had to move this to a Windows machine running on Win 10.
+Despite the fact that C is relatively well-supported on Windows (I mean it&rsquo;s just basically compiling to byte code), I had quite
+a hard time compiling it because of all that dll shit and hoops that Windows make you jump through, and some issues surrounding
+certain dependencies the program had. I did get everything to compile in MSVS 2017 eventually, but I think I&rsquo;ll leave that story
+to Part 2 instead. If you wanna skip ahead, the project files can be found in the <a href="https://github.com/aranair/modbus_adapter/tree/master/win32">win32 folder</a>!</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2017/programming-modbus-protocol';
+                        var disqus_title = 'Programming with Modbus Protocol';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

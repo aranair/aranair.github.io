@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://aranair.github.io/bio/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2013/07/27/embers-handlebars-setup-problem/</loc>
+    <loc>https://aranair.github.io/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2013/07/28/replicating-rails-scopes-in-emberjs/</loc>
+    <loc>https://aranair.github.io/posts/2015/07/04/heka-bigquery-realtime-log/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2013/08/04/emberjs-model-restadapter-conventions/</loc>
+    <loc>https://aranair.github.io/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/01/31/emberjs-saving-associated-models-controller/</loc>
+    <loc>https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/19/deploying-meteor-0-8-0-meteorite-to-heroku/</loc>
+    <loc>https://aranair.github.io/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -33,15 +33,7 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/04/25/thrift-gem-0-8-0-with-mavericks-10-9/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2014/04/28/dnsmasq-for-local-dev/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2014/04/29/cmd-function-to-browse-git-branch-compare/</loc>
+    <loc>https://aranair.github.io/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -49,11 +41,19 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/05/04/emberjs-jqueryui-date-momentjs/</loc>
+    <loc>https://aranair.github.io/posts/2016/12/05/aws-ecs-elasticsearch-cluster/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/05/07/block-scope-in-javascript/</loc>
+    <loc>https://aranair.github.io/posts/2013/08/04/emberjs-model-restadapter-conventions/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2013/07/27/embers-handlebars-setup-problem/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2016/07/27/capybara-and-waiting/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -61,7 +61,7 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2014/05/20/vim-toggle-background-scheme/</loc>
+    <loc>https://aranair.github.io/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -73,43 +73,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2015/07/04/heka-bigquery-realtime-log/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/04/27/golang-docker-postgres-digital-ocean/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/07/27/capybara-and-waiting/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/07/28/nil-try-and-lonely-operator/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/12/05/aws-ecs-elasticsearch-cluster/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/12/14/aws-emr-pig-index-into-elasticsearch/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/12/24/prevent-aws-emr-pig-elasticsearch-duplicates/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</loc>
+    <loc>https://aranair.github.io/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -117,23 +81,63 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</loc>
+    <loc>https://aranair.github.io/posts/2014/05/07/block-scope-in-javascript/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/</loc>
+    <loc>https://aranair.github.io/posts/2016/04/27/golang-docker-postgres-digital-ocean/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</loc>
+    <loc>https://aranair.github.io/posts/2016/07/28/nil-try-and-lonely-operator/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</loc>
+    <loc>https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/bio/</loc>
+    <loc>https://aranair.github.io/posts/2013/07/28/replicating-rails-scopes-in-emberjs/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/04/29/cmd-function-to-browse-git-branch-compare/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/05/04/emberjs-jqueryui-date-momentjs/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/10/30/programming-with-modbus-rtu-tcp-protocol/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/04/28/dnsmasq-for-local-dev/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/04/19/deploying-meteor-0-8-0-meteorite-to-heroku/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/04/25/thrift-gem-0-8-0-with-mavericks-10-9/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2016/11/22/aws-elasticsearch-elastic-cloud-self-managed/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/05/20/vim-toggle-background-scheme/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2014/01/31/emberjs-saving-associated-models-controller/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -141,63 +145,23 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/tags/emberjs/</loc>
+    <loc>https://aranair.github.io/posts/tags/elasticsearch/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/tags/meteorjs/</loc>
+    <loc>https://aranair.github.io/posts/tags/aws/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/tags/meteorite/</loc>
+    <loc>https://aranair.github.io/posts/tags/emr/</loc>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/posts/tags/heroku/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/bem/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/frontend/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/rails/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/dnsmasq/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/git/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/scripting/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/javascript/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/vim/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/iterm/</loc>
+    <loc>https://aranair.github.io/posts/tags/apache-pig/</loc>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://aranair.github.io/posts/tags/golang/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/protobuf/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -210,86 +174,6 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/tags/kafka/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/capistrano/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/devops/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/docker/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/capybara/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/try/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/elasticsearch/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/aws/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/found-io/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/elastic-cloud/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/ecs/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/emr/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/apache-pig/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/hadoop/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/datapipeline/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/telegram/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/bot/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/webhooks/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/ssl/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/nginx/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/digital-ocean/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -309,6 +193,66 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/hadoop/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/datapipeline/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/telegram/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/bot/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/bem/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/frontend/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/ecs/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/emberjs/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/capybara/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/rails/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/vim/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/iterm/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/capistrano/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/devops/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/protobuf/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/tags/python/</loc>
     <priority>0.7</priority>
   </url>
@@ -321,7 +265,91 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/webhooks/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/ssl/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/nginx/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/digital-ocean/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/javascript/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/docker/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/try/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/git/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/scripting/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/modbus/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/kepware/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/c-programming/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/iot/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/dnsmasq/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/meteorjs/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/meteorite/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/heroku/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/found-io/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/elastic-cloud/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2017/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/10/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2017/10/30/</loc>
     <priority>0.7</priority>
   </url>
   <url>
