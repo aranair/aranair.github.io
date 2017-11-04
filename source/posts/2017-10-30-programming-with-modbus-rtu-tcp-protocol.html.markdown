@@ -3,7 +3,7 @@ title: 'Programming with the Modbus RTU & TCP/IP Protocol'
 description: 'In this post, I run through some of the gotchas I experienced and things I found useful while developing
 a program to talk to a spindle/inverter hitachi wj200 over the Modbus RTU protocol, while at the same time polling and
 relaying information from the spindle to another slave on Kepware using modbus TCP/IP.'
-date: 2017-10-01
+date: 2017-10-30
 tags: modbus, kepware, c-programming, IoT
 disqus_identifier: 2017/programming-modbus-protocol
 disqus_title: Programming with Modbus Protocol
