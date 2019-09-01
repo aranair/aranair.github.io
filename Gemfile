@@ -6,8 +6,10 @@ gem "middleman", '~> 4.2.1'
 gem "middleman-blog", '~> 4.0.1'
 gem "middleman-livereload", '~> 3.4.6'
 gem "middleman-syntax", '~> 3.0.0'
-gem 'middleman-deploy', github: 'middleman-contrib/middleman-deploy', branch: 'master'
-gem "middleman-sprockets", github: 'middleman/middleman-sprockets', branch: 'master'
+gem "middleman-deploy", "~> 2.0.0.pre.alpha"
+gem "middleman-sprockets", "~> 4.1.0"
+# gem 'middleman-deploy', github: 'middleman-contrib/middleman-deploy', branch: 'master'
+# gem "middleman-sprockets", github: 'middleman/middleman-sprockets', branch: 'master'
 gem "redcarpet"
 # gem "therubyracer"
 gem "oj"
