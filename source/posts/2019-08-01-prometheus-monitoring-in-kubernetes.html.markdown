@@ -76,7 +76,8 @@ An important implementation decision that I'll like to point out is that Grafana
 would need to be commited to code; in general I think this conforms better to the `infrastructure-as-code` kind of idealogy which makes
 it much easier to replicate the same infrastructure across multiple clouds / regions.
 
-![Monitoring Stack](https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png "Monitoring Stack")
+
+[![Monitoring Stack](https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png "Monitoring Stack")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png)
 
 ### Custom Helm Chart
 
@@ -193,11 +194,11 @@ additionalServiceMonitors:
 
 These would show up as targets in the prometheus deployment, e.g.
 
-![Traefik Targets Prometheus](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png "Traefik Targets Prometheus")
+[![Traefik Targets Prometheus](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png "Traefik Targets Prometheus")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png)
 
 You can then use PromQL to query things.. like average number of open connections per second looking back at 5min windows, (then extrapolate to 5mins by multiplying by 300)
 
-![Traefik Avg backend open connections](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png "Traefik Avg backend open connections")
+[![Traefik Avg backend open connections](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png "Traefik Avg backend open connections")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png)
 
 Charting isnt the best in Prometheus but to be fair, that's not really the primary function of Prometheus.
 It can get you what you need eventually, but it just takes way more effort than it should.
@@ -210,16 +211,16 @@ variables and timeframes then export in json and check that in into our git repo
 quite a number of dashboards that monitor many of the services in our cluster (as well as many good default mixins provided
 out of the box).
 
-![Grafana Dashboards](https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png "Grafana Dashboards")
+[![Grafana Dashboards](https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png "Grafana Dashboards")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png)
 
 One example is shown below, where it displays the total CPU/RAM usage; we can also click to drill down to each individual pod.
 
-![Traefik CPU/RAM](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png "Traefik k8s mixin")
+[![Traefik CPU/RAM](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png "Traefik k8s mixin")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png)
 
 This next one is a dashboard that I built to monitor the health of Traefik, looking at the number of times its had to hot-reload
 configurations, and latencies and other useful metrics. We also track the Apdex for example for both entrypoints and backends.
 
-![Traefik Custom](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png "Traefik Custom")
+[![Traefik Custom](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png "Traefik Custom")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png)
 
 ### Prometheus Rules
 
@@ -366,11 +367,11 @@ or infrastructure, that can cause a bunch of issues if not recovered quickly. Th
 
 Example of an alert that has gone off in AlertManager:
 
-![Example AlertManager Alert](https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png "Example AlertManager Alert")
+[![Example AlertManager Alert](https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png "Example AlertManager Alert")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png)
 
 Slack Alert:
 
-![Example Slack Alert](https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png "Example Slack Alert")
+[![Example Slack Alert](https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png "Example Slack Alert")](https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png)
 
 From here, you can have inhibitions that, when present, other alerts will not fire; or silences that would silence
 alerts based on their tags.
