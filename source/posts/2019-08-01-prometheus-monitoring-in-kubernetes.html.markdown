@@ -7,8 +7,6 @@ disqus_identifier: 2019/prometheus-monitoring-in-kubernetes
 disqus_title: Monitoring Stack in Kubernetes, with Prometheus
 ---
 
-### Background
-
 For the past year or so, I've been working with DevOps in Tulip.
 It's a fairly big change in direction but quite frankly, it's been a refreshing experience!
 
