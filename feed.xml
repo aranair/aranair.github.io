@@ -14,7 +14,7 @@
     <link rel="alternate" href="http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/"/>
     <id>http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/</id>
     <published>2020-11-27T11:00:00-05:00</published>
-    <updated>2020-12-06T11:59:29-05:00</updated>
+    <updated>2020-12-06T12:02:19-05:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -105,10 +105,10 @@ that does not work well for clusters with varying types of workloads. It would i
 An example is the periodic resource check, or worse, at times, it might only allow light tasks through and blocking tasks that could still fit well.&lt;/p&gt;
 
 &lt;p&gt;You can also do &lt;code&gt;volume-locality&lt;/code&gt;, &lt;code&gt;random&lt;/code&gt; and &lt;code&gt;fewest-build-containers&lt;/code&gt; placements. We&amp;rsquo;ve ultimately gone with &lt;code&gt;fewest-build-containers&lt;/code&gt; because
-we have CPU-intensive tasks but for most usecases, but I think every workload / situation is probably different and this is one of those settings
-to consider tweaking when setting Concourse up.&lt;/p&gt;
+we have CPU-intensive tasks, but I think every workload / situation is probably different and this is one of those settings
+to consider tweaking when setting Concourse up or if you&amp;rsquo;re seeing load-imbalance.&lt;/p&gt;
 
-&lt;p&gt;Sidenote: I believe this is also on the v10 improvement list!&lt;/p&gt;
+&lt;p&gt;Sidenote: I believe this issue of load-imbalance is also going to be addressed in v10 as well!&lt;/p&gt;
 
 &lt;h3&gt;Resource Allocation&lt;/h3&gt;
 
