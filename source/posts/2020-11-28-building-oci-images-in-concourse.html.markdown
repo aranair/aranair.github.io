@@ -92,10 +92,10 @@ that does not work well for clusters with varying types of workloads. It would i
 An example is the periodic resource check, or worse, at times, it might only allow light tasks through and blocking tasks that could still fit well.
 
 You can also do `volume-locality`, `random` and `fewest-build-containers` placements. We've ultimately gone with `fewest-build-containers` because
-we have CPU-intensive tasks but for most usecases, but I think every workload / situation is probably different and this is one of those settings
-to consider tweaking when setting Concourse up.
+we have CPU-intensive tasks, but I think every workload / situation is probably different and this is one of those settings
+to consider tweaking when setting Concourse up or if you're seeing load-imbalance.
 
-Sidenote: I believe this is also on the v10 improvement list!
+Sidenote: I believe this issue of load-imbalance is also going to be addressed in v10 as well!
 
 ### Resource Allocation
 
