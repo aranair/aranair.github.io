@@ -5,16 +5,539 @@
   <id>http://blog.url.com/posts</id>
   <link href="http://blog.url.com/posts"/>
   <link href="http://blog.url.com/feed.xml" rel="self"/>
-  <updated>2017-10-29T12:00:00-04:00</updated>
+  <updated>2020-11-27T11:00:00-05:00</updated>
   <author>
     <name>Blog Author</name>
   </author>
+  <entry>
+    <title>Concourse CI - Lessons</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/"/>
+    <id>http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/</id>
+    <published>2020-11-27T11:00:00-05:00</published>
+    <updated>2020-12-06T11:59:29-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;I run a mid-sized &lt;a href="https://concourse-ci.org/"&gt;Concourse CI&lt;/a&gt; cluster for Tulip, that runs ~3000 fairly resource-intensive builds weekly.
+I&amp;rsquo;ve encountered a fair share of stability issues with it, some from lack of experience, some from real issues,
+but overall, my experience with it has been fairly positive. I can&amp;rsquo;t speak about
+Github Actions, or TravisCI and CircleCI but my experience has been vastly better than that with Jenkins (another popular CI/CD tool).
+It is open-source and is continuously improving with fairly frequent releases with good core contributing members. It helps with not getting
+locked down by a specific platform such as Github Actions. I&amp;rsquo;m actually surprised not more people are onboard this,
+which is one of the reasons that prompted me to write this series.&lt;/p&gt;
+
+&lt;p&gt;Over the next couple posts or so, I&amp;rsquo;ll be talking about some random topics related to Concourse. They might help with your decision to onboard
+(or skip) Concourse. This first one might read like a rant on the issues of Concourse, but it really isn&amp;rsquo;t :P&lt;/p&gt;
+
+&lt;p&gt;To clarify, they&amp;rsquo;re more like lessons I&amp;rsquo;ve learned about Concourse and how some tweaks might help with smoothing the running of a cluster.&lt;/p&gt;
+
+&lt;h3&gt;Infrastructure&lt;/h3&gt;
+
+&lt;p&gt;We use &lt;a href="https://github.com/EngineerBetter/control-tower"&gt;EngineerBetter/ControlTower&lt;/a&gt;, also formerly known as ConcourseUp for the initial setup.
+The initial setup is fairly effortless (generally speaking, without deviation).
+On top of that, we do most of the custom configuration for Concourse via &lt;a href="https://bosh.io/docs/"&gt;Bosh&lt;/a&gt;.
+Bosh is also incharge of provisioning the different components such as the prometheus, atc, web, worker nodes.
+It is also essentially self-healing because of bosh cloud-checks as well; any termination or deletion will automatically be replaced.&lt;/p&gt;
+
+&lt;h3&gt;Resources&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ll be talking about resources in the next few sections, so here&amp;rsquo;s a quick primer.&lt;/p&gt;
+
+&lt;p&gt;They&amp;rsquo;re like versioned artifacts with external resources. To interface with the external source of truth, there are &amp;ldquo;plugins&amp;rdquo; that are called &lt;code&gt;resource_types&lt;/code&gt;.
+There are &lt;a href="https://resource-types.concourse-ci.org/"&gt;a bunch of community built resource types&lt;/a&gt; and they&amp;rsquo;re an important contributor of Concourse&amp;rsquo;s flexibility imo.&lt;/p&gt;
+
+&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;the &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; tracks commits in a Git repo&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/concourse/registry-image-resource"&gt;registry-image&lt;/a&gt; would manage images for docker registries.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Triggering builds for Pull Requests&lt;/h3&gt;
+
+&lt;p&gt;This is a really common usecase of CI/CD. Everytime a pull request is updated with a new commit in Github, a build is triggered to
+do a range of tasks, from simple go lints, unit tests, to building artifacts to full-scale integration tests. This flow is achieved through webhooks
+events from Github.&lt;/p&gt;
+
+&lt;p&gt;The receiver of those webhook events is a &lt;a href="https://github.com/telia-oss/github-pr-resource"&gt;github-pr-resource&lt;/a&gt; &lt;code&gt;resource_type&lt;/code&gt; (or similar forks like
+&lt;a href="https://github.com/digitalocean/github-pr-resource"&gt;digitalocean&amp;rsquo;s&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;You might imagine that a pipeline can be triggered immediately after it interprets the webhook event. It&amp;rsquo;s worth clarifying
+that this concept of triggering a pipeline is incorrect; that&amp;rsquo;s not how it works in Concourse. Pipelines are basically just set of jobs
+and they are all independently scheduled. New builds are created by the scheduler when it detects that a job&amp;rsquo;s dependent (e.g. trigger: true)
+resources have changed.&lt;/p&gt;
+
+&lt;p&gt;So, what really happens after it processes a webhook event?&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;pr-resource&lt;/code&gt; queues a &lt;code&gt;check&lt;/code&gt; that reaches out to Github to query for open pull-requests updates
+through their GraphQL API (filtering from the latest update in a previous pull). From there, it updates the lists of versions
+for the resource and rely on the scheduler to do the rest as mentioned above^.&lt;/p&gt;
+
+&lt;p&gt;To be honest, this flow isn&amp;rsquo;t one of the strong points of Concourse. It is somewhat awkward - leading to the perception that it is slower to
+trigger than other popular builds, among other concerns, such as rate-limiting (if you have too many open pull-requests at one time).&lt;/p&gt;
+
+&lt;p&gt;For me though, I&amp;rsquo;ll say that this setup has worked acceptably well.&lt;/p&gt;
+
+&lt;p&gt;And, this has been acknowledged as such by the core members and listed as a primary focus in the &lt;a href="https://blog.concourse-ci.org/core-roadmap-towards-v10/"&gt;v10 roadmap&lt;/a&gt;, which I&amp;rsquo;m pretty excited about!&lt;/p&gt;
+
+&lt;h3&gt;&lt;code&gt;default_check_interval&lt;/code&gt; / &lt;code&gt;check_recycle_period&lt;/code&gt; / Github Ratelimiting &lt;a id="intervals" href="#intervals"&gt;&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;Default (Bosh) setting for the &lt;a href="https://concourse-ci.org/concourse-web.html"&gt;web node&lt;/a&gt;&amp;rsquo;s &lt;code&gt;default_check_interval&lt;/code&gt; is 1 minute. This means that for every resource you define, you&amp;rsquo;ll be running a check,
+hitting whatever api that might be required. For example, for a &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; that hits Github, each call counts towards the rate-limit that Github sets.
+It&amp;rsquo;s fairly high at 5000 per hour, but it is still exhaustible if you&amp;rsquo;re not careful!&lt;/p&gt;
+
+&lt;p&gt;Relatedly, there is another setting in Bosh, for the web/scheduler node, &lt;code&gt;check_recycle_period&lt;/code&gt; - which decides
+how often the containers for resource checks are garbage-collected. The default is 6 hours.&lt;/p&gt;
+
+&lt;p&gt;Don&amp;rsquo;t make the mistake (like me!) of drastically reducing this GC interval even if there might be containers used for checks lying around, doing nothing.
+It depends on the implementation of the particular concourse resource but in my case, the &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; would init and re-query
+(history) of versions and end up consuming unnecessary calls to Github, which led to us getting rate-limited occasionally.&lt;/p&gt;
+
+&lt;p&gt;YMMV, but if you&amp;rsquo;re using this resource, consider leaving it at a higher enough interval to take advantage of the caching!&lt;/p&gt;
+
+&lt;h3&gt;Container Placement Strategy&lt;/h3&gt;
+
+&lt;p&gt;We have resource-intensive jobs (across different pipelines) that can be triggered at the same time. When that happens, our cluster occasionally run into
+resoure deprivation issues.&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;ve tried the experimental feature &lt;code&gt;limit-active-tasks&lt;/code&gt; - a &lt;code&gt;container_placement_strategy&lt;/code&gt; that limits the number of tasks per worker. In my opinion,
+that does not work well for clusters with varying types of workloads. It would inevitably end up blocking tasks that may not be resource-intensive.
+An example is the periodic resource check, or worse, at times, it might only allow light tasks through and blocking tasks that could still fit well.&lt;/p&gt;
+
+&lt;p&gt;You can also do &lt;code&gt;volume-locality&lt;/code&gt;, &lt;code&gt;random&lt;/code&gt; and &lt;code&gt;fewest-build-containers&lt;/code&gt; placements. We&amp;rsquo;ve ultimately gone with &lt;code&gt;fewest-build-containers&lt;/code&gt; because
+we have CPU-intensive tasks but for most usecases, but I think every workload / situation is probably different and this is one of those settings
+to consider tweaking when setting Concourse up.&lt;/p&gt;
+
+&lt;p&gt;Sidenote: I believe this is also on the v10 improvement list!&lt;/p&gt;
+
+&lt;h3&gt;Resource Allocation&lt;/h3&gt;
+
+&lt;p&gt;This is obviously deeply related to the section above. If you run smaller nodes and can&amp;rsquo;t have multiple (heavy) jobs run at the same time, you do have
+a number of knobs to help you restrict these.&lt;/p&gt;
+
+&lt;p&gt;You can control the number of builds per job that happens at the same time, with &lt;code&gt;max_in_flight&lt;/code&gt; (or &lt;code&gt;serial: true&lt;/code&gt; for 1) at the job definition level.
+If you would like all jobs that belong some specific category to run serially, you can group all of these jobs up and run them different groups serially.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;jobs&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-a&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-b&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-tag&lt;/span&gt;&lt;span class="pi"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;some-other-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-c&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-other-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Also, it&amp;rsquo;s probably prudent to also define a default cpu/memory allocation with this &lt;a href="https://bosh.io/jobs/web?source=github.com/concourse/concourse-bosh-release&amp;amp;version=6.6.0#p%3ddefault_task_cpu_limit"&gt;Bosh settings&lt;/a&gt; and then override each task with &lt;code&gt;container_limits&lt;/code&gt;,
+to avoid any rogue jobs just spinning out of control. Anecdotally, I had jobs that pegged and took down 4xlarge nodes; to be fair they were erlang/beam jobs that
+are notorious for the amount of resources they demand.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Bosh -&amp;gt; web node defaults&lt;/span&gt;
+&lt;span class="c1"&gt;# This is the equivalent of&lt;/span&gt;
+&lt;span class="na"&gt;default_task_cpu_limit&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;256&lt;/span&gt;
+&lt;span class="na"&gt;default_task_memory_limit&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;4GB&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Override at the Job level&lt;/span&gt;
+&lt;span class="na"&gt;container_limits&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="na"&gt;cpu&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;256&lt;/span&gt;
+  &lt;span class="na"&gt;memory&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;1GB&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Do note that the CPU defined here is not the number of cores but the CPU shares. I believe the Concourse / system stuff running on each node runs
+with a default of &lt;code&gt;512&lt;/code&gt; so using &lt;code&gt;256&lt;/code&gt; would slightly lower the priority of user-level jobs so important system processes don&amp;rsquo;t get starved.&lt;/p&gt;
+
+&lt;h3&gt;(Storage) Volumes / Baggage Claims&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve discovered that, when the volumes choke up (IOPS or otherwise), Concourse baggage-claims (gc of volumes and such) seem to fail rather silently,
+and you start having containers failing to schedule within the time limit.&lt;/p&gt;
+
+&lt;p&gt;I only really realized this when we went from many small(xlarge) EC2 nodes to fewer 4xlarge nodes and had our EBS volumes&amp;rsquo; IOPS constantly get
+pegged by certain IO intensive jobs. It was extremely surprising how much IOPS we needed (thanks, yarn). Many of our performance issues went away with this fixed.&lt;/p&gt;
+
+&lt;p&gt;I encourage people who are facing issues, just double-check this in their cluster as well.&lt;/p&gt;
+
+&lt;h3&gt;Overlay vs btrfs&lt;/h3&gt;
+
+&lt;p&gt;Concourse ships with btrfs by default. There are obviously things that btrfs does that overlay doesn&amp;rsquo;t but it has stability issues. The problem set and
+trade-offs are clearly talked about in &lt;a href="https://github.com/concourse/concourse/issues/1045"&gt;this github issue&lt;/a&gt; so I won&amp;rsquo;t rehash them.&lt;/p&gt;
+
+&lt;p&gt;One thing I&amp;rsquo;ll say though, I encourage people to switch over to overlay for most usecases.&lt;/p&gt;
+
+&lt;h3&gt;Next&lt;/h3&gt;
+
+&lt;p&gt;Again, this might have read like a rant on the problems, but it really is more like the things that I&amp;rsquo;ve learned over running our cluster. To be honest,
+alot of these are surrounding issues that are not Concourse specific per-se. And it is extremely positive in my opinion that the core team acknowledges
+some of the real issues (that really still work reasonably well) and put real work towards them for v10.&lt;/p&gt;
+
+&lt;p&gt;In the next few posts, I&amp;rsquo;ll go over in more technical details how you might do certain things, like&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;building from PR, or&lt;/li&gt;
+&lt;li&gt;building docker OCI images in Concourse, or&lt;/li&gt;
+&lt;li&gt;running docker-in-docker in overlay&lt;/li&gt;
+&lt;li&gt;running a registry-mirror and using it in Concourse&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Monitoring Stack in Kubernetes, with Prometheus</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2019/08/01/prometheus-monitoring-in-kubernetes/"/>
+    <id>http://blog.url.com/posts/2019/08/01/prometheus-monitoring-in-kubernetes/</id>
+    <published>2019-07-31T12:00:00-04:00</published>
+    <updated>2020-11-19T22:43:44-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;For the past year or so, I&amp;rsquo;ve been working with DevOps in Tulip.
+It&amp;rsquo;s a fairly big change in direction but quite frankly, it&amp;rsquo;s been a refreshing experience!&lt;/p&gt;
+
+&lt;p&gt;One of the first projects was to build a monitoring system for a number of different components
+in our kubernetes cluster: various microservices, main monolith application, our ingress controller,
+and the health of the cluster itself. I thought Prometheus fit fairly well with what we wanted, so we
+went ahead with that. I would say that it has been served us pretty well!&lt;/p&gt;
+
+&lt;h3&gt;Prometheus&lt;/h3&gt;
+
+&lt;p&gt;Some context about Prometheus; it is a pull-based monitoring system that is sometimes compared to Nagios.
+It&amp;rsquo;s not event-based, so applications do not report each individual event to Prometheus as it happens (like SegmentIO).
+Also, since its pull-based, we have to define all its targets (to scrape) in advance. Contrary to certain arguments, I actually think
+this is a plus. It is more tedious and harder to set up, but it is also harder to get into a situation where it becomes a blackbox and
+you have no idea what you&amp;rsquo;re dumping into it. It&amp;rsquo;s also easier to detect if a target is actually down vs a push-based system.&lt;/p&gt;
+
+&lt;h3&gt;Prometheus Operator&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/coreos/prometheus-operator"&gt;Prometheus Operator&lt;/a&gt; is an open-source tool
+that makes deploying a Prometheus stack (AlertManager, Grafana, Prometheus) so, much easier than hand-crafting the entire stack.
+It helps generate a whole lot of boiler plates and pretty much reduces the entire deployment down to native
+kubernetes declarations and YAML.&lt;/p&gt;
+
+&lt;p&gt;If you&amp;rsquo;re familiar with Kubernetes, then you&amp;rsquo;ve probably heard of custom resource definitions, or
+CRDs in short. Think of them as definitions of objects like pods, deployments or daemonsets
+that the cluster can understand and act on if needed. For the purpose of deploying a monitoring stack,
+Prometheus Operator introduces 3 new CRDs - &lt;code&gt;Prometheus&lt;/code&gt;, &lt;code&gt;AlertManager&lt;/code&gt; and &lt;code&gt;ServiceMonitor&lt;/code&gt;, and a controller
+that is in-charge of deploying and connfiguring the respective services into the Kubernetes Cluster.&lt;/p&gt;
+
+&lt;p&gt;For example: if a prometheus CRD like the one below is present in the cluster, the prometheus-operator controller
+would create a matching deployment of Prometheus into the kubernetes cluster, that in this case would also link
+up with the alertmanager by that name in the monitoring namespace.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  ...
+  name: clustermon-prometheus-oper-prometheus
+  namespace: monitoring
+spec:
+  alerting:
+    alertmanagers:
+    - name: clustermon-prometheus-oper-alertmanager
+      namespace: monitoring
+      pathPrefix: /
+      port: web
+  baseImage: quay.io/prometheus/prometheus
+  ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;kube-prometheus&lt;/h3&gt;
+
+&lt;p&gt;kube-prometheus used to be a set of contrib helm charts that utilizes the capabilities of the Prometheus Operator to deploy
+an entire monitoring stack (with some assumptions and defaults ofc). It has since been absorbed into the main &lt;a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator"&gt;helm charts&lt;/a&gt;
+and moved to the official stable chart repository.&lt;/p&gt;
+
+&lt;p&gt;There are various exporters included such as: kube-dns, kube-state-metrics, node-exporter and many others
+that are necessary to monitor the health of a Kubernetes cluster (and more). You can find the full list &lt;a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator/templates/exporters"&gt;here&lt;/a&gt;.
+It also has a simple set of kubernetes-mixins for Grafana as well (if you choose to install that).&lt;/p&gt;
+
+&lt;h3&gt;Overview&lt;/h3&gt;
+
+&lt;p&gt;This section gives a general idea of the components involved.&lt;/p&gt;
+
+&lt;p&gt;An important implementation decision that I&amp;rsquo;ll like to point out is that Grafana is (mostly) stateless. Any new dashboards, or changes
+would need to be commited to code; in general I think this conforms better to the &lt;code&gt;infrastructure-as-code&lt;/code&gt; kind of idealogy which makes
+it much easier to replicate the same infrastructure across multiple clouds / regions.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png" title="Monitoring Stack" alt="Monitoring Stack" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Custom Helm Chart&lt;/h3&gt;
+
+&lt;p&gt;You can find a stripped down version fo the things I&amp;rsquo;ll talk about in this repository: &lt;a href="https://github.com/aranair/k8s-prometheus-operator-helm-example"&gt;k8s-prometheus-operator-helm-example&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Note: The contents are all based on prometheus-operator helm chart &lt;code&gt;5.10.5&lt;/code&gt;.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# requirements.yaml&lt;/span&gt;
+&lt;span class="na"&gt;dependencies&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;prometheus-operator&lt;/span&gt;
+    &lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;5.10.5&lt;/span&gt;
+    &lt;span class="na"&gt;repository&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;https://kubernetes-charts.storage.googleapis.com/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This part of the chart is responsible for loading  &lt;code&gt;*.json&lt;/code&gt; dashboard configurations exported from Grafana and creating
+them as individual configmaps in Kubernetes. The config-reloaders in Grafana would then read them and reconfigure itself.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# templates/dashboards-configmap.yaml&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- $files&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= .Files.Glob "dashboards/*.json"&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="na"&gt;apiVersion&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;v1&lt;/span&gt;
+&lt;span class="na"&gt;kind&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;ConfigMapList&lt;/span&gt;
+&lt;span class="na"&gt;items&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- range $path&lt;/span&gt;&lt;span class="pi"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;$fileContents&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= $files&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- $dashboardName&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= regexReplaceAll "(^.*/)(.*)\\.json$" $path "$&lt;/span&gt;&lt;span class="pi"&gt;{&lt;/span&gt;&lt;span class="nv"&gt;2&lt;/span&gt;&lt;span class="pi"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;}}&lt;/span&gt;
+&lt;span class="s"&gt;-&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;apiVersion:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;v1&lt;/span&gt;
+  &lt;span class="s"&gt;kind:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;ConfigMap&lt;/span&gt;
+  &lt;span class="s"&gt;metadata:&lt;/span&gt;
+    &lt;span class="s"&gt;name:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;printf&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;"&lt;/span&gt;&lt;span class="err"&gt;%&lt;/span&gt;&lt;span class="nv"&gt;s-%s" (include "prometheus-operator.fullname" $) $dashboardName | trunc 63 | trimSuffix "-"&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+    &lt;span class="na"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="na"&gt;grafana_dashboard&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;1"&lt;/span&gt;
+      &lt;span class="na"&gt;app&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;template "prometheus-operator.name" $&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;&lt;span class="s"&gt;-grafana&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;include "prometheus-operator.labels" $ | indent 6&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+  &lt;span class="na"&gt;data&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;$dashboardName&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;&lt;span class="s"&gt;.json&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;|-&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;$.Files.Get $path | indent 6&lt;/span&gt;&lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- end&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Prometheus&lt;/h3&gt;
+
+&lt;p&gt;Prometheus rocks a TSDB for data storage so the instance that the pod runs on needs to have a huge volume attached to it.
+In my setup, I&amp;rsquo;ve chosen to run Prometheus on a node, by itself, with no other pods scheduled on it. I do this by setting up taints
+on a particular node and having Prometheus selectively schedule to that node and tolerate those taints. Normal pods without that
+toleration would then just refuse to schedule on it&lt;/p&gt;
+
+&lt;p&gt;(This is slightly different in the example app above)&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# values.yaml
+prometheus:
+  prometheusSpec:
+
+    # So that Prometheus can schedule onto the node with this taint
+    # Other pods will not have this toleration and won't schedule on it
+    tolerations:
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoExecute"
+
+    # The Prometheus node
+    nodeSelector:
+      node: prometheus
+
+    # This PV is named in my case, but you can also just do a dynamic claim template like here:
+    # https://github.com/aranair/k8s-prometheus-operator-helm-example/blob/master/clustermon/values.yaml#L181-L189
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          volumeName: prometheus-pv
+          selector:
+            matchLabels:
+              app: prometheus-pv
+          resources:
+            requests:
+              storage: 1500Gi
+      selector: {}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If you take a look at the prometheus-operator&amp;rsquo;s default [values.yaml][helm-chart-values] file, you will find just about any configuration you can think of.&lt;/p&gt;
+
+&lt;h3&gt;Monitoring Custom Services&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code&gt;ServiceMonitor&lt;/code&gt; CRD from the prometheus-operators is used to describe the set of targets to be monitored by Prometheus; the
+controller would automatically generate the Prometheus config needed.&lt;/p&gt;
+
+&lt;p&gt;For example, a &lt;code&gt;ServiceMonitor&lt;/code&gt; for monitoring &lt;a href="https://traefik.io"&gt;Traefik&lt;/a&gt;, our ingress controller would look something like this:
+&lt;code&gt;
+additionalServiceMonitors:
+  - name: traefik-monitor
+    namespace: monitoring
+    selector:
+      matchLabels:
+        app: traefik   # this should be the selector for the Service
+    namespaceSelector:
+      matchNames:
+      - kube-system    # Which namespace to look for the Service in
+    endpoints:
+    - basicAuth:       # Take creds from secret named traefik-monitor-metrics-auth
+        password:
+          name: traefik-monitor-metrics-auth
+          key: password
+        username:
+          name: traefik-monitor-metrics-auth
+          key: user
+      port: metrics
+      interval: 10s
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;These would show up as targets in the prometheus deployment, e.g.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png" title="Traefik Targets Prometheus" alt="Traefik Targets Prometheus" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;You can then use PromQL to query things.. like average number of open connections per second looking back at 5min windows, (then extrapolate to 5mins by multiplying by 300)&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png" title="Traefik Avg backend open connections" alt="Traefik Avg backend open connections" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Charting isnt the best in Prometheus but to be fair, that&amp;rsquo;s not really the primary function of Prometheus.
+It can get you what you need eventually, but it just takes way more effort than it should.&lt;/p&gt;
+
+&lt;h3&gt;Grafana&lt;/h3&gt;
+
+&lt;p&gt;Grafana fills that gap; with this setup, a Grafana instance is automatically setup with Prometheus targeted as a data source.
+So generally what I&amp;rsquo;ll do is experiement in Prometheus with PromQL, then port over to a Grafana dashboard with proper
+variables and timeframes then export in json and check that in into our git repository. Overtime, we have developed
+quite a number of dashboards that monitor many of the services in our cluster (as well as many good default mixins provided
+out of the box).&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png" title="Grafana Dashboards" alt="Grafana Dashboards" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;One example is shown below, where it displays the total CPU/RAM usage; we can also click to drill down to each individual pod.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png" title="Traefik k8s mixin" alt="Traefik CPU/RAM" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This next one is a dashboard that I built to monitor the health of Traefik, looking at the number of times its had to hot-reload
+configurations, and latencies and other useful metrics. We also track the Apdex for example for both entrypoints and backends.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png" title="Traefik Custom" alt="Traefik Custom" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Prometheus Rules&lt;/h3&gt;
+
+&lt;p&gt;Prometheus rules can be defined in PromQL; these are primarily alerts that you might want the system to flag.
+There are many built-in rules that come along with the default installation.&lt;/p&gt;
+
+&lt;p&gt;Like when the kube api pods&amp;rsquo; error rate is high:
+&lt;code&gt;
+alert: KubeAPIErrorsHigh
+expr: sum(rate(apiserver_request_count{code=~&amp;quot;^(?:5..)$&amp;quot;,job=&amp;quot;apiserver&amp;quot;}[5m]))
+  / sum(rate(apiserver_request_count{job=&amp;quot;apiserver&amp;quot;}[5m])) * 100 &amp;gt; 3
+for: 10m
+labels:
+  severity: critical
+annotations:
+  message: API server is returning errors for {{ $value }}% of requests.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubeapierrorshigh
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Or like when there are CLBO pods:&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;alert: KubePodCrashLooping
+expr: rate(kube_pod_container_status_restarts_total{job="kube-state-metrics"}[15m])
+  * 60 * 5 &amp;gt; 0
+for: 1h
+labels:
+  severity: critical
+annotations:
+  message: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }})
+    is restarting {{ printf "%.2f" $value }} times / 5 minutes.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepodcrashlooping
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;But you can also define your own custom ones; we have quite a number of custom rules.
+As an example, there is an alert that will fire when there are &amp;gt; 10 etcd failed proposals
+in the past 10 mins, which might indicate some stability issues with the etcd cluster.&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;additionalPrometheusRules&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;custom-alerts&lt;/span&gt;
+    &lt;span class="na"&gt;groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;generic.rules&lt;/span&gt;
+      &lt;span class="na"&gt;rules&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;alert&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;EtcdFailedProposals&lt;/span&gt;
+        &lt;span class="na"&gt;expr&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;increase(etcd_server_proposal_failed_total[10m]) &amp;gt; 10&lt;/span&gt;
+        &lt;span class="na"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+          &lt;span class="na"&gt;severity&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;warning&lt;/span&gt;
+          &lt;span class="na"&gt;group&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;tulip&lt;/span&gt;
+        &lt;span class="na"&gt;annotations&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+          &lt;span class="na"&gt;summary&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;failed&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;proposals"&lt;/span&gt;
+          &lt;span class="na"&gt;description&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;$labels.instance&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;failed&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;proposals&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;over&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;the&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;past&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;10&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;minutes&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;has&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;increased.&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;May&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;signal&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;cluster&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;instability"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Or when a specific pod has restarted X number of times:&lt;/p&gt;
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="nn"&gt;...&lt;/span&gt;
+    &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;generic.rules&lt;/span&gt;
+        &lt;span class="s"&gt;- alert&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;TraefikPodCrashLooping&lt;/span&gt;
+          &lt;span class="s"&gt;expr&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;round(increase(kube_pod_container_status_restarts_total{pod=~"traefik-.*"}[5m])) &amp;gt; 5&lt;/span&gt;
+          &lt;span class="s"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+            &lt;span class="na"&gt;severity&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;critical&lt;/span&gt;
+            &lt;span class="na"&gt;group&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;tulip&lt;/span&gt;
+          &lt;span class="na"&gt;annotations&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+            &lt;span class="na"&gt;summary&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;Traefik&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;pod&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;is&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;restarting&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;frequently"&lt;/span&gt;
+            &lt;span class="na"&gt;description&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;Traefik&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;pod&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{$labels.pod}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;has&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;restarted&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{$value}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;times&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;in&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;the&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;last&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;5&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;mins"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When these alerts fire, you can see them in Prometheus directly; they are also sent off to the AlertManger if one is linked up with Prometheus.&lt;/p&gt;
+
+&lt;h3&gt;AlertManager&lt;/h3&gt;
+
+&lt;p&gt;AlertManager can be configured to send to Slack, VictorOps, PagerDuty, or various other sorts of alerting systems.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;alertmanager:
+  config:
+    global:
+      smtp_auth_username: ''
+      smtp_auth_password: ''
+      victorops_api_key: ''
+      victorops_api_url: ''
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;In our setup, I configured it to post to Slack whenever there is a &lt;code&gt;Warning&lt;/code&gt; level alert, and to VictorOps when there is a &lt;code&gt;critical&lt;/code&gt; level alert.&lt;/p&gt;
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;route:
+  group_by: ['job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'null'
+
+  # This can be used to route specific specific type of alerts to specific teams.
+  routes:
+  - match:
+      alertname: DeadMansSwitch
+    receiver: 'null'
+  - match:
+      alertname: TargetDown
+    receiver: 'null'
+  - match:
+      severity: warning
+      group: custom
+    group_by: ['namespace']
+    receiver: 'slack'
+  - match:
+      severity: critical
+      group: custom
+    group_by: ['namespace']
+    receiver: 'victorops'
+
+  receivers:
+  - name: 'null'
+  - name: 'sysadmins-email'
+    email_configs:
+      - to: 'sysadmin@example.com'
+
+  - name: 'slack'
+    slack_configs:
+      - username: 'Prometheus'
+        send_resolved: true
+        api_url: ''
+        title: '[{{ .Status | toUpper }}] Warning Alert'
+        text: &amp;gt;-
+          {{ template "slack.techops.text" . }}
+
+  - name: 'victorops'
+    victorops_configs:
+      - routing_key: 'routing_key'
+        message_type: '{{ .CommonLabels.severity }}'
+        entity_display_name: '{{ .CommonAnnotations.summary }}'
+        state_message: &amp;gt;-
+          {{ template "slack.techops.text" . }}
+        api_url: ''
+        api_key: ''
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Generally speaking, &lt;code&gt;warning&lt;/code&gt; alerts could indicate some level of degraded service but might self-recover, such as when a node is down and pods auto-reschedule;
+or they could also be non time-critical situations that does not need immediate intervention. And &lt;code&gt;critical&lt;/code&gt; alerts are reserved for mission-critical services
+or infrastructure, that can cause a bunch of issues if not recovered quickly. These would page someone and be resolved as quickly as we can.&lt;/p&gt;
+
+&lt;p&gt;Example of an alert that has gone off in AlertManager:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png" title="Example AlertManager Alert" alt="Example AlertManager Alert" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Slack Alert:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png" title="Example Slack Alert" alt="Example Slack Alert" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;From here, you can have inhibitions that, when present, other alerts will not fire; or silences that would silence
+alerts based on their tags.&lt;/p&gt;
+
+&lt;h3&gt;Wrap-up&lt;/h3&gt;
+
+&lt;p&gt;Together, I think the 3 components form a rather well-rounded monitoring stack for k8s infrastructure and services&amp;rsquo; metrics.
+I think, down the road, the next big extension would be to have it spin up federated clusters to monitor different AWS regions and/or clusters.&lt;/p&gt;
+
+&lt;p&gt;PS: Here&amp;rsquo;s the repo that has a simplified version of everything I&amp;rsquo;ve talked about above:
+&lt;a href="https://github.com/aranair/k8s-prometheus-operator-helm-example"&gt;k8s-prometheus-operator-helm-example&lt;/a&gt;. And feel free to let me know in the
+comments section below if you have any questions or run into any issues playing with that example.&lt;/p&gt;
+</content>
+  </entry>
   <entry>
     <title>Programming with the Modbus RTU &amp; TCP/IP Protocol</title>
     <link rel="alternate" href="http://blog.url.com/posts/2017/10/30/programming-with-modbus-rtu-tcp-protocol/"/>
     <id>http://blog.url.com/posts/2017/10/30/programming-with-modbus-rtu-tcp-protocol/</id>
     <published>2017-10-29T12:00:00-04:00</published>
-    <updated>2017-11-04T09:29:15-04:00</updated>
+    <updated>2020-11-19T22:43:42-05:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -241,7 +764,7 @@ to Part 2 instead. If you wanna skip ahead, the project files can be found in th
     <link rel="alternate" href="http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/"/>
     <id>http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</id>
     <published>2017-08-19T12:00:00-04:00</published>
-    <updated>2017-09-30T20:53:21-04:00</updated>
+    <updated>2020-11-19T22:43:42-05:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -391,7 +914,7 @@ hours.&lt;/li&gt;
     <link rel="alternate" href="http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/"/>
     <id>http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</id>
     <published>2017-06-27T12:00:00-04:00</published>
-    <updated>2017-09-30T20:53:19-04:00</updated>
+    <updated>2020-11-19T22:43:42-05:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -595,7 +1118,7 @@ instead of appending texts into the quote_box.&lt;/li&gt;
     <link rel="alternate" href="http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/"/>
     <id>http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5.2.2-to-work-on-amazon-ecs/</id>
     <published>2017-04-02T12:00:00-04:00</published>
-    <updated>2017-09-30T20:53:19-04:00</updated>
+    <updated>2020-11-19T22:43:42-05:00</updated>
     <author>
       <name>Article Author</name>
     </author>
@@ -707,503 +1230,6 @@ get the cluster up.&lt;/p&gt;
 
 &lt;p&gt;This is obviously less than ideal in a deployment process which otherwise could be full-automated. But if you&amp;rsquo;re 
 still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve you well!&lt;/p&gt;
-</content>
-  </entry>
-  <entry>
-    <title>Tuning My Apache Spark Data Processing Cluster on Amazon EMR</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/"/>
-    <id>http://blog.url.com/posts/2017/03/10/tuning-my-apache-spark-cluster-on-aws-emr/</id>
-    <published>2017-03-09T11:00:00-05:00</published>
-    <updated>2017-09-30T20:53:19-04:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Lately, I had the chance to work on some data integration at Pocketmath where I wrote a 
-bunch of Spark scripts in Scala to run some transformations on a data set of about 
-250GB that will run on a monthly basis. In this post, I talk about some of the 
-problems I encountered, and some considerations while setting up the cluster and also how I improved
-the performance of the the Spark tasks.&lt;/p&gt;
-
-&lt;h3&gt;Dataset Size&lt;/h3&gt;
-
-&lt;p&gt;The size of the data set is only 250GB, which probably isn&amp;rsquo;t even close to the scale other data 
-engineers handle, but is easily one of the bigger sets for me. Nonetheless, I do think the 
-transformations are on the heavy side; it involves a chain of rather expensive operations. &lt;/p&gt;
-
-&lt;h3&gt;Multiple Shuffle Operations&lt;/h3&gt;
-
-&lt;p&gt;The sequence of execution is something like &lt;code&gt;JOIN&lt;/code&gt;, &lt;code&gt;JOIN&lt;/code&gt;, &lt;code&gt;UNION&lt;/code&gt;, &lt;code&gt;EXPLODE&lt;/code&gt;, &lt;code&gt;SORT&lt;/code&gt; within partition,
-then &lt;code&gt;GROUP&lt;/code&gt;, &lt;code&gt;COLLECT&lt;/code&gt; and finally another &lt;code&gt;SORT&lt;/code&gt; eventually. &lt;/p&gt;
-
-&lt;p&gt;Each of these are &lt;em&gt;pretty&lt;/em&gt; expensive shuffle operations. Not surprisingly, these operations posed some problems
-even at this moderate data size.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow.png"&gt;&lt;img src="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-flow-small.png" alt="Spark Flow Chart" /&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;h3&gt;Another Difficulty&lt;/h3&gt;
-
-&lt;p&gt;On top of that, I also had to split a file that looks like the examples below. &lt;/p&gt;
-
-&lt;p&gt;Essentially, I think of it as generating ranks or row numbers (of course, with a bunch of other data transformations)&lt;/p&gt;
-
-&lt;p&gt;From this format:&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;51abebcfab2ef2abeed2f 8,120,384,898 
-21abfbbeef5791adef3f2 1,9,1214,8827 
-...
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Into these two files:&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# 1,2 are like IDs&lt;/span&gt;
-51abebcfab2ef2abeed2f 1
-21abfbbeef5791adef3f2 2
-...
-&lt;/code&gt;&lt;/pre&gt;&lt;pre class="highlight shell"&gt;&lt;code&gt;1 8,120,384,898 
-2 1,9,1214,8827 
-
-...
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;It turns out that generating a consistent row number like this is a difficult operation for Spark to handle.
-&lt;strong&gt;Matter of fact&lt;/strong&gt;, it is probably an expensive task for any distributed system to perform. &lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;Dataframes&lt;/code&gt; are available in Spark 2.0 and I mainly use that data structure. The only way that I know of currently to 
-generate these row numbers with a Dataframe is to first convert into an RDD and do a &lt;code&gt;zipWithIndex&lt;/code&gt; on it. &lt;/p&gt;
-&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;segRdd&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;segmentIdGroups&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rdd&lt;/span&gt;
-&lt;span class="k"&gt;val&lt;/span&gt; &lt;span class="n"&gt;rows&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="n"&gt;segRdd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zipWithIndex&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;map&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt; &lt;span class="k"&gt;case&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Row&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="k"&gt;:&lt;/span&gt; &lt;span class="kt"&gt;Long&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="k"&gt;=&amp;gt;&lt;/span&gt; &lt;span class="nc"&gt;Row&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fromSeq&lt;/span&gt;&lt;span class="o"&gt;((&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+:&lt;/span&gt; &lt;span class="n"&gt;r&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;toSeq&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;em&gt;Okay, there is actually another method that involves windows and partitions but unfortunately it basically 
-moves all the data into one partition, which isn&amp;rsquo;t feasible for me.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;Executer Cores and Memory Allocation&lt;/h3&gt;
-
-&lt;p&gt;While starting the Spark task in Amazon EMR, I manually set the &lt;code&gt;--executor-cores&lt;/code&gt; and &lt;code&gt;--executor-memory&lt;/code&gt; 
-configurations. The calculation is somewhat non-intuitive at first because I have to manually take into account 
-the overheads of YARN, the application master/driver cores and memory usage et cetera.&lt;/p&gt;
-
-&lt;p&gt;As a guideline, YARN overheads take roughly &lt;code&gt;7%&lt;/code&gt; and allocating more from there is generally good practice. This
-ensures enough is left for system processes and Hadoop e.g.&lt;/p&gt;
-
-&lt;p&gt;Using an instance of &lt;code&gt;r3.8xlarge&lt;/code&gt; as an example:&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# 122GB RAM, 16 cores&lt;/span&gt;
-
-&lt;span class="nv"&gt;$CORES_PER_DRIVER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
-&lt;span class="nv"&gt;$MEMORY_PER_DRIVER&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;24G
-
-&lt;span class="nv"&gt;$CORES_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
-&lt;span class="nv"&gt;$MEMORY_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;24G
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Each instance could potentially run 4 executors, with 4 cores per executor. Available memory for the HEAP is 122/4 = 30.5G.&lt;/p&gt;
-
-&lt;p&gt;To account for the overheads, I multiply the available memory by &lt;strong&gt;0.93&lt;/strong&gt;. This works out to be &lt;strong&gt;28G&lt;/strong&gt;.
-For my experiment, I used &lt;strong&gt;24G&lt;/strong&gt; just to account for the overheads but on hindsight, &lt;strong&gt;26G&lt;/strong&gt; should be enough too.&lt;/p&gt;
-
-&lt;p&gt;Recap: &lt;/p&gt;
-&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="n"&gt;total_memory_available&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="n"&gt;total_cores_available&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mf"&gt;0.07&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
-
-&lt;span class="c1"&gt;// 122GB/16 * (1 - 0.07) = 28G
-// Leave some leeway, to 24-26G
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;em&gt;This directly affects how many executors that can be deployed per instance and also affects the
-memory available for each task, and consequently for each shuffle operation.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;Task / Partition Size&lt;/h3&gt;
-
-&lt;p&gt;Another critical configuration is the task size; it is something that I think should be considered carefully 
-because the task &lt;strong&gt;will slow down&lt;/strong&gt; by quite a bit if it starts to spill to disk.&lt;/p&gt;
-
-&lt;p&gt;Initially, I just set the &lt;code&gt;default_parallelism&lt;/code&gt; in Spark and expected the system to automatically 
-handle the rest, and was surprised to see some stages spilling to disk causing the cluster to slow down. 
-I later found out that &lt;code&gt;default_parallelism&lt;/code&gt; is only used for certain operations and for the rest of the time, 
-Spark would infer the size by looking at the input from a previous stage, which happens to be the number of files
-it reads: 300. &lt;/p&gt;
-
-&lt;p&gt;Each of these files are roughly 800-900MB. And having that few paritions is not ideal since 
-each of these tasks / partitions will be too big to fit into memory. &lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Well alright, this actually depends on your executor setup too.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;I had to force a repartition via &lt;code&gt;df.repartition(2000)&lt;/code&gt; right after the reading of the files. 
-This would immediately add a shuffle step but performs better later on in other tasks in my opinion, YMMV though.&lt;/p&gt;
-
-&lt;h3&gt;Shuffle Memory Usage, Executor Memory-to-CPU ratio&lt;/h3&gt;
-
-&lt;p&gt;In general, I tried to optimize the system to avoid any form of spilling, both memory and disk. If
-the entire shuffle operation can fit into memory, there will be no spilling.&lt;/p&gt;
-
-&lt;p&gt;Each core in an executor runs a single task at any one time. Hence, with 26GB per executor and 4 cores each executor, 
-the HEAP_SIZE allocated for each task is &lt;strong&gt;26G/4&lt;/strong&gt; or &lt;strong&gt;4G&lt;/strong&gt;.  &lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;However, not all the memory allocated to the executor is used for shuffle operations.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;The memory available for shuffle can be calculated as such:&lt;/p&gt;
-&lt;pre class="highlight scala"&gt;&lt;code&gt;&lt;span class="c1"&gt;// Per task
-&lt;/span&gt;&lt;span class="mi"&gt;24&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mf"&gt;0.2&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="mf"&gt;0.8&lt;/span&gt; &lt;span class="k"&gt;=&lt;/span&gt; &lt;span class="mf"&gt;0.96&lt;/span&gt;&lt;span class="nc"&gt;GB&lt;/span&gt;
-
-&lt;span class="c1"&gt;// 0.2 -&amp;gt; spark.shuffle.memoryFraction
-// 0.8 -&amp;gt; spark.shuffle.safetyFraction
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;If your task is already spilling to disk, try using this formula to find out how much space it
-actually needs. This might help you to better fine tune the RAM-to-CPU ratio for ur executor tasks.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;shuffle_write &lt;span class="k"&gt;*&lt;/span&gt; shuffle_spill_mem &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;4&lt;span class="o"&gt;)&lt;/span&gt;executor_cores
-—————————————————————————————————————————————————————————————————————
-shuffle_spill_disk &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;24&lt;span class="o"&gt;)&lt;/span&gt;executor_mem &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;0.2&lt;span class="o"&gt;)&lt;/span&gt;shuffle_mem_fraction &lt;span class="k"&gt;*&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;0.8&lt;span class="o"&gt;)&lt;/span&gt;shuffle_safety_fraction
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Splitting the task size properly is probably one of the bigger improvements while tuning my cluster. 
-&lt;strong&gt;Key takeaway:&lt;/strong&gt; It is definitely better to err on a higher number of partitions, which results in a smaller task bite size.&lt;/p&gt;
-
-&lt;h3&gt;Counter Example&lt;/h3&gt;
-
-&lt;p&gt;To quickly illustrate how things can go wrong in a problematic configuration, 
-I&amp;rsquo;ll use one of my iterations as an example.&lt;/p&gt;
-
-&lt;p&gt;I first used &lt;code&gt;c3&lt;/code&gt; &amp;amp; &lt;code&gt;m3&lt;/code&gt; instances and only allocated &lt;code&gt;10G&lt;/code&gt; per 3 cores. This works out
-to be about 500MB for shuffling each task. I had only 300 partitions and my task sizes were well beyond 850MB. &lt;/p&gt;
-
-&lt;p&gt;It resulted in a ton more needless computations:&lt;/p&gt;
-
-&lt;p&gt;&lt;a href="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-shuffle-spill.png"&gt;&lt;img src="https://s3-ap-southeast-1.amazonaws.com/homan/blog/spark-shuffle-spill-small.png" alt="Shuffle Spills" /&gt;&lt;/a&gt;&lt;/p&gt;
-
-&lt;h3&gt;Getting the Right Partition Size and Instance Type&lt;/h3&gt;
-
-&lt;p&gt;&lt;em&gt;It is crucial to get the partition size right for it to run smoothly, but getting the right instance type
-makes it much more efficient.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Back to my setup, with about 2000 paritions and 250GB data, each partition or task works out to be 
-only about 125MB, which is close to the 128MB that is recommended in the official docs. &lt;/p&gt;
-
-&lt;p&gt;At that partition size, it is more efficient to run &lt;code&gt;c3.8xlarge&lt;/code&gt; instances with 
-a lower memory to core ratio. I did choose to use &lt;code&gt;i2.2xlarge&lt;/code&gt; memory instances to
-eliminate any possibility of a memory constraint issue but the &lt;code&gt;c3.8xlarge&lt;/code&gt; would&amp;rsquo;ve been much faster.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;# c3.8xlarge: 32 VCPUS, 60GB Memory&lt;/span&gt;
-&lt;span class="nv"&gt;$CORES_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;4
-&lt;span class="nv"&gt;$MEMORY_PER_EXECUTOR&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;6.5G
-
-&lt;span class="c"&gt;# Available memory for shuffle, more than enough for 125mb&lt;/span&gt;
-6.5 / 4 &lt;span class="k"&gt;*&lt;/span&gt; 0.2 &lt;span class="k"&gt;*&lt;/span&gt; 0.8 &lt;span class="o"&gt;=&lt;/span&gt; 0.26G
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Spot Instances and HDFS&lt;/h3&gt;
-
-&lt;p&gt;Amazon EMR allows you to bid for spot instances at a &lt;em&gt;fraction of the cost&lt;/em&gt; of the original instance
-price. I use them frequently and have found them to be massively discounted during some hours. &lt;/p&gt;
-
-&lt;p&gt;I had HDFS running for the cluster and the results of each &lt;code&gt;result stage&lt;/code&gt; are stored into the HDFS for future use. 
-At first, I ran a test using spot instances completely, even for the CORE instance group, which turned out to be
-a big mistake.&lt;/p&gt;
-
-&lt;p&gt;When I lose the instances, inevitably, from getting outbidded during peak hours, the cluster loses data. 
-In my experience, Spark is unable to fully recover from the lost data, even after taking extra time for 
-stage-retries.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;With everything taken into consideration, I found it easier to just use on-demand instances 
-for the CORE instance group entirely.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h3&gt;Instance Setup&lt;/h3&gt;
-
-&lt;p&gt;I recommend using non-spot, disk-optimized instances for the CORE instance group. For example, I got two 800GB SSDs 
-with an &lt;code&gt;i2.2xlarge&lt;/code&gt; which costs only ~$1.70 per hour. In comparison, &lt;code&gt;c3&lt;/code&gt; or &lt;code&gt;r3&lt;/code&gt; instances 
-give you way lesser disk space.&lt;/p&gt;
-
-&lt;p&gt;For the actual computation in the task instance group, I would switch to using only spot instances 
-(&lt;code&gt;r3.8xlarge&lt;/code&gt; or &lt;code&gt;c3.8xlarge&lt;/code&gt;). I&amp;rsquo;ve found that this was the most cost-efficient to run my task.&lt;/p&gt;
-
-&lt;p&gt;To bring it all together, I used 20 spot instances of &lt;code&gt;r3.8xlarge&lt;/code&gt;. Mentioned this above, but I&amp;rsquo;ll say it again.
-Memory instances were used just to eliminate any potential issue of shuffle spills but &lt;code&gt;c3.8xlarge&lt;/code&gt; would&amp;rsquo;ve been more efficient
-definitely as I&amp;rsquo;ve showned above. For the core group, there were 3 &lt;code&gt;i2.2xlarge&lt;/code&gt; on-demand instances for the HDFS.&lt;/p&gt;
-
-&lt;h3&gt;To Persist or Not?&lt;/h3&gt;
-
-&lt;p&gt;In some of the heavy shuffles, I found that it was faster to persist them on disk to 
-prevent re-calculations. This is especially true if you&amp;rsquo;re re-using scala variables further
-down the chain. Obviously, you&amp;rsquo;ll need to look into the total calculation time and compare it with
-the network read bytes (divided by an average network throughput) to see if it is worth while to
-persist. &lt;/p&gt;
-
-&lt;p&gt;One good thing is that the Amazon EMR handles the HDFS integrations seamlessly which makes
-it effortless to do a &lt;code&gt;DISK_ONLY&lt;/code&gt; persistance. One thing to note is that since I was doing some disk persistance, 
-I do end up using more disk space than the total data size. This is also why I chose to use the &lt;code&gt;i2&lt;/code&gt; instances
-for HDFS.&lt;/p&gt;
-
-&lt;h3&gt;Recalculations vs Persistence&lt;/h3&gt;
-
-&lt;p&gt;&lt;em&gt;Recalculations will yield different sequences every time.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;In my case, having to generate a key for each row was the one requirement I couldn&amp;rsquo;t remove. &lt;/p&gt;
-
-&lt;p&gt;Without persisting it to disk first, using the variable again would cause a re-calculation 
-through the stages and &lt;code&gt;zipWithIndex&lt;/code&gt; could potentially produce results which are 
-different each time and be rendered absolutely useless. &lt;/p&gt;
-
-&lt;p&gt;I was forced to persist them to disk but either way, since they were heavy operations, persisting
-them to disk made sense too.&lt;/p&gt;
-
-&lt;h3&gt;Resources&lt;/h3&gt;
-
-&lt;p&gt;All of the information has been sourced from multiple sources including, but not limited to:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/"&gt;Cloudera, How to tune your Apache Spark Jobs Part 1&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-1/"&gt;Cloudera, How to tune your Apache Spark Jobs Part 2&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details"&gt;Mastering Apache Spark&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.linkedin.com/pulse/tune-spark-jobs-2-chaaranpall-lambba"&gt;Tune Spark Jobs 2&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.slideshare.net/cloudera/top-5-mistakes-to-avoid-when-writing-apache-spark-applications"&gt;Top 5 Mistakes while writing Apache Spark Applications&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</content>
-  </entry>
-  <entry>
-    <title>How I Deployed My Golang Telegram Bot</title>
-    <link rel="alternate" href="http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"/>
-    <id>http://blog.url.com/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/</id>
-    <published>2017-01-20T11:00:00-05:00</published>
-    <updated>2017-09-30T20:53:19-04:00</updated>
-    <author>
-      <name>Article Author</name>
-    </author>
-    <content type="html">&lt;p&gt;Continuing where I left off in the &lt;a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"&gt;first part&lt;/a&gt; of my &lt;code&gt;Golang Telegram Bot&lt;/code&gt;, in this post I go through all the
-steps I took to get to a one command deployment of my Telegram bot into a Digital Ocean Ubuntu 16.04
-instance. A number of components were involved: dockerizing the app, setting up a self-signed SSL cert,
-get the Nginx to work as a reverse proxy with that, submitting the SSL to Telegram, and finally setting up
-git post-update webhooks for deployment.&lt;/p&gt;
-
-&lt;h3&gt;Dockerizing the App&lt;/h3&gt;
-
-&lt;p&gt;To prepare the bot for deployment, a natural choice was to dockerize it. I&amp;rsquo;ve found it simpler, by far, to use docker 
-to get the environment needed for my apps to run instead of manually fiddling with the server in most cases. It
-also gives me the benefit of being able to run multiple containers on a single instance if the load
-isn&amp;rsquo;t too high on them. Let&amp;rsquo;s dive in to the code.&lt;/p&gt;
-
-&lt;h5&gt;Dockerfile&lt;/h5&gt;
-&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="s"&gt;FROM golang:1.6&lt;/span&gt;
-
-&lt;span class="s"&gt;ADD configs.toml /go/bin/&lt;/span&gt;
-
-&lt;span class="s"&gt;ADD . /go/src/github.com/aranair/remindbot&lt;/span&gt;
-&lt;span class="s"&gt;WORKDIR /go/src/github.com/aranair/remindbot&lt;/span&gt;
-
-&lt;span class="s"&gt;RUN go get ./...&lt;/span&gt;
-&lt;span class="s"&gt;RUN go install ./...&lt;/span&gt;
-
-&lt;span class="s"&gt;WORKDIR /go/bin/&lt;/span&gt;
-&lt;span class="s"&gt;ENTRYPOINT remindbot&lt;/span&gt;
-
-&lt;span class="s"&gt;EXPOSE 8080&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;I start from the base &lt;a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile"&gt;Golang 1.6 image&lt;/a&gt;. &lt;/p&gt;
-
-&lt;p&gt;From there, the next line adds a &lt;code&gt;configs.toml&lt;/code&gt; into the bin folder.
-This file contains credentials and configs that my app needs to run. This should be added into the server
-manually, so that it doesn&amp;rsquo;t get checked into the github repository for security reasons. &lt;/p&gt;
-
-&lt;p&gt;I took a look at the &lt;a href="https://github.com/docker-library/golang/blob/master/1.6/Dockerfile"&gt;official Golang Dockerfile&lt;/a&gt; and I saw that the default &lt;code&gt;gopath&lt;/code&gt; is &lt;code&gt;/go&lt;/code&gt;.
-By adding my config item into &lt;code&gt;/go/bin&lt;/code&gt; folder, I can easily give the app direct access to the file,
-without having to provide it an additional arbiturary path to get that file.&lt;/p&gt;
-
-&lt;p&gt;The next line adds the files into the image during the build process.
-Previously, I would get the files in a different way. I would use this:&lt;/p&gt;
-&lt;pre class="highlight docker"&gt;&lt;code&gt;go get /go/src/github.com/aranair/remindbot
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;But it&amp;rsquo;s actually a little easier to do it in the above way:&lt;/p&gt;
-&lt;pre class="highlight docker"&gt;&lt;code&gt;&lt;span class="k"&gt;ADD&lt;/span&gt;&lt;span class="s"&gt; . /go/src/github.com/aranair/remindbot&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;This would take all the files at &lt;code&gt;.&lt;/code&gt;, the location where &lt;code&gt;docker build&lt;/code&gt; 
-would run from, and copy them  into &lt;code&gt;/go/src/github.com/aranair/remindbot&lt;/code&gt; during the build process, 
-essentially achieving the same result as &lt;code&gt;go get ...&lt;/code&gt;. &lt;/p&gt;
-
-&lt;p&gt;What&amp;rsquo;s different here is that I don&amp;rsquo;t -have- to remember to push to github before the deployment. 
-I also wouldn&amp;rsquo;t need to manually &lt;code&gt;git pull&lt;/code&gt;. The entire deployment process can be contained 
-inside the post-update webhook. I&amp;rsquo;ll discuss that in more detail further down.&lt;/p&gt;
-
-&lt;h3&gt;Docker Compose&lt;/h3&gt;
-
-&lt;p&gt;Personally, I hate fiddling with manual running of the containers so I just use docker-compose, 
-especially if there is more than one component to worry about. For this bot, there is really only
-the mounted volume so that my sqlite3 files won&amp;rsquo;t get flushed on a deployment but I could 
-just as easily set-up a PostgreSQL database up with a few simple additions to this file.&lt;/p&gt;
-&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;2'&lt;/span&gt;
-&lt;span class="na"&gt;services&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
-  &lt;span class="na"&gt;gobot&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
-    &lt;span class="na"&gt;build&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;.&lt;/span&gt;
-    &lt;span class="na"&gt;ports&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
-      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080:8080"&lt;/span&gt;
-    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
-      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The section under ports exposes and links the container&amp;rsquo;s port 8080 to the server&amp;rsquo;s port 8080 (&lt;code&gt;HOST::CONTAINER&lt;/code&gt; format). 
-More about that can be found in the &lt;a href="https://docs.docker.com/compose/compose-file/#/ports"&gt;compose-file documentations&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;For the volumes, the code above simply tells the container to link the host&amp;rsquo;s &lt;code&gt;/var/data/&lt;/code&gt; to the container&amp;rsquo;s &lt;code&gt;/var/data/&lt;/code&gt;
-essentially creating a mounted volume. Again, the format is &lt;code&gt;HOST::CONTAINER&lt;/code&gt;. I store the files there for my 
-&lt;code&gt;Sqlite&lt;/code&gt; database and this mounted volume preserves the data on deployments.&lt;/p&gt;
-
-&lt;h3&gt;How to Set-up Self-Signed SSL Certificate&lt;/h3&gt;
-
-&lt;p&gt;One of the main hassles and requirements of the Telegram API is that they require https, and that requires
-an SSL certificate. It encrypts communication between Telegram and my server, and this helps Telegram to
-verify that my server is the correct one, and not a bogus one when a potential man-in-the-middle hijacks the 
-traffic.&lt;/p&gt;
-
-&lt;p&gt;I could go get an SSL cert from a provider, but in this case, what we&amp;rsquo;re really concerned is the
-identity of my server to Telegram and not for users so a self-signed certificate would work just as well.&lt;/p&gt;
-
-&lt;p&gt;I SSH&amp;rsquo;d into the server to create the certs.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/self-signed.key -out /etc/ssl/certs/self-signed.crt
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;-days&lt;/code&gt; defines the validity span. I did adjust the validity-days to something much bigger but generally might be better with a year or two.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;rsa:2048&lt;/code&gt; means that will create an RSA key that is 2048 bits long.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;-keyout&lt;/code&gt; refers to the private key for the cert&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;-out&lt;/code&gt; refers the cert itself&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The process leads me through the steps above for some further information. The most important bit
-is the &lt;strong&gt;Common Name&lt;/strong&gt;. In my case, I didn&amp;rsquo;t have a domain, so I simply put in the &lt;code&gt;server_IP_address&lt;/code&gt; 
-for my Digital Ocean instance.&lt;/p&gt;
-&lt;pre class="highlight plaintext"&gt;&lt;code&gt;Country Name (2 letter code) [AU]:SG
-State or Province Name (full name) [Some-State]:Singapore
-Locality Name (eg, city) []:Singapore
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:
-Organizational Unit Name (eg, section) []:
-Common Name (e.g. server FQDN or YOUR name) []:server_IP_address
-Email Address []:boa.homan@gmail.com
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;As part of Nginx best practices, I also created a strong Diffie-Hellman group for added security.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Configuring Nginx to Use the SSL Cert&lt;/h3&gt;
-
-&lt;p&gt;I first made a new Nginx configuration snippet at &lt;code&gt;/etc/nginx/snippets&lt;/code&gt; that simply points
-to the SSL certs I just created above.&lt;/p&gt;
-&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="n"&gt;ssl_certificate&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;certs&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;crt&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_certificate_key&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;private&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;key&lt;/span&gt;;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Another snippet to set-up some SSL settings based on recommendations from &lt;a href="https://cipherli.st/"&gt;https://cipherli.st/&lt;/a&gt;.&lt;/p&gt;
-&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="c"&gt;# from https://cipherli.st/
-# and https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
-&lt;/span&gt;
-&lt;span class="n"&gt;ssl_protocols&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt;.&lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="n"&gt;TLSv1&lt;/span&gt;.&lt;span class="m"&gt;2&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_prefer_server_ciphers&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_ciphers&lt;/span&gt; &lt;span class="s2"&gt;"EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_ecdh_curve&lt;/span&gt; &lt;span class="n"&gt;secp384r1&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_session_cache&lt;/span&gt; &lt;span class="n"&gt;shared&lt;/span&gt;:&lt;span class="n"&gt;SSL&lt;/span&gt;:&lt;span class="m"&gt;10&lt;/span&gt;&lt;span class="n"&gt;m&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_session_tickets&lt;/span&gt; &lt;span class="n"&gt;off&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_stapling&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
-&lt;span class="n"&gt;ssl_stapling_verify&lt;/span&gt; &lt;span class="n"&gt;on&lt;/span&gt;;
-&lt;span class="n"&gt;resolver&lt;/span&gt; &lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt; &lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;8&lt;/span&gt;.&lt;span class="m"&gt;4&lt;/span&gt;.&lt;span class="m"&gt;4&lt;/span&gt; &lt;span class="n"&gt;valid&lt;/span&gt;=&lt;span class="m"&gt;300&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;;
-&lt;span class="n"&gt;resolver_timeout&lt;/span&gt; &lt;span class="m"&gt;5&lt;/span&gt;&lt;span class="n"&gt;s&lt;/span&gt;;
-&lt;span class="c"&gt;# Disable preloading HSTS for now.  You can use the commented out header line that includes
-# the "preload" directive if you understand the implications.
-#add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
-&lt;/span&gt;&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;Strict&lt;/span&gt;-&lt;span class="n"&gt;Transport&lt;/span&gt;-&lt;span class="n"&gt;Security&lt;/span&gt; &lt;span class="s2"&gt;"max-age=63072000; includeSubdomains"&lt;/span&gt;;
-&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;-&lt;span class="n"&gt;Frame&lt;/span&gt;-&lt;span class="n"&gt;Options&lt;/span&gt; &lt;span class="n"&gt;DENY&lt;/span&gt;;
-&lt;span class="n"&gt;add_header&lt;/span&gt; &lt;span class="n"&gt;X&lt;/span&gt;-&lt;span class="n"&gt;Content&lt;/span&gt;-&lt;span class="n"&gt;Type&lt;/span&gt;-&lt;span class="n"&gt;Options&lt;/span&gt; &lt;span class="n"&gt;nosniff&lt;/span&gt;;
-
-&lt;span class="n"&gt;ssl_dhparam&lt;/span&gt; /&lt;span class="n"&gt;etc&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;/&lt;span class="n"&gt;certs&lt;/span&gt;/&lt;span class="n"&gt;dhparam&lt;/span&gt;.&lt;span class="n"&gt;pem&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;Finally, we will need to edit the Nginx configuration files to use SSL.&lt;/p&gt;
-
-&lt;p&gt;This is what the file intially looks like: &lt;/p&gt;
-&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="c"&gt;# /etc/nginx/sites-available/default
-&lt;/span&gt;
-&lt;span class="n"&gt;server&lt;/span&gt; {
-    &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-    &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-
-    &lt;span class="c"&gt;# SSL configuration
-&lt;/span&gt;
-    &lt;span class="c"&gt;# listen 443 ssl default_server;
-&lt;/span&gt;    &lt;span class="c"&gt;# listen [::]:443 ssl default_server;
-&lt;/span&gt;
-    ...
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;I changed it to look like this (remember to replace IP!)&lt;/p&gt;
-&lt;pre class="highlight conf"&gt;&lt;code&gt;&lt;span class="n"&gt;server&lt;/span&gt; {
-  &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-  &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;80&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-  &lt;span class="n"&gt;server_name&lt;/span&gt; &lt;span class="n"&gt;YOUR_SERVER_IP_ADDRESS&lt;/span&gt;;
-  &lt;span class="n"&gt;return&lt;/span&gt; &lt;span class="m"&gt;301&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;://$&lt;span class="n"&gt;server_name&lt;/span&gt;$&lt;span class="n"&gt;request_uri&lt;/span&gt;;
-}
-
-&lt;span class="n"&gt;server&lt;/span&gt; {
-&lt;span class="c"&gt;# SSL configuration
-&lt;/span&gt;
-  &lt;span class="n"&gt;listen&lt;/span&gt; &lt;span class="m"&gt;443&lt;/span&gt; &lt;span class="n"&gt;ssl&lt;/span&gt; &lt;span class="n"&gt;http2&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-  &lt;span class="n"&gt;listen&lt;/span&gt; [::]:&lt;span class="m"&gt;443&lt;/span&gt; &lt;span class="n"&gt;ssl&lt;/span&gt; &lt;span class="n"&gt;http2&lt;/span&gt; &lt;span class="n"&gt;default_server&lt;/span&gt;;
-
-  &lt;span class="n"&gt;include&lt;/span&gt; &lt;span class="n"&gt;snippets&lt;/span&gt;/&lt;span class="n"&gt;self&lt;/span&gt;-&lt;span class="n"&gt;signed&lt;/span&gt;.&lt;span class="n"&gt;conf&lt;/span&gt;;
-  &lt;span class="n"&gt;include&lt;/span&gt; &lt;span class="n"&gt;snippets&lt;/span&gt;/&lt;span class="n"&gt;ssl&lt;/span&gt;-&lt;span class="n"&gt;params&lt;/span&gt;.&lt;span class="n"&gt;conf&lt;/span&gt;;
-
-  &lt;span class="n"&gt;location&lt;/span&gt; / {
-    &lt;span class="n"&gt;proxy_pass&lt;/span&gt; &lt;span class="n"&gt;http&lt;/span&gt;://&lt;span class="m"&gt;127&lt;/span&gt;.&lt;span class="m"&gt;0&lt;/span&gt;.&lt;span class="m"&gt;0&lt;/span&gt;.&lt;span class="m"&gt;1&lt;/span&gt;:&lt;span class="m"&gt;8080&lt;/span&gt;;
-  }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;What I did was to basically ask Nginx to automatically redirect HTTP requests to HTTPS. And ask it to
-server root from the port 8080 that the docker container is listening to.&lt;/p&gt;
-
-&lt;h3&gt;UFW Firewall&lt;/h3&gt;
-
-&lt;p&gt;For security reasons, I also enabled &lt;a href="https://help.ubuntu.com/community/UFW"&gt;ufw firewall&lt;/a&gt; by doing the following: &lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;sudo ufw &lt;span class="nb"&gt;enable
-&lt;/span&gt;sudo ufw allow &lt;span class="s1"&gt;'OpenSSH'&lt;/span&gt;
-sudo ufw allow &lt;span class="s1"&gt;'Nginx Full'&lt;/span&gt;
-sudo ufw delete allow &lt;span class="s1"&gt;'Nginx HTTP'&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;It should look something like this in &lt;code&gt;sudo ufw status&lt;/code&gt;&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;To                         Action      From
---                         ------      ----
-Nginx Full                 ALLOW       Anywhere
-OpenSSH                    ALLOW       Anywhere
-Nginx Full &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;            ALLOW       Anywhere &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;
-OpenSSH &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;               ALLOW       Anywhere &lt;span class="o"&gt;(&lt;/span&gt;v6&lt;span class="o"&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;And its done; to start Nginx, all that&amp;rsquo;s left is to &lt;code&gt;sudo nginx -t&lt;/code&gt;&lt;/p&gt;
-
-&lt;h3&gt;Sending Telegram the SSL Cert&lt;/h3&gt;
-
-&lt;p&gt;Telegram will need the other side of the cert. Consulting their documentation, it seems that they
-need the PEM file. To get that, I had to convert the current CRT file into the PEM format.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;openssl x509 -in /etc/ssl/certs/self-signed.crt -outform pem -out /etc/ssl/certs/bot.pem
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;To get the cert to Telegram&amp;rsquo;s hands, I sent it via their API using this: (Replace bot keys!)&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;curl -F &lt;span class="s2"&gt;"url=https://your.domain.or.ip.com"&lt;/span&gt; -F &lt;span class="s2"&gt;"certificate=@/etc/ssl/certs/bot.pem"&lt;/span&gt; https://api.telegram.org/bot12345:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/setWebhook
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Set-up Git Hooks&lt;/h3&gt;
-
-&lt;p&gt;Great! Now all that&amp;rsquo;s left is the deployment process. The general outcome that I wanted is that
-it&amp;rsquo;ll be a one-command process that updates the code in the server, rebuilds and restarts the docker
-container with the updated app.&lt;/p&gt;
-
-&lt;p&gt;At my server, I created the necessary files for the server git repository&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; /var
-mkdir repo &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd &lt;/span&gt;repo
-mkdir bot.git &lt;span class="o"&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class="nb"&gt;cd &lt;/span&gt;bot.git
-git init --bare
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h4&gt;The Hooks&lt;/h4&gt;
-
-&lt;p&gt;Looking into the &lt;code&gt;hooks&lt;/code&gt; folder in bot.git, there were many samples for the different hooks provided.
-For the purpose of this bot, I created a &lt;code&gt;post-receive&lt;/code&gt; hook with the following content.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="c"&gt;#!/bin/sh&lt;/span&gt;
-git --work-tree&lt;span class="o"&gt;=&lt;/span&gt;/var/app/remindbot --git-dir&lt;span class="o"&gt;=&lt;/span&gt;/var/repo/bot.git checkout -f
-&lt;span class="nb"&gt;cd&lt;/span&gt; /var/app/remindbot
-docker-compose build
-docker-compose down
-docker-compose up -d
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;The sets the &lt;code&gt;/var/app&lt;/code&gt; folder to be the working directory for my app. And the script goes into
-my working directory and rebuilds the container and restarts it. All of this will happen on deployment!&lt;/p&gt;
-
-&lt;p&gt;Of course, I also had to make the post-receive file executable.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;chmod +x post-receive
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3&gt;Deploy All The Things!&lt;/h3&gt;
-
-&lt;p&gt;From my development machine, I added a remote repo to my local git repo.&lt;/p&gt;
-&lt;pre class="highlight shell"&gt;&lt;code&gt;git remote add prod ssh://user@my.domain.or.ip.com/var/repo/bot.git
-git push prod master
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;And the Telegram bot finally goes live, responding to live chats in Telegram. All of this code can be found 
-at the &lt;a href="https://github.com/aranair/remindbot"&gt;project github repository&lt;/a&gt;. The reminder bot&amp;rsquo;s name is Hazel. She responds instantly to 
-chats in Telegram and helps me to manage my ever-growing list of responsibilities everyday now :P&lt;/p&gt;
-
-&lt;p&gt;Feel free to star it or fork it or leave comments below!&lt;/p&gt;
 </content>
   </entry>
 </feed>

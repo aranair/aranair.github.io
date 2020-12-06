@@ -1,0 +1,535 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Monitoring Stack in Kubernetes, with Prometheus</title>
+
+    <meta name="description" content="How to spin up a monitoring stack in a kubernetes cluster to monitor various microservices, monolith application, ingress controller, and the health of the cluster itself." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Monitoring Stack in Kubernetes, with Prometheus" />
+
+    <!-- Bootstrap Stuff -->
+    <link href=rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-ef7858ef.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-92b26ff4.css" rel="stylesheet" />
+    <script src="/javascripts/all-50c17d63.js" async="true"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2019 posts_2019_08 posts_2019_08_01 posts_2019_08_01_prometheus-monitoring-in-kubernetes posts_2019_08_01_prometheus-monitoring-in-kubernetes_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Monitoring Stack in Kubernetes, with Prometheus<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Aug 01, 2019
+        <span class="article__middle-dot"></span>
+        17  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/prometheus/" class="article__tag-link">prometheus</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/kubernetes/" class="article__tag-link">kubernetes</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/monitoring/" class="article__tag-link">monitoring</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/devops/" class="article__tag-link">devops</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>For the past year or so, I&rsquo;ve been working with DevOps in Tulip.
+It&rsquo;s a fairly big change in direction but quite frankly, it&rsquo;s been a refreshing experience!</p>
+
+<p>One of the first projects was to build a monitoring system for a number of different components
+in our kubernetes cluster: various microservices, main monolith application, our ingress controller,
+and the health of the cluster itself. I thought Prometheus fit fairly well with what we wanted, so we
+went ahead with that. I would say that it has been served us pretty well!</p>
+
+<h3>Prometheus</h3>
+
+<p>Some context about Prometheus; it is a pull-based monitoring system that is sometimes compared to Nagios.
+It&rsquo;s not event-based, so applications do not report each individual event to Prometheus as it happens (like SegmentIO).
+Also, since its pull-based, we have to define all its targets (to scrape) in advance. Contrary to certain arguments, I actually think
+this is a plus. It is more tedious and harder to set up, but it is also harder to get into a situation where it becomes a blackbox and
+you have no idea what you&rsquo;re dumping into it. It&rsquo;s also easier to detect if a target is actually down vs a push-based system.</p>
+
+<h3>Prometheus Operator</h3>
+
+<p><a href="https://github.com/coreos/prometheus-operator">Prometheus Operator</a> is an open-source tool
+that makes deploying a Prometheus stack (AlertManager, Grafana, Prometheus) so, much easier than hand-crafting the entire stack.
+It helps generate a whole lot of boiler plates and pretty much reduces the entire deployment down to native
+kubernetes declarations and YAML.</p>
+
+<p>If you&rsquo;re familiar with Kubernetes, then you&rsquo;ve probably heard of custom resource definitions, or
+CRDs in short. Think of them as definitions of objects like pods, deployments or daemonsets
+that the cluster can understand and act on if needed. For the purpose of deploying a monitoring stack,
+Prometheus Operator introduces 3 new CRDs - <code>Prometheus</code>, <code>AlertManager</code> and <code>ServiceMonitor</code>, and a controller
+that is in-charge of deploying and connfiguring the respective services into the Kubernetes Cluster.</p>
+
+<p>For example: if a prometheus CRD like the one below is present in the cluster, the prometheus-operator controller
+would create a matching deployment of Prometheus into the kubernetes cluster, that in this case would also link
+up with the alertmanager by that name in the monitoring namespace.</p>
+<pre class="highlight plaintext"><code>apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  ...
+  name: clustermon-prometheus-oper-prometheus
+  namespace: monitoring
+spec:
+  alerting:
+    alertmanagers:
+    - name: clustermon-prometheus-oper-alertmanager
+      namespace: monitoring
+      pathPrefix: /
+      port: web
+  baseImage: quay.io/prometheus/prometheus
+  ...
+</code></pre>
+<h3>kube-prometheus</h3>
+
+<p>kube-prometheus used to be a set of contrib helm charts that utilizes the capabilities of the Prometheus Operator to deploy
+an entire monitoring stack (with some assumptions and defaults ofc). It has since been absorbed into the main <a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator">helm charts</a>
+and moved to the official stable chart repository.</p>
+
+<p>There are various exporters included such as: kube-dns, kube-state-metrics, node-exporter and many others
+that are necessary to monitor the health of a Kubernetes cluster (and more). You can find the full list <a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator/templates/exporters">here</a>.
+It also has a simple set of kubernetes-mixins for Grafana as well (if you choose to install that).</p>
+
+<h3>Overview</h3>
+
+<p>This section gives a general idea of the components involved.</p>
+
+<p>An important implementation decision that I&rsquo;ll like to point out is that Grafana is (mostly) stateless. Any new dashboards, or changes
+would need to be commited to code; in general I think this conforms better to the <code>infrastructure-as-code</code> kind of idealogy which makes
+it much easier to replicate the same infrastructure across multiple clouds / regions.</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png" title="Monitoring Stack" alt="Monitoring Stack" /></a></p>
+
+<h3>Custom Helm Chart</h3>
+
+<p>You can find a stripped down version fo the things I&rsquo;ll talk about in this repository: <a href="https://github.com/aranair/k8s-prometheus-operator-helm-example">k8s-prometheus-operator-helm-example</a></p>
+
+<p>Note: The contents are all based on prometheus-operator helm chart <code>5.10.5</code>.</p>
+<pre class="highlight yaml"><code><span class="c1"># requirements.yaml</span>
+<span class="na">dependencies</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">prometheus-operator</span>
+    <span class="na">version</span><span class="pi">:</span> <span class="s">5.10.5</span>
+    <span class="na">repository</span><span class="pi">:</span> <span class="s">https://kubernetes-charts.storage.googleapis.com/</span>
+</code></pre>
+<p>This part of the chart is responsible for loading  <code>*.json</code> dashboard configurations exported from Grafana and creating
+them as individual configmaps in Kubernetes. The config-reloaders in Grafana would then read them and reconfigure itself.</p>
+<pre class="highlight yaml"><code><span class="c1"># templates/dashboards-configmap.yaml</span>
+<span class="pi">{{</span><span class="nv">- $files</span> <span class="pi">:</span><span class="nv">= .Files.Glob "dashboards/*.json"</span> <span class="pi">}}</span>
+<span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">ConfigMapList</span>
+<span class="na">items</span><span class="pi">:</span>
+<span class="pi">{{</span><span class="nv">- range $path</span><span class="pi">,</span> <span class="nv">$fileContents</span> <span class="pi">:</span><span class="nv">= $files</span> <span class="pi">}}</span>
+<span class="pi">{{</span><span class="nv">- $dashboardName</span> <span class="pi">:</span><span class="nv">= regexReplaceAll "(^.*/)(.*)\\.json$" $path "$</span><span class="pi">{</span><span class="nv">2</span><span class="pi">}</span><span class="s2">"</span><span class="nv"> </span><span class="s">}}</span>
+<span class="s">-</span><span class="nv"> </span><span class="s">apiVersion:</span><span class="nv"> </span><span class="s">v1</span>
+  <span class="s">kind:</span><span class="nv"> </span><span class="s">ConfigMap</span>
+  <span class="s">metadata:</span>
+    <span class="s">name:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">printf</span><span class="nv"> </span><span class="s">"</span><span class="err">%</span><span class="nv">s-%s" (include "prometheus-operator.fullname" $) $dashboardName | trunc 63 | trimSuffix "-"</span> <span class="pi">}}</span>
+    <span class="na">labels</span><span class="pi">:</span>
+      <span class="na">grafana_dashboard</span><span class="pi">:</span> <span class="s2">"</span><span class="s">1"</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="pi">{{</span> <span class="nv">template "prometheus-operator.name" $</span> <span class="pi">}}</span><span class="s">-grafana</span>
+<span class="pi">{{</span> <span class="nv">include "prometheus-operator.labels" $ | indent 6</span> <span class="pi">}}</span>
+  <span class="na">data</span><span class="pi">:</span>
+    <span class="pi">{{</span> <span class="nv">$dashboardName</span> <span class="pi">}}</span><span class="s">.json</span><span class="pi">:</span> <span class="pi">|-</span>
+<span class="pi">{{</span> <span class="nv">$.Files.Get $path | indent 6</span><span class="pi">}}</span>
+<span class="pi">{{</span><span class="nv">- end</span> <span class="pi">}}</span>
+</code></pre>
+<h3>Prometheus</h3>
+
+<p>Prometheus rocks a TSDB for data storage so the instance that the pod runs on needs to have a huge volume attached to it.
+In my setup, I&rsquo;ve chosen to run Prometheus on a node, by itself, with no other pods scheduled on it. I do this by setting up taints
+on a particular node and having Prometheus selectively schedule to that node and tolerate those taints. Normal pods without that
+toleration would then just refuse to schedule on it</p>
+
+<p>(This is slightly different in the example app above)</p>
+<pre class="highlight plaintext"><code># values.yaml
+prometheus:
+  prometheusSpec:
+
+    # So that Prometheus can schedule onto the node with this taint
+    # Other pods will not have this toleration and won't schedule on it
+    tolerations:
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoExecute"
+
+    # The Prometheus node
+    nodeSelector:
+      node: prometheus
+
+    # This PV is named in my case, but you can also just do a dynamic claim template like here:
+    # https://github.com/aranair/k8s-prometheus-operator-helm-example/blob/master/clustermon/values.yaml#L181-L189
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          volumeName: prometheus-pv
+          selector:
+            matchLabels:
+              app: prometheus-pv
+          resources:
+            requests:
+              storage: 1500Gi
+      selector: {}
+</code></pre>
+<p>If you take a look at the prometheus-operator&rsquo;s default [values.yaml][helm-chart-values] file, you will find just about any configuration you can think of.</p>
+
+<h3>Monitoring Custom Services</h3>
+
+<p>The <code>ServiceMonitor</code> CRD from the prometheus-operators is used to describe the set of targets to be monitored by Prometheus; the
+controller would automatically generate the Prometheus config needed.</p>
+
+<p>For example, a <code>ServiceMonitor</code> for monitoring <a href="https://traefik.io">Traefik</a>, our ingress controller would look something like this:
+<code>
+additionalServiceMonitors:
+  - name: traefik-monitor
+    namespace: monitoring
+    selector:
+      matchLabels:
+        app: traefik   # this should be the selector for the Service
+    namespaceSelector:
+      matchNames:
+      - kube-system    # Which namespace to look for the Service in
+    endpoints:
+    - basicAuth:       # Take creds from secret named traefik-monitor-metrics-auth
+        password:
+          name: traefik-monitor-metrics-auth
+          key: password
+        username:
+          name: traefik-monitor-metrics-auth
+          key: user
+      port: metrics
+      interval: 10s
+</code></p>
+
+<p>These would show up as targets in the prometheus deployment, e.g.</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png" title="Traefik Targets Prometheus" alt="Traefik Targets Prometheus" /></a></p>
+
+<p>You can then use PromQL to query things.. like average number of open connections per second looking back at 5min windows, (then extrapolate to 5mins by multiplying by 300)</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png" title="Traefik Avg backend open connections" alt="Traefik Avg backend open connections" /></a></p>
+
+<p>Charting isnt the best in Prometheus but to be fair, that&rsquo;s not really the primary function of Prometheus.
+It can get you what you need eventually, but it just takes way more effort than it should.</p>
+
+<h3>Grafana</h3>
+
+<p>Grafana fills that gap; with this setup, a Grafana instance is automatically setup with Prometheus targeted as a data source.
+So generally what I&rsquo;ll do is experiement in Prometheus with PromQL, then port over to a Grafana dashboard with proper
+variables and timeframes then export in json and check that in into our git repository. Overtime, we have developed
+quite a number of dashboards that monitor many of the services in our cluster (as well as many good default mixins provided
+out of the box).</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png" title="Grafana Dashboards" alt="Grafana Dashboards" /></a></p>
+
+<p>One example is shown below, where it displays the total CPU/RAM usage; we can also click to drill down to each individual pod.</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png" title="Traefik k8s mixin" alt="Traefik CPU/RAM" /></a></p>
+
+<p>This next one is a dashboard that I built to monitor the health of Traefik, looking at the number of times its had to hot-reload
+configurations, and latencies and other useful metrics. We also track the Apdex for example for both entrypoints and backends.</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png" title="Traefik Custom" alt="Traefik Custom" /></a></p>
+
+<h3>Prometheus Rules</h3>
+
+<p>Prometheus rules can be defined in PromQL; these are primarily alerts that you might want the system to flag.
+There are many built-in rules that come along with the default installation.</p>
+
+<p>Like when the kube api pods&rsquo; error rate is high:
+<code>
+alert: KubeAPIErrorsHigh
+expr: sum(rate(apiserver_request_count{code=~&quot;^(?:5..)$&quot;,job=&quot;apiserver&quot;}[5m]))
+  / sum(rate(apiserver_request_count{job=&quot;apiserver&quot;}[5m])) * 100 &gt; 3
+for: 10m
+labels:
+  severity: critical
+annotations:
+  message: API server is returning errors for {{ $value }}% of requests.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubeapierrorshigh
+</code></p>
+
+<p>Or like when there are CLBO pods:</p>
+<pre class="highlight plaintext"><code>alert: KubePodCrashLooping
+expr: rate(kube_pod_container_status_restarts_total{job="kube-state-metrics"}[15m])
+  * 60 * 5 &gt; 0
+for: 1h
+labels:
+  severity: critical
+annotations:
+  message: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }})
+    is restarting {{ printf "%.2f" $value }} times / 5 minutes.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepodcrashlooping
+</code></pre>
+<p>But you can also define your own custom ones; we have quite a number of custom rules.
+As an example, there is an alert that will fire when there are &gt; 10 etcd failed proposals
+in the past 10 mins, which might indicate some stability issues with the etcd cluster.</p>
+<pre class="highlight yaml"><code><span class="na">additionalPrometheusRules</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">custom-alerts</span>
+    <span class="na">groups</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">generic.rules</span>
+      <span class="na">rules</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="na">alert</span><span class="pi">:</span> <span class="s">EtcdFailedProposals</span>
+        <span class="na">expr</span><span class="pi">:</span> <span class="s">increase(etcd_server_proposal_failed_total[10m]) &gt; 10</span>
+        <span class="na">labels</span><span class="pi">:</span>
+          <span class="na">severity</span><span class="pi">:</span> <span class="s">warning</span>
+          <span class="na">group</span><span class="pi">:</span> <span class="s">tulip</span>
+        <span class="na">annotations</span><span class="pi">:</span>
+          <span class="na">summary</span><span class="pi">:</span> <span class="s2">"</span><span class="s">etcd</span><span class="nv"> </span><span class="s">failed</span><span class="nv"> </span><span class="s">proposals"</span>
+          <span class="na">description</span><span class="pi">:</span> <span class="s2">"</span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.instance</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">failed</span><span class="nv"> </span><span class="s">etcd</span><span class="nv"> </span><span class="s">proposals</span><span class="nv"> </span><span class="s">over</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">past</span><span class="nv"> </span><span class="s">10</span><span class="nv"> </span><span class="s">minutes</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">increased.</span><span class="nv"> </span><span class="s">May</span><span class="nv"> </span><span class="s">signal</span><span class="nv"> </span><span class="s">etcd</span><span class="nv"> </span><span class="s">cluster</span><span class="nv"> </span><span class="s">instability"</span>
+</code></pre>
+<p>Or when a specific pod has restarted X number of times:</p>
+<pre class="highlight yaml"><code><span class="nn">...</span>
+    <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">generic.rules</span>
+        <span class="s">- alert</span><span class="pi">:</span> <span class="s">TraefikPodCrashLooping</span>
+          <span class="s">expr</span><span class="pi">:</span> <span class="s">round(increase(kube_pod_container_status_restarts_total{pod=~"traefik-.*"}[5m])) &gt; 5</span>
+          <span class="s">labels</span><span class="pi">:</span>
+            <span class="na">severity</span><span class="pi">:</span> <span class="s">critical</span>
+            <span class="na">group</span><span class="pi">:</span> <span class="s">tulip</span>
+          <span class="na">annotations</span><span class="pi">:</span>
+            <span class="na">summary</span><span class="pi">:</span> <span class="s2">"</span><span class="s">Traefik</span><span class="nv"> </span><span class="s">pod</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">restarting</span><span class="nv"> </span><span class="s">frequently"</span>
+            <span class="na">description</span><span class="pi">:</span> <span class="s2">"</span><span class="s">Traefik</span><span class="nv"> </span><span class="s">pod</span><span class="nv"> </span><span class="s">{{$labels.pod}}</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">restarted</span><span class="nv"> </span><span class="s">{{$value}}</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">mins"</span>
+</code></pre>
+<p>When these alerts fire, you can see them in Prometheus directly; they are also sent off to the AlertManger if one is linked up with Prometheus.</p>
+
+<h3>AlertManager</h3>
+
+<p>AlertManager can be configured to send to Slack, VictorOps, PagerDuty, or various other sorts of alerting systems.</p>
+<pre class="highlight plaintext"><code>alertmanager:
+  config:
+    global:
+      smtp_auth_username: ''
+      smtp_auth_password: ''
+      victorops_api_key: ''
+      victorops_api_url: ''
+</code></pre>
+<p>In our setup, I configured it to post to Slack whenever there is a <code>Warning</code> level alert, and to VictorOps when there is a <code>critical</code> level alert.</p>
+<pre class="highlight plaintext"><code>route:
+  group_by: ['job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'null'
+
+  # This can be used to route specific specific type of alerts to specific teams.
+  routes:
+  - match:
+      alertname: DeadMansSwitch
+    receiver: 'null'
+  - match:
+      alertname: TargetDown
+    receiver: 'null'
+  - match:
+      severity: warning
+      group: custom
+    group_by: ['namespace']
+    receiver: 'slack'
+  - match:
+      severity: critical
+      group: custom
+    group_by: ['namespace']
+    receiver: 'victorops'
+
+  receivers:
+  - name: 'null'
+  - name: 'sysadmins-email'
+    email_configs:
+      - to: 'sysadmin@example.com'
+
+  - name: 'slack'
+    slack_configs:
+      - username: 'Prometheus'
+        send_resolved: true
+        api_url: ''
+        title: '[{{ .Status | toUpper }}] Warning Alert'
+        text: &gt;-
+          {{ template "slack.techops.text" . }}
+
+  - name: 'victorops'
+    victorops_configs:
+      - routing_key: 'routing_key'
+        message_type: '{{ .CommonLabels.severity }}'
+        entity_display_name: '{{ .CommonAnnotations.summary }}'
+        state_message: &gt;-
+          {{ template "slack.techops.text" . }}
+        api_url: ''
+        api_key: ''
+</code></pre>
+<p>Generally speaking, <code>warning</code> alerts could indicate some level of degraded service but might self-recover, such as when a node is down and pods auto-reschedule;
+or they could also be non time-critical situations that does not need immediate intervention. And <code>critical</code> alerts are reserved for mission-critical services
+or infrastructure, that can cause a bunch of issues if not recovered quickly. These would page someone and be resolved as quickly as we can.</p>
+
+<p>Example of an alert that has gone off in AlertManager:</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png" title="Example AlertManager Alert" alt="Example AlertManager Alert" /></a></p>
+
+<p>Slack Alert:</p>
+
+<p><a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png"><img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png" title="Example Slack Alert" alt="Example Slack Alert" /></a></p>
+
+<p>From here, you can have inhibitions that, when present, other alerts will not fire; or silences that would silence
+alerts based on their tags.</p>
+
+<h3>Wrap-up</h3>
+
+<p>Together, I think the 3 components form a rather well-rounded monitoring stack for k8s infrastructure and services&rsquo; metrics.
+I think, down the road, the next big extension would be to have it spin up federated clusters to monitor different AWS regions and/or clusters.</p>
+
+<p>PS: Here&rsquo;s the repo that has a simplified version of everything I&rsquo;ve talked about above:
+<a href="https://github.com/aranair/k8s-prometheus-operator-helm-example">k8s-prometheus-operator-helm-example</a>. And feel free to let me know in the
+comments section below if you have any questions or run into any issues playing with that example.</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2019/prometheus-monitoring-in-kubernetes';
+                        var disqus_title = 'Monitoring Stack in Kubernetes, with Prometheus';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

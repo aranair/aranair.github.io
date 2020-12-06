@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://aranair.github.io/bio/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://aranair.github.io/posts/</loc>
     <priority>0.7</priority>
   </url>
@@ -50,6 +46,10 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/2013/07/27/embers-handlebars-setup-problem/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2020/11/28/building-oci-images-in-concourse/</loc>
     <priority>1.0</priority>
   </url>
   <url>
@@ -117,6 +117,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/2019/08/01/prometheus-monitoring-in-kubernetes/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/2014/04/19/deploying-meteor-0-8-0-meteorite-to-heroku/</loc>
     <priority>1.0</priority>
   </url>
@@ -137,11 +141,15 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://aranair.github.io/</loc>
+    <loc>https://aranair.github.io/bio/</loc>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://aranair.github.io/projects/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -225,6 +233,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/concourse/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/ci-cd/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/devops/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/tags/capybara/</loc>
     <priority>0.7</priority>
   </url>
@@ -242,10 +262,6 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/tags/capistrano/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://aranair.github.io/posts/tags/devops/</loc>
     <priority>0.7</priority>
   </url>
   <url>
@@ -321,6 +337,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://aranair.github.io/posts/tags/prometheus/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/kubernetes/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/tags/monitoring/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://aranair.github.io/posts/tags/meteorjs/</loc>
     <priority>0.7</priority>
   </url>
@@ -338,6 +366,30 @@
   </url>
   <url>
     <loc>https://aranair.github.io/posts/tags/elastic-cloud/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2020/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2020/11/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2020/11/28/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2019/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2019/08/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://aranair.github.io/posts/2019/08/01/</loc>
     <priority>0.7</priority>
   </url>
   <url>
