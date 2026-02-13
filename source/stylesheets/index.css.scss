@@ -1,15 +1,13 @@
 $font-size-base: 16px;
 
-
-@import "font-awesome-sprockets";
+$fa-font-path: "/fonts/font-awesome/";
 @import "font-awesome";
-@import "bootstrap-sprockets";
 @import "bootstrap";
 @import "variables";
 @import "general";
-@import "fonts.css.scss";
-@import "animate.css.scss";
-@import "headroom.css.scss";
+@import "fonts";
+@import "animate";
+@import "headroom";
 @import "navbar";
 @import "social_media";
 

@@ -1,5 +1,5 @@
 class ReadingTime < Middleman::Extension
-  def initialize(app, options_hash={}, &block)
+  def initialize(app, options_hash = {}, &block)
     super
   end
 
@@ -8,7 +8,7 @@ class ReadingTime < Middleman::Extension
       words_per_minute = 130.0
 
       words = input.split.size
-      minutes = (words/words_per_minute).floor
+      minutes = (words / words_per_minute).floor
       minutes_label = minutes == 1 ? ' minute' : ' minutes'
       minutes > 0 ? "#{minutes} #{minutes_label}" : 'less than a minute'
     end

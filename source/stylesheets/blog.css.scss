@@ -1,22 +1,21 @@
 $font-size-base: 16px;
 
-@import "bootstrap-sprockets";
 @import "bootstrap";
 
-@import "font-awesome-sprockets";
+$fa-font-path: "/fonts/font-awesome/";
 @import "font-awesome";
 
-@import "pygment.css.scss";
+@import "pygment";
 @import "variables";
 @import "navbar";
 
-@import "general.scss";
-@import "article_list.css.scss";
-@import "project_list.css.scss";
+@import "general";
+@import "article_list";
+@import "project_list";
 @import "bio";
 @import "social_media";
 
-@import "fonts.css.scss";
-@import "animate.css.scss";
-@import "headroom.css.scss";
-@import "media_queries.css.scss";
+@import "fonts";
+@import "animate";
+@import "headroom";
+@import "media_queries";
