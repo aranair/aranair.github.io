@@ -1,0 +1,263 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Capybara & Waiting</title>
+
+    <meta name="description" content="A discussion about the best way to avoid ajax issues in Capybara." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Capybara &amp; Waiting" />
+<link rel="description" href="A discussion about the best way to avoid ajax issues in Capybara." />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="Capybara &amp; Waiting" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_07 posts_2016_07_27 posts_2016_07_27_capybara-and-waiting posts_2016_07_27_capybara-and-waiting_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Capybara & Waiting<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jul 27, 2016
+        <span class="article__middle-dot"></span>
+        4  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/capybara/" class="article__tag-link">capybara</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/rails/" class="article__tag-link">rails</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>All of us do TDD or at least some form of automated testing, I hope! If you’re writing tests in Rails,
+you’re likely to be doing feature tests with <a href="https://github.com/jnicklas/capybara">Capybara</a> as well.</p>
+
+<p>Some of these slipped my mind while adding feature specs at work at
+<a href="https://www.pocketmath.com/">pocketmath</a> and I spent extra time that I shouldn&rsquo;t have!
+So I hope this post can be a reminder to myself in future and be of help to anyone who
+encounters the same problems!</p>
+
+<h3>Common Scenario</h3>
+
+<p>Let’s look at a common scenario in a feature test:</p>
+
+<ul>
+<li>Load some form</li>
+<li>Click a random button</li>
+<li>Check if the refreshed page (or partially re-rendered pages) matches your expected results</li>
+</ul>
+
+<p>If you’re just transitioning from unit tests, it might be tempting to jump right to this option:</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">visit</span> <span class="n">some_path</span>
+<span class="n">click_button</span> <span class="s1">'Submit'</span> <span class="c1"># Does an AJAX request</span>
+
+<span class="c1"># -- Page refresh or re-render --</span>
+
+<span class="n">expect</span><span class="p">(</span><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">text</span><span class="p">).</span><span class="nf">to</span> <span class="n">eq</span> <span class="s1">'something'</span>
+</code></pre></div>
+<p>You&rsquo;ll find that it doesn&rsquo;t work too well (not at all actually). This is because there is a delay
+between the button click and the actual completion of the code that is run as a result of that click.</p>
+
+<p>It is not synchronous. It could be a page refresh, a partial render or a simple AJAX call.
+Its hard to predict how long exactly that is going to take.</p>
+
+<h3>Magical Built-in Matchers</h3>
+
+<p>For this reason, Capybara provides us with some built-in matchers. They work amazingly well
+for these scenarios where you are waiting for something to finish before checking the content for text,
+DOM elements for visibility etc. Since the start, it was designed to automatically wait for elements
+to appear or disappear on the page.</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span>
+<span class="c1"># have_css, have_selector</span>
+</code></pre></div>
+<p>You can even define if the element should be visible or not after it is rendered.</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">find</span><span class="p">(</span><span class="s1">'#dom-id'</span><span class="p">).</span><span class="nf">should</span> <span class="n">have_content</span> <span class="s1">'something'</span><span class="p">,</span> <span class="ss">visible: </span><span class="kp">false</span>
+</code></pre></div>
+<p>Magical. Right?</p>
+
+<h3>Old solutions</h3>
+
+<p>Despite the fact that the awesome Capybara matchers were there from the start, pre-2.0, many people didn&rsquo;t use them.
+Instead they used <code>wait_until { ... }</code> or even <code>sleep(3)</code> despite being clunkier solutions.
+<code>wait_until</code> was then deprecated in Capybara v2.0 altogether.</p>
+
+<h3>Complications</h3>
+
+<p>Take a look at the scenario below, is that single <code>have_content</code> there sufficient? What do you think?</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">fill_in</span> <span class="ss">:name</span><span class="p">,</span> <span class="ss">with: </span><span class="s1">'Daniel'</span>
+<span class="n">click_button</span> <span class="s1">'Link'</span> <span class="c1">#some AJAX call happens</span>
+<span class="n">reload_page</span>
+<span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">).</span><span class="nf">to</span> <span class="n">have_content</span> <span class="s1">'Linked'</span>
+</code></pre></div>
+<p>Nope! There&rsquo;s still a chance that the <code>reload_page</code> would happen before the AJAX code finishes.
+And the tests would randomly fail since the content-check is dependant on the click event&rsquo;s code execution.
+That&rsquo;s not good; we all want deterministic results for our tests, right?</p>
+
+<h3>What now?</h3>
+
+<p>So what do we do now? Well, one pretty elegant way to fix this is explained over at a thoughtbot blog post
+<a href="https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara">here</a>.  Through spec
+helpers, they introduce a <code>wait_for_ajax</code> method that was designed to be used whenever you need
+to make sure that all AJAX calls have completed before proceeding, or in this case, before the page reload.</p>
+
+<h3>Alternatives</h3>
+
+<p>Alternatively, you could also use <code>have_selector</code> infront of the reload to block the execution. But in my opinion,
+if you don&rsquo;t actually want to test the content, using <code>wait_for_ajax</code> makes more sense.</p>
+
+<p>So the next time you encounter similar issues, stay calm and first check to make sure that you are
+using the Capybara built-in matchers before using <code>sleep</code>!</p>
+
+<p>What does everyone think? Are your experiences similar?</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/capybara-and-waiting';
+                        var disqus_title = 'Capybara and Waiting';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

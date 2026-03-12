@@ -1,0 +1,1235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Blog Name</title>
+  <subtitle>Blog subtitle</subtitle>
+  <id>http://blog.url.com/posts</id>
+  <link href="http://blog.url.com/posts"/>
+  <link href="http://blog.url.com/feed.xml" rel="self"/>
+  <updated>2020-11-28T00:00:00+08:00</updated>
+  <author>
+    <name>Blog Author</name>
+  </author>
+  <entry>
+    <title>Concourse CI - Lessons</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/"/>
+    <id>http://blog.url.com/posts/2020/11/28/building-oci-images-in-concourse/</id>
+    <published>2020-11-28T00:00:00+08:00</published>
+    <updated>2026-03-12T10:54:00-04:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;I run a mid-sized &lt;a href="https://concourse-ci.org/"&gt;Concourse CI&lt;/a&gt; cluster for Tulip, that runs ~3000 fairly resource-intensive builds weekly.
+I&amp;rsquo;ve encountered a fair share of stability issues with it, some from lack of experience, some from real issues,
+but overall, my experience with it has been fairly positive. I can&amp;rsquo;t speak about
+Github Actions, or TravisCI and CircleCI but my experience has been vastly better than that with Jenkins (another popular CI/CD tool).
+It is open-source and is continuously improving with fairly frequent releases with good core contributing members. It helps with not getting
+locked down by a specific platform such as Github Actions. I&amp;rsquo;m actually surprised not more people are onboard this,
+which is one of the reasons that prompted me to write this series.&lt;/p&gt;
+
+&lt;p&gt;Over the next couple posts or so, I&amp;rsquo;ll be talking about some random topics related to Concourse. They might help with your decision to onboard
+(or skip) Concourse. This first one might read like a rant on the issues of Concourse, but it really isn&amp;rsquo;t :P&lt;/p&gt;
+
+&lt;p&gt;To clarify, they&amp;rsquo;re more like lessons I&amp;rsquo;ve learned about Concourse and how some tweaks might help with smoothing the running of a cluster.&lt;/p&gt;
+
+&lt;h3&gt;Infrastructure&lt;/h3&gt;
+
+&lt;p&gt;We use &lt;a href="https://github.com/EngineerBetter/control-tower"&gt;EngineerBetter/ControlTower&lt;/a&gt;, also formerly known as ConcourseUp for the initial setup.
+The initial setup is fairly effortless (generally speaking, without deviation).
+On top of that, we do most of the custom configuration for Concourse via &lt;a href="https://bosh.io/docs/"&gt;Bosh&lt;/a&gt;.
+Bosh is also incharge of provisioning the different components such as the prometheus, atc, web, worker nodes.
+It is also essentially self-healing because of bosh cloud-checks as well; any termination or deletion will automatically be replaced.&lt;/p&gt;
+
+&lt;h3&gt;Resources&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ll be talking about resources in the next few sections, so here&amp;rsquo;s a quick primer.&lt;/p&gt;
+
+&lt;p&gt;They&amp;rsquo;re like versioned artifacts with external resources. To interface with the external source of truth, there are &amp;ldquo;plugins&amp;rdquo; that are called &lt;code&gt;resource_types&lt;/code&gt;.
+There are &lt;a href="https://resource-types.concourse-ci.org/"&gt;a bunch of community built resource types&lt;/a&gt; and they&amp;rsquo;re an important contributor of Concourse&amp;rsquo;s flexibility imo.&lt;/p&gt;
+
+&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;the &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; tracks commits in a Git repo&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/concourse/registry-image-resource"&gt;registry-image&lt;/a&gt; would manage images for docker registries.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Triggering builds for Pull Requests&lt;/h3&gt;
+
+&lt;p&gt;This is a really common usecase of CI/CD. Everytime a pull request is updated with a new commit in Github, a build is triggered to
+do a range of tasks, from simple go lints, unit tests, to building artifacts to full-scale integration tests. This flow is achieved through webhooks
+events from Github.&lt;/p&gt;
+
+&lt;p&gt;The receiver of those webhook events is a &lt;a href="https://github.com/telia-oss/github-pr-resource"&gt;github-pr-resource&lt;/a&gt; &lt;code&gt;resource_type&lt;/code&gt; (or similar forks like
+&lt;a href="https://github.com/digitalocean/github-pr-resource"&gt;digitalocean&amp;rsquo;s&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;You might imagine that a pipeline can be triggered immediately after it interprets the webhook event. It&amp;rsquo;s worth clarifying
+that this concept of triggering a pipeline is incorrect; that&amp;rsquo;s not how it works in Concourse. Pipelines are basically just set of jobs
+and they are all independently scheduled. New builds are created by the scheduler when it detects that a job&amp;rsquo;s dependent (e.g. trigger: true)
+resources have changed.&lt;/p&gt;
+
+&lt;p&gt;So, what really happens after it processes a webhook event?&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;pr-resource&lt;/code&gt; queues a &lt;code&gt;check&lt;/code&gt; that reaches out to Github to query for open pull-requests updates
+through their GraphQL API (filtering from the latest update in a previous pull). From there, it updates the lists of versions
+for the resource and rely on the scheduler to do the rest as mentioned above^.&lt;/p&gt;
+
+&lt;p&gt;To be honest, this flow isn&amp;rsquo;t one of the strong points of Concourse. It is somewhat awkward - leading to the perception that it is slower to
+trigger than other popular builds, among other concerns, such as rate-limiting (if you have too many open pull-requests at one time).&lt;/p&gt;
+
+&lt;p&gt;For me though, I&amp;rsquo;ll say that this setup has worked acceptably well.&lt;/p&gt;
+
+&lt;p&gt;And, this has been acknowledged as such by the core members and listed as a primary focus in the &lt;a href="https://blog.concourse-ci.org/core-roadmap-towards-v10/"&gt;v10 roadmap&lt;/a&gt;, which I&amp;rsquo;m pretty excited about!&lt;/p&gt;
+
+&lt;h3&gt;&lt;code&gt;default_check_interval&lt;/code&gt; / &lt;code&gt;check_recycle_period&lt;/code&gt; / Github Ratelimiting &lt;a id="intervals" href="#intervals"&gt;&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;Default (Bosh) setting for the &lt;a href="https://concourse-ci.org/concourse-web.html"&gt;web node&lt;/a&gt;&amp;rsquo;s &lt;code&gt;default_check_interval&lt;/code&gt; is 1 minute. This means that for every resource you define, you&amp;rsquo;ll be running a check,
+hitting whatever api that might be required. For example, for a &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; that hits Github, each call counts towards the rate-limit that Github sets.
+It&amp;rsquo;s fairly high at 5000 per hour, but it is still exhaustible if you&amp;rsquo;re not careful!&lt;/p&gt;
+
+&lt;p&gt;Relatedly, there is another setting in Bosh, for the web/scheduler node, &lt;code&gt;check_recycle_period&lt;/code&gt; - which decides
+how often the containers for resource checks are garbage-collected. The default is 6 hours.&lt;/p&gt;
+
+&lt;p&gt;Don&amp;rsquo;t make the mistake (like me!) of drastically reducing this GC interval even if there might be containers used for checks lying around, doing nothing.
+It depends on the implementation of the particular concourse resource but in my case, the &lt;a href="https://github.com/concourse/git-resource"&gt;git-resource&lt;/a&gt; would init and re-query
+(history) of versions and end up consuming unnecessary calls to Github, which led to us getting rate-limited occasionally.&lt;/p&gt;
+
+&lt;p&gt;YMMV, but if you&amp;rsquo;re using this resource, consider leaving it at a higher enough interval to take advantage of the caching!&lt;/p&gt;
+
+&lt;h3&gt;Container Placement Strategy&lt;/h3&gt;
+
+&lt;p&gt;We have resource-intensive jobs (across different pipelines) that can be triggered at the same time. When that happens, our cluster occasionally run into
+resoure deprivation issues.&lt;/p&gt;
+
+&lt;p&gt;I&amp;rsquo;ve tried the experimental feature &lt;code&gt;limit-active-tasks&lt;/code&gt; - a &lt;code&gt;container_placement_strategy&lt;/code&gt; that limits the number of tasks per worker. In my opinion,
+that does not work well for clusters with varying types of workloads. It would inevitably end up blocking tasks that may not be resource-intensive.
+An example is the periodic resource check, or worse, at times, it might only allow light tasks through and blocking tasks that could still fit well.&lt;/p&gt;
+
+&lt;p&gt;You can also do &lt;code&gt;volume-locality&lt;/code&gt;, &lt;code&gt;random&lt;/code&gt; and &lt;code&gt;fewest-build-containers&lt;/code&gt; placements. We&amp;rsquo;ve ultimately gone with &lt;code&gt;fewest-build-containers&lt;/code&gt; because
+we have CPU-intensive tasks, but I think every workload / situation is probably different and this is one of those settings
+to consider tweaking when setting Concourse up or if you&amp;rsquo;re seeing load-imbalance.&lt;/p&gt;
+
+&lt;p&gt;Sidenote: I believe this issue of load-imbalance is also going to be addressed in v10 as well!&lt;/p&gt;
+
+&lt;h3&gt;Resource Allocation&lt;/h3&gt;
+
+&lt;p&gt;This is obviously deeply related to the section above. If you run smaller nodes and can&amp;rsquo;t have multiple (heavy) jobs run at the same time, you do have
+a number of knobs to help you restrict these.&lt;/p&gt;
+
+&lt;p&gt;You can control the number of builds per job that happens at the same time, with &lt;code&gt;max_in_flight&lt;/code&gt; (or &lt;code&gt;serial: true&lt;/code&gt; for 1) at the job definition level.
+If you would like all jobs that belong some specific category to run serially, you can group all of these jobs up and run them different groups serially.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;jobs&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-a&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-b&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-tag&lt;/span&gt;&lt;span class="pi"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;some-other-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;job-c&lt;/span&gt;
+  &lt;span class="na"&gt;serial_groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;some-other-tag&lt;/span&gt;&lt;span class="pi"&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Also, it&amp;rsquo;s probably prudent to also define a default cpu/memory allocation with this &lt;a href="https://bosh.io/jobs/web?source=github.com/concourse/concourse-bosh-release&amp;amp;version=6.6.0#p%3ddefault_task_cpu_limit"&gt;Bosh settings&lt;/a&gt; and then override each task with &lt;code&gt;container_limits&lt;/code&gt;,
+to avoid any rogue jobs just spinning out of control. Anecdotally, I had jobs that pegged and took down 4xlarge nodes; to be fair they were erlang/beam jobs that
+are notorious for the amount of resources they demand.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Bosh -&amp;gt; web node defaults&lt;/span&gt;
+&lt;span class="c1"&gt;# This is the equivalent of&lt;/span&gt;
+&lt;span class="na"&gt;default_task_cpu_limit&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="m"&gt;256&lt;/span&gt;
+&lt;span class="na"&gt;default_task_memory_limit&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;4GB&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Override at the Job level&lt;/span&gt;
+&lt;span class="na"&gt;container_limits&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="na"&gt;cpu&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="m"&gt;256&lt;/span&gt;
+  &lt;span class="na"&gt;memory&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;1GB&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Do note that the CPU defined here is not the number of cores but the CPU shares. I believe the Concourse / system stuff running on each node runs
+with a default of &lt;code&gt;512&lt;/code&gt; so using &lt;code&gt;256&lt;/code&gt; would slightly lower the priority of user-level jobs so important system processes don&amp;rsquo;t get starved.&lt;/p&gt;
+
+&lt;h3&gt;(Storage) Volumes / Baggage Claims&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve discovered that, when the volumes choke up (IOPS or otherwise), Concourse baggage-claims (gc of volumes and such) seem to fail rather silently,
+and you start having containers failing to schedule within the time limit.&lt;/p&gt;
+
+&lt;p&gt;I only really realized this when we went from many small(xlarge) EC2 nodes to fewer 4xlarge nodes and had our EBS volumes&amp;rsquo; IOPS constantly get
+pegged by certain IO intensive jobs. It was extremely surprising how much IOPS we needed (thanks, yarn). Many of our performance issues went away with this fixed.&lt;/p&gt;
+
+&lt;p&gt;I encourage people who are facing issues, just double-check this in their cluster as well.&lt;/p&gt;
+
+&lt;h3&gt;Overlay vs btrfs&lt;/h3&gt;
+
+&lt;p&gt;Concourse ships with btrfs by default. There are obviously things that btrfs does that overlay doesn&amp;rsquo;t but it has stability issues. The problem set and
+trade-offs are clearly talked about in &lt;a href="https://github.com/concourse/concourse/issues/1045"&gt;this github issue&lt;/a&gt; so I won&amp;rsquo;t rehash them.&lt;/p&gt;
+
+&lt;p&gt;One thing I&amp;rsquo;ll say though, I encourage people to switch over to overlay for most usecases.&lt;/p&gt;
+
+&lt;h3&gt;Next&lt;/h3&gt;
+
+&lt;p&gt;Again, this might have read like a rant on the problems, but it really is more like the things that I&amp;rsquo;ve learned over running our cluster. To be honest,
+alot of these are surrounding issues that are not Concourse specific per-se. And it is extremely positive in my opinion that the core team acknowledges
+some of the real issues (that really still work reasonably well) and put real work towards them for v10.&lt;/p&gt;
+
+&lt;p&gt;In the next few posts, I&amp;rsquo;ll go over in more technical details how you might do certain things, like&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;building from PR, or&lt;/li&gt;
+&lt;li&gt;building docker OCI images in Concourse, or&lt;/li&gt;
+&lt;li&gt;running docker-in-docker in overlay&lt;/li&gt;
+&lt;li&gt;running a registry-mirror and using it in Concourse&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Monitoring Stack in Kubernetes, with Prometheus</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2019/08/01/prometheus-monitoring-in-kubernetes/"/>
+    <id>http://blog.url.com/posts/2019/08/01/prometheus-monitoring-in-kubernetes/</id>
+    <published>2019-08-01T00:00:00+08:00</published>
+    <updated>2026-02-23T08:33:21-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;For the past year or so, I&amp;rsquo;ve been working with DevOps in Tulip.
+It&amp;rsquo;s a fairly big change in direction but quite frankly, it&amp;rsquo;s been a refreshing experience!&lt;/p&gt;
+
+&lt;p&gt;One of the first projects was to build a monitoring system for a number of different components
+in our kubernetes cluster: various microservices, main monolith application, our ingress controller,
+and the health of the cluster itself. I thought Prometheus fit fairly well with what we wanted, so we
+went ahead with that. I would say that it has been served us pretty well!&lt;/p&gt;
+
+&lt;h3&gt;Prometheus&lt;/h3&gt;
+
+&lt;p&gt;Some context about Prometheus; it is a pull-based monitoring system that is sometimes compared to Nagios.
+It&amp;rsquo;s not event-based, so applications do not report each individual event to Prometheus as it happens (like SegmentIO).
+Also, since its pull-based, we have to define all its targets (to scrape) in advance. Contrary to certain arguments, I actually think
+this is a plus. It is more tedious and harder to set up, but it is also harder to get into a situation where it becomes a blackbox and
+you have no idea what you&amp;rsquo;re dumping into it. It&amp;rsquo;s also easier to detect if a target is actually down vs a push-based system.&lt;/p&gt;
+
+&lt;h3&gt;Prometheus Operator&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/coreos/prometheus-operator"&gt;Prometheus Operator&lt;/a&gt; is an open-source tool
+that makes deploying a Prometheus stack (AlertManager, Grafana, Prometheus) so, much easier than hand-crafting the entire stack.
+It helps generate a whole lot of boiler plates and pretty much reduces the entire deployment down to native
+kubernetes declarations and YAML.&lt;/p&gt;
+
+&lt;p&gt;If you&amp;rsquo;re familiar with Kubernetes, then you&amp;rsquo;ve probably heard of custom resource definitions, or
+CRDs in short. Think of them as definitions of objects like pods, deployments or daemonsets
+that the cluster can understand and act on if needed. For the purpose of deploying a monitoring stack,
+Prometheus Operator introduces 3 new CRDs - &lt;code&gt;Prometheus&lt;/code&gt;, &lt;code&gt;AlertManager&lt;/code&gt; and &lt;code&gt;ServiceMonitor&lt;/code&gt;, and a controller
+that is in-charge of deploying and connfiguring the respective services into the Kubernetes Cluster.&lt;/p&gt;
+
+&lt;p&gt;For example: if a prometheus CRD like the one below is present in the cluster, the prometheus-operator controller
+would create a matching deployment of Prometheus into the kubernetes cluster, that in this case would also link
+up with the alertmanager by that name in the monitoring namespace.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  ...
+  name: clustermon-prometheus-oper-prometheus
+  namespace: monitoring
+spec:
+  alerting:
+    alertmanagers:
+    - name: clustermon-prometheus-oper-alertmanager
+      namespace: monitoring
+      pathPrefix: /
+      port: web
+  baseImage: quay.io/prometheus/prometheus
+  ...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;kube-prometheus&lt;/h3&gt;
+
+&lt;p&gt;kube-prometheus used to be a set of contrib helm charts that utilizes the capabilities of the Prometheus Operator to deploy
+an entire monitoring stack (with some assumptions and defaults ofc). It has since been absorbed into the main &lt;a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator"&gt;helm charts&lt;/a&gt;
+and moved to the official stable chart repository.&lt;/p&gt;
+
+&lt;p&gt;There are various exporters included such as: kube-dns, kube-state-metrics, node-exporter and many others
+that are necessary to monitor the health of a Kubernetes cluster (and more). You can find the full list &lt;a href="https://github.com/helm/charts/tree/master/stable/prometheus-operator/templates/exporters"&gt;here&lt;/a&gt;.
+It also has a simple set of kubernetes-mixins for Grafana as well (if you choose to install that).&lt;/p&gt;
+
+&lt;h3&gt;Overview&lt;/h3&gt;
+
+&lt;p&gt;This section gives a general idea of the components involved.&lt;/p&gt;
+
+&lt;p&gt;An important implementation decision that I&amp;rsquo;ll like to point out is that Grafana is (mostly) stateless. Any new dashboards, or changes
+would need to be commited to code; in general I think this conforms better to the &lt;code&gt;infrastructure-as-code&lt;/code&gt; kind of idealogy which makes
+it much easier to replicate the same infrastructure across multiple clouds / regions.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/monitoring-stack.png" title="Monitoring Stack" alt="Monitoring Stack" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Custom Helm Chart&lt;/h3&gt;
+
+&lt;p&gt;You can find a stripped down version fo the things I&amp;rsquo;ll talk about in this repository: &lt;a href="https://github.com/aranair/k8s-prometheus-operator-helm-example"&gt;k8s-prometheus-operator-helm-example&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Note: The contents are all based on prometheus-operator helm chart &lt;code&gt;5.10.5&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# requirements.yaml&lt;/span&gt;
+&lt;span class="na"&gt;dependencies&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;prometheus-operator&lt;/span&gt;
+    &lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;5.10.5&lt;/span&gt;
+    &lt;span class="na"&gt;repository&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;https://kubernetes-charts.storage.googleapis.com/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This part of the chart is responsible for loading  &lt;code&gt;*.json&lt;/code&gt; dashboard configurations exported from Grafana and creating
+them as individual configmaps in Kubernetes. The config-reloaders in Grafana would then read them and reconfigure itself.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="c1"&gt;# templates/dashboards-configmap.yaml&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- $files&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= .Files.Glob "dashboards/*.json"&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="na"&gt;apiVersion&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;v1&lt;/span&gt;
+&lt;span class="na"&gt;kind&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;ConfigMapList&lt;/span&gt;
+&lt;span class="na"&gt;items&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- range $path&lt;/span&gt;&lt;span class="pi"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;$fileContents&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= $files&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- $dashboardName&lt;/span&gt; &lt;span class="pi"&gt;:&lt;/span&gt;&lt;span class="nv"&gt;= regexReplaceAll "(^.*/)(.*)\\.json$" $path "$&lt;/span&gt;&lt;span class="pi"&gt;{&lt;/span&gt;&lt;span class="nv"&gt;2&lt;/span&gt;&lt;span class="pi"&gt;}&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;}}&lt;/span&gt;
+&lt;span class="s"&gt;-&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;apiVersion:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;v1&lt;/span&gt;
+  &lt;span class="s"&gt;kind:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;ConfigMap&lt;/span&gt;
+  &lt;span class="s"&gt;metadata:&lt;/span&gt;
+    &lt;span class="s"&gt;name:&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;printf&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;"&lt;/span&gt;&lt;span class="err"&gt;%&lt;/span&gt;&lt;span class="nv"&gt;s-%s" (include "prometheus-operator.fullname" $) $dashboardName | trunc 63 | trimSuffix "-"&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+    &lt;span class="na"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="na"&gt;grafana_dashboard&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;1"&lt;/span&gt;
+      &lt;span class="na"&gt;app&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;template "prometheus-operator.name" $&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;&lt;span class="s"&gt;-grafana&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;include "prometheus-operator.labels" $ | indent 6&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+  &lt;span class="na"&gt;data&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;$dashboardName&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;&lt;span class="na"&gt;.json&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="pi"&gt;|-&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt; &lt;span class="nv"&gt;$.Files.Get $path | indent 6&lt;/span&gt;&lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;span class="pi"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt;- end&lt;/span&gt; &lt;span class="pi"&gt;}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;Prometheus&lt;/h3&gt;
+
+&lt;p&gt;Prometheus rocks a TSDB for data storage so the instance that the pod runs on needs to have a huge volume attached to it.
+In my setup, I&amp;rsquo;ve chosen to run Prometheus on a node, by itself, with no other pods scheduled on it. I do this by setting up taints
+on a particular node and having Prometheus selectively schedule to that node and tolerate those taints. Normal pods without that
+toleration would then just refuse to schedule on it&lt;/p&gt;
+
+&lt;p&gt;(This is slightly different in the example app above)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;# values.yaml
+prometheus:
+  prometheusSpec:
+
+    # So that Prometheus can schedule onto the node with this taint
+    # Other pods will not have this toleration and won't schedule on it
+    tolerations:
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "dedicated"
+      operator: "Exists"
+      effect: "NoExecute"
+
+    # The Prometheus node
+    nodeSelector:
+      node: prometheus
+
+    # This PV is named in my case, but you can also just do a dynamic claim template like here:
+    # https://github.com/aranair/k8s-prometheus-operator-helm-example/blob/master/clustermon/values.yaml#L181-L189
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          volumeName: prometheus-pv
+          selector:
+            matchLabels:
+              app: prometheus-pv
+          resources:
+            requests:
+              storage: 1500Gi
+      selector: {}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;If you take a look at the prometheus-operator&amp;rsquo;s default [values.yaml][helm-chart-values] file, you will find just about any configuration you can think of.&lt;/p&gt;
+
+&lt;h3&gt;Monitoring Custom Services&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code&gt;ServiceMonitor&lt;/code&gt; CRD from the prometheus-operators is used to describe the set of targets to be monitored by Prometheus; the
+controller would automatically generate the Prometheus config needed.&lt;/p&gt;
+
+&lt;p&gt;For example, a &lt;code&gt;ServiceMonitor&lt;/code&gt; for monitoring &lt;a href="https://traefik.io"&gt;Traefik&lt;/a&gt;, our ingress controller would look something like this:
+&lt;code&gt;
+additionalServiceMonitors:
+  - name: traefik-monitor
+    namespace: monitoring
+    selector:
+      matchLabels:
+        app: traefik   # this should be the selector for the Service
+    namespaceSelector:
+      matchNames:
+      - kube-system    # Which namespace to look for the Service in
+    endpoints:
+    - basicAuth:       # Take creds from secret named traefik-monitor-metrics-auth
+        password:
+          name: traefik-monitor-metrics-auth
+          key: password
+        username:
+          name: traefik-monitor-metrics-auth
+          key: user
+      port: metrics
+      interval: 10s
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;These would show up as targets in the prometheus deployment, e.g.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-in-prometheus.png" title="Traefik Targets Prometheus" alt="Traefik Targets Prometheus" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;You can then use PromQL to query things.. like average number of open connections per second looking back at 5min windows, (then extrapolate to 5mins by multiplying by 300)&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-chart-prometheus.png" title="Traefik Avg backend open connections" alt="Traefik Avg backend open connections" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Charting isnt the best in Prometheus but to be fair, that&amp;rsquo;s not really the primary function of Prometheus.
+It can get you what you need eventually, but it just takes way more effort than it should.&lt;/p&gt;
+
+&lt;h3&gt;Grafana&lt;/h3&gt;
+
+&lt;p&gt;Grafana fills that gap; with this setup, a Grafana instance is automatically setup with Prometheus targeted as a data source.
+So generally what I&amp;rsquo;ll do is experiement in Prometheus with PromQL, then port over to a Grafana dashboard with proper
+variables and timeframes then export in json and check that in into our git repository. Overtime, we have developed
+quite a number of dashboards that monitor many of the services in our cluster (as well as many good default mixins provided
+out of the box).&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/grafana-dashboards.png" title="Grafana Dashboards" alt="Grafana Dashboards" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;One example is shown below, where it displays the total CPU/RAM usage; we can also click to drill down to each individual pod.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-dashboard.png" title="Traefik k8s mixin" alt="Traefik CPU/RAM" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This next one is a dashboard that I built to monitor the health of Traefik, looking at the number of times its had to hot-reload
+configurations, and latencies and other useful metrics. We also track the Apdex for example for both entrypoints and backends.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/traefik-custom.png" title="Traefik Custom" alt="Traefik Custom" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Prometheus Rules&lt;/h3&gt;
+
+&lt;p&gt;Prometheus rules can be defined in PromQL; these are primarily alerts that you might want the system to flag.
+There are many built-in rules that come along with the default installation.&lt;/p&gt;
+
+&lt;p&gt;Like when the kube api pods&amp;rsquo; error rate is high:
+&lt;code&gt;
+alert: KubeAPIErrorsHigh
+expr: sum(rate(apiserver_request_count{code=~&amp;quot;^(?:5..)$&amp;quot;,job=&amp;quot;apiserver&amp;quot;}[5m]))
+  / sum(rate(apiserver_request_count{job=&amp;quot;apiserver&amp;quot;}[5m])) * 100 &amp;gt; 3
+for: 10m
+labels:
+  severity: critical
+annotations:
+  message: API server is returning errors for {{ $value }}% of requests.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubeapierrorshigh
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Or like when there are CLBO pods:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;alert: KubePodCrashLooping
+expr: rate(kube_pod_container_status_restarts_total{job="kube-state-metrics"}[15m])
+  * 60 * 5 &amp;gt; 0
+for: 1h
+labels:
+  severity: critical
+annotations:
+  message: Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }})
+    is restarting {{ printf "%.2f" $value }} times / 5 minutes.
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepodcrashlooping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;But you can also define your own custom ones; we have quite a number of custom rules.
+As an example, there is an alert that will fire when there are &amp;gt; 10 etcd failed proposals
+in the past 10 mins, which might indicate some stability issues with the etcd cluster.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;additionalPrometheusRules&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;custom-alerts&lt;/span&gt;
+    &lt;span class="na"&gt;groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;generic.rules&lt;/span&gt;
+      &lt;span class="na"&gt;rules&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;alert&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;EtcdFailedProposals&lt;/span&gt;
+        &lt;span class="na"&gt;expr&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;increase(etcd_server_proposal_failed_total[10m]) &amp;gt; &lt;/span&gt;&lt;span class="m"&gt;10&lt;/span&gt;
+        &lt;span class="na"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+          &lt;span class="na"&gt;severity&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;warning&lt;/span&gt;
+          &lt;span class="na"&gt;group&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;tulip&lt;/span&gt;
+        &lt;span class="na"&gt;annotations&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+          &lt;span class="na"&gt;summary&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;failed&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;proposals"&lt;/span&gt;
+          &lt;span class="na"&gt;description&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;{{&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;$labels.instance&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;failed&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;proposals&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;over&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;the&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;past&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;10&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;minutes&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;has&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;increased.&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;May&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;signal&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;etcd&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;cluster&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;instability"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Or when a specific pod has restarted X number of times:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="nn"&gt;...&lt;/span&gt;
+    &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="na"&gt;name&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;generic.rules&lt;/span&gt;
+        &lt;span class="s"&gt;- alert&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s"&gt;TraefikPodCrashLooping&lt;/span&gt;
+          &lt;span class="s"&gt;expr&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt; &lt;span class="s"&gt;round(increase(kube_pod_container_status_restarts_total{pod=~"traefik-.*"}[5m])) &amp;gt; &lt;/span&gt;&lt;span class="m"&gt;5&lt;/span&gt;
+          &lt;span class="na"&gt;labels&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+            &lt;span class="na"&gt;severity&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;critical&lt;/span&gt;
+            &lt;span class="na"&gt;group&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;tulip&lt;/span&gt;
+          &lt;span class="na"&gt;annotations&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+            &lt;span class="na"&gt;summary&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;Traefik&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;pod&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;is&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;restarting&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;frequently"&lt;/span&gt;
+            &lt;span class="na"&gt;description&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;Traefik&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;pod&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{$labels.pod}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;has&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;restarted&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;{{$value}}&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;times&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;in&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;the&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;last&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;5&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;mins"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When these alerts fire, you can see them in Prometheus directly; they are also sent off to the AlertManger if one is linked up with Prometheus.&lt;/p&gt;
+
+&lt;h3&gt;AlertManager&lt;/h3&gt;
+
+&lt;p&gt;AlertManager can be configured to send to Slack, VictorOps, PagerDuty, or various other sorts of alerting systems.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;alertmanager:
+  config:
+    global:
+      smtp_auth_username: ''
+      smtp_auth_password: ''
+      victorops_api_key: ''
+      victorops_api_url: ''
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In our setup, I configured it to post to Slack whenever there is a &lt;code&gt;Warning&lt;/code&gt; level alert, and to VictorOps when there is a &lt;code&gt;critical&lt;/code&gt; level alert.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;route:
+  group_by: ['job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'null'
+
+  # This can be used to route specific specific type of alerts to specific teams.
+  routes:
+  - match:
+      alertname: DeadMansSwitch
+    receiver: 'null'
+  - match:
+      alertname: TargetDown
+    receiver: 'null'
+  - match:
+      severity: warning
+      group: custom
+    group_by: ['namespace']
+    receiver: 'slack'
+  - match:
+      severity: critical
+      group: custom
+    group_by: ['namespace']
+    receiver: 'victorops'
+
+  receivers:
+  - name: 'null'
+  - name: 'sysadmins-email'
+    email_configs:
+      - to: 'sysadmin@example.com'
+
+  - name: 'slack'
+    slack_configs:
+      - username: 'Prometheus'
+        send_resolved: true
+        api_url: ''
+        title: '[{{ .Status | toUpper }}] Warning Alert'
+        text: &amp;gt;-
+          {{ template "slack.techops.text" . }}
+
+  - name: 'victorops'
+    victorops_configs:
+      - routing_key: 'routing_key'
+        message_type: '{{ .CommonLabels.severity }}'
+        entity_display_name: '{{ .CommonAnnotations.summary }}'
+        state_message: &amp;gt;-
+          {{ template "slack.techops.text" . }}
+        api_url: ''
+        api_key: ''
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Generally speaking, &lt;code&gt;warning&lt;/code&gt; alerts could indicate some level of degraded service but might self-recover, such as when a node is down and pods auto-reschedule;
+or they could also be non time-critical situations that does not need immediate intervention. And &lt;code&gt;critical&lt;/code&gt; alerts are reserved for mission-critical services
+or infrastructure, that can cause a bunch of issues if not recovered quickly. These would page someone and be resolved as quickly as we can.&lt;/p&gt;
+
+&lt;p&gt;Example of an alert that has gone off in AlertManager:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/alert-manager.png" title="Example AlertManager Alert" alt="Example AlertManager Alert" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Slack Alert:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png"&gt;&lt;img src="https://homan.s3-ap-southeast-1.amazonaws.com/blog/prometheus-slack-alert.png" title="Example Slack Alert" alt="Example Slack Alert" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;From here, you can have inhibitions that, when present, other alerts will not fire; or silences that would silence
+alerts based on their tags.&lt;/p&gt;
+
+&lt;h3&gt;Wrap-up&lt;/h3&gt;
+
+&lt;p&gt;Together, I think the 3 components form a rather well-rounded monitoring stack for k8s infrastructure and services&amp;rsquo; metrics.
+I think, down the road, the next big extension would be to have it spin up federated clusters to monitor different AWS regions and/or clusters.&lt;/p&gt;
+
+&lt;p&gt;PS: Here&amp;rsquo;s the repo that has a simplified version of everything I&amp;rsquo;ve talked about above:
+&lt;a href="https://github.com/aranair/k8s-prometheus-operator-helm-example"&gt;k8s-prometheus-operator-helm-example&lt;/a&gt;. And feel free to let me know in the
+comments section below if you have any questions or run into any issues playing with that example.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Programming with the Modbus RTU &amp; TCP/IP Protocol</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/10/30/programming-with-modbus-rtu-tcp-protocol/"/>
+    <id>http://blog.url.com/posts/2017/10/30/programming-with-modbus-rtu-tcp-protocol/</id>
+    <published>2017-10-30T00:00:00+08:00</published>
+    <updated>2026-02-23T08:33:21-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;Today&amp;rsquo;s post probably has a very different audience- modbus protocol; it&amp;rsquo;s nowhere near the web projects that I&amp;rsquo;ve been
+doing so far but definitely something I&amp;rsquo;m super interested in. This project mostly works with the &lt;a href="http://www.simplymodbus.ca/FAQ.htm"&gt;modbus protocol&lt;/a&gt;,
+which is an open, communication protocol used for transmitting information over serial lines between hardware devices.
+Given that IoT is becoming more and more relevant and that the modbus protocol, while old, is still a very commonly used
+protocol in the IoT world. So, I hope people will find this post interesting, or even useful if you&amp;rsquo;re attempting something
+similar.&lt;/p&gt;
+
+&lt;h3&gt;Backstory&lt;/h3&gt;
+
+&lt;p&gt;The backstory of the project is that I needed a program to read some data from a spindle, as well as control it through an
+inverter- the hitachi wj200 over the &lt;a href="http://www.simplymodbus.ca/FAQ.htm"&gt;Modbus&lt;/a&gt; RTU protocol. At the same time, it also needs to relay some of this
+information to a &lt;a href="https://www.kepware.com/en-us/products/kepserverex/"&gt;KepwareServer&lt;/a&gt; that acts as both a Modbus TCP/IP slave and a &lt;a href="https://opcfoundation.org/about/opc-technologies/opc-ua/"&gt;OPC/UA&lt;/a&gt; server.
+This then, in turn allows communication with other OPC/UA clients.&lt;/p&gt;
+
+&lt;p&gt;The project was initially developed and tested on OSX Sierra 10.12.6 but was eventually compiled and ran on a Windows 10
+so that the program can just talk to Kepware over modbus TCP instead of needing 2 machines: 1 linux/OSX + external cabling
+to a windows machine (Kepware only runs on windows), but it was also tested on OSX Sierra 10.12.6 first.&lt;/p&gt;
+
+&lt;p&gt;You can find the reference code here: &lt;a href="https://github.com/aranair/modbus_adapter"&gt;https://github.com/aranair/modbus_adapter&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3&gt;Simplified Demo&lt;/h3&gt;
+
+&lt;p&gt;If you&amp;rsquo;re just here to find some sample code that runs a Modbus client and server, you can check out the &lt;code&gt;simplified&lt;/code&gt; branch
+from the repo above. The master and slave code should work with each other.&lt;/p&gt;
+
+&lt;h3&gt;Setup&lt;/h3&gt;
+
+&lt;p&gt;The hardware setup looks roughly like this:&lt;/p&gt;
+
+&lt;p&gt;Spindle &amp;lt;&amp;gt; hitachi wj200 &amp;lt;&amp;gt; USB/COM converter &amp;lt;&amp;gt; C program &amp;lt;&amp;gt; Kepware &amp;lt;&amp;gt; OPC/UA&lt;/p&gt;
+
+&lt;p&gt;In this post though, I&amp;rsquo;ll focus on the first part (from the left) of the setup, up to the C program. The C program
+was written and tested on my Mac at first so I&amp;rsquo;ll talk a little bit on that. In the next post, I&amp;rsquo;ll shift the focus to
+Kepware and how I compiled the same program in Windows 10 (which turned out to be harder than I thought it should be because of
+some dependencies I used).&lt;/p&gt;
+
+&lt;h3&gt;Modbus Masters vs Slaves&lt;/h3&gt;
+
+&lt;p&gt;I am not going to go into details of the Modbus protocol, you can head over &lt;a href="http://www.simplymodbus.ca/FAQ.htm"&gt;here&lt;/a&gt; if you want a quick overview of
+the actual protocol like how to &lt;code&gt;write_registers&lt;/code&gt; and &lt;code&gt;write_coil&lt;/code&gt; e.g. but I&amp;rsquo;ll like to talk about something I was
+initially confused about.&lt;/p&gt;
+
+&lt;p&gt;It was the concept of masters, slaves, clients and servers in Modbus. The two different ways of
+definition that are sometimes used interchangeably in documentations makes it harder to remember which is which, at
+least for me. So, before moving ahead with the rest of the stuff, I should probably define it here again so that
+it&amp;rsquo;s less confusing for the unfortunate souls who might read on lol.&lt;/p&gt;
+
+&lt;h4&gt;Master / Client&lt;/h4&gt;
+
+&lt;p&gt;The master in a modbus network is the brain that is in charge of controlling devices. They can read and write to
+slaves (devices). The concept of master and slave is &lt;a href="https://en.wikipedia.org/wiki/Master/slave_(technology)"&gt;pretty common&lt;/a&gt; in software engineering, so I
+won&amp;rsquo;t elaborate more here.&lt;/p&gt;
+
+&lt;p&gt;However, in the case of the modbus protocol, the master is also called the client and physical
+devices such as the inverter above, are considered servers, or slaves.  The master would be the
+one that initiates the connection to the slaves. I had assumed it was the other way around.&lt;/p&gt;
+
+&lt;p&gt;What remains the same is that, there can only be one master in a single modbus RTU network. (You can
+have multiple masters in a modbus TCP/IP network though I think.)&lt;/p&gt;
+
+&lt;h4&gt;Slaves / Server&lt;/h4&gt;
+
+&lt;p&gt;The slaves are the physical devices that you&amp;rsquo;re communicating with. They&amp;rsquo;re also called servers. They
+accept connections from the masters.&lt;/p&gt;
+
+&lt;h3&gt;Multiple Modbus Masters?&lt;/h3&gt;
+
+&lt;p&gt;For each of the connections defined in &lt;a href="https://github.com/aranair/modbus_adapter/tree/master/config.cfg"&gt;config.cfg&lt;/a&gt;, I created a Modbus connection.
+In this case, one was over RTU protocol and speaks over COM3 and one over TCP/IP.&lt;/p&gt;
+
+&lt;p&gt;My spindle was obviously a slave, and it accepts connections / commands from a master. But, I also needed live
+information from the spindle at the windows machine with Kepware. At first, I was hoping that I could achieve
+that by having a single Modbus slave to multiple Modbus masters (program + kepware). Unfortunately, that isn&amp;rsquo;t
+possible, at least over Modbus RTU.&lt;/p&gt;
+
+&lt;p&gt;To get around that, I got my program to issue commands to the spindle as a master, while periodically polling
+whatever required data from it, and relaying that information as a master to another slave- the Kepware instance.&lt;/p&gt;
+
+&lt;p&gt;Essentially, my program initiates and maintains two separate Modbus connections as a master.&lt;/p&gt;
+
+&lt;h3&gt;libconfig&lt;/h3&gt;
+
+&lt;p&gt;With regards to config files setup in my C program, coming ƒrom ruby and the web environment, YAML seemed like a
+natural choice. But I soon learned that, that&amp;rsquo;s not the case in C. I&amp;rsquo;m not sure what is the de-facto solution here,
+or if people used config files at all, but I eventually settled on &lt;code&gt;libconfig&lt;/code&gt;. It was fairly simple to use and
+the interface was semi-clean I guess, even if a little convoluted.&lt;/p&gt;
+
+&lt;p&gt;It provides you a way to define nested lists and hashes.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;connections = (
+  {
+    type = "rtu";
+    rtu_port = "COM3";
+    baud = 115200;
+  },
+  {
+    type = "tcp";
+    ip = "127.0.0.1";
+    port = 502;
+  }
+);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Which you can then get from the program via something like&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;setting = config_lookup(&amp;amp;cfg, "connections");
+int connections_count = config_setting_length(setting);
+conn_arr = (struct ModbusConn *) malloc(sizeof(struct ModbusConn) * connections_count);
+
+const char *type;
+for (i = 0; i &amp;lt; connections_count; i++) {
+  config_setting_t *connection = config_setting_get_elem(setting, i);
+  config_setting_lookup_string(connection, "type", &amp;amp;type);
+  ...
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I know, it is a little long if you&amp;rsquo;re coming from ruby since all of those would be a single line of code.
+But hey, at least I&amp;rsquo;ve managed to encapsulate all the config stuff into &lt;a href="https://github.com/aranair/modbus_adapter/tree/master/config.h"&gt;config.h&lt;/a&gt;.
+From the main program, I just need to search/reference it for the configs!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;struct ModbusDevice *plc = get_device(config, "hitachiwj200");
+struct ModbusDevice *kep = get_device(config, "kepware");
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;libmodbus&lt;/h3&gt;
+
+&lt;p&gt;The library that I was using to establish connections and construct the bytes to send to the devices was &lt;a href="https://github.com/stephane/libmodbus"&gt;libmodbus&lt;/a&gt;,
+a library in C.&lt;/p&gt;
+
+&lt;p&gt;The gist of it is, you establish a connection.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight c"&gt;&lt;code&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;modbus_connect&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ctx&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;fprintf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;"Connection failed: %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;modbus_strerror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;errno&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+  &lt;span class="n"&gt;modbus_free&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ctx&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+  &lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;And from there, by addressing directly to the register/coil memory locations you can set or read information through the
+protocol.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight c"&gt;&lt;code&gt;&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;set_coil&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;modbus_t&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;ctx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="kt"&gt;uint16_t&lt;/span&gt; &lt;span class="n"&gt;addr_offset&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;bool&lt;/span&gt; &lt;span class="n"&gt;setting&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;"Setting coil to %d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;setting&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;modbus_write_bit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ctx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;addr_offset&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;setting&lt;/span&gt; &lt;span class="o"&gt;?&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;fprintf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;"Failed to write to coil: %s&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;modbus_strerror&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;errno&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+  &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The library implements all of the commands the protocol provides. You can read more about the commands at &lt;a href="https://github.com/stephane/libmodbus"&gt;SimplyModbus&lt;/a&gt;.
+Each of the commands can be represented via some bytes (as with all things CS lol).&lt;/p&gt;
+
+&lt;p&gt;For instance, the &lt;code&gt;modbus_read_registers&lt;/code&gt; method in &lt;a href="https://github.com/stephane/libmodbus"&gt;libmodbus&lt;/a&gt;, is essentially &lt;code&gt;Read Holding Registers&lt;/code&gt;
+on &lt;a href="http://www.simplymodbus.ca/FC03.htm"&gt;this page&lt;/a&gt;. The library helps you take care of&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;the slave address (which you do have to set beforehand),&lt;/li&gt;
+&lt;li&gt;the function code (that represents read_registers) and&lt;/li&gt;
+&lt;li&gt;the CRC.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;You also have to manually pass in the rest of the parameters such as the memory location and
+the number of registers requested.&lt;/p&gt;
+
+&lt;h3&gt;Tricky Memory Addressing&lt;/h3&gt;
+
+&lt;p&gt;And this got a little tricky for me.&lt;/p&gt;
+
+&lt;p&gt;Each type of register / coil also have their designated memory locations and depending on the implementation of the library.
+For instance, single register memory locations might start from 40000 or 400001 depending on which library you use, and this
+is obviously quite a source of problem.&lt;/p&gt;
+
+&lt;p&gt;Something I found was useful with libmodbus is that it helps you with the first digit of the memory address if you point out
+which type it is. You could address a register at memory address 0 with libmodbus and I believe it would automatically map
+that to the appropriate memory address, say 400001 in the byte stream for the request it sends out to the slave.&lt;/p&gt;
+
+&lt;p&gt;Do note that different libraries might implement it differently and this can be a source of error in particular.&lt;/p&gt;
+
+&lt;h3&gt;Configuring Kepware&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;m (also) not going to go into too much details with the configuration of Kepware since the vast majority of you who
+happen to read this article will not be paying the price tag on Kepware. But, I think it&amp;rsquo;s enough to say that,
+it is a piece of software that provides multiple drivers and UIs that come bundled with it to allow devices who might
+speak different protocols such as modbus, or OPC/UA (and a million others), to speak to each other without
+needing another piece of software to translate.&lt;/p&gt;
+
+&lt;p&gt;For the purpose of this project, it was set up on a Windows machine such that it would host a Modbus slave
+that accepts connections from my program, and would receive the data over Modbus TCP/IP as a slave and store the
+streamed byte data in an internal register that is universally accessible in Kepware by it&amp;rsquo;s other services e.g.
+the OPC/UA driver.&lt;/p&gt;
+
+&lt;h3&gt;Virtual Serial Ports Via Pseudo Terminal&lt;/h3&gt;
+
+&lt;p&gt;The above sections kinda ran through the setup that I built. This section is mostly on a quick way to run it locally
+without needing a COM port connected to the actual device at first. I found it troublesome to have to test my program
+with the actual spindle/hardware connected all the time so I looked for a way to simulate the Modbus RTU locally.&lt;/p&gt;
+
+&lt;p&gt;So far, I&amp;rsquo;ve found that the pseudo terminal works pretty well, okay except when it randomly stops emiting the stream
+data mysteriously heh. But, a restart of the socat stuff below usually fixes that.&lt;/p&gt;
+
+&lt;p&gt;I used virtual serial ports to test the program using the steps below:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ brew install socat
+$ socat -d -d pty,raw,echo=0 pty,raw,echo=0  # to get two pseudo terminals assigned.
+$ cat &amp;lt; /dev/ttys035
+$ echo "Test" &amp;gt; /dev/ttys037 # on a separate terminal
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;a href="http://www.dest-unreach.org/socat/doc/socat.html"&gt;Socat&lt;/a&gt; is a CLI toolt that allows you to establish two bi-directional byte streams and allows a
+transfer of data between them. The commands in the snippet above, in combination, sets up the byte stream across
+&lt;code&gt;/dev/ttys035&lt;/code&gt; and &lt;code&gt;/dev/ttys037&lt;/code&gt; (psuedo terminals) so that any data sent from one end of it will be transmitted
+over to the other.&lt;/p&gt;
+
+&lt;p&gt;In other words, I could then get my program, which acts as a Modbus RTU master, to connect directly to &lt;code&gt;/dev/ttys035&lt;/code&gt;
+that has a Modbus RTU slave connected to it. And they can talk to each other in the modbus protocol flawlessly.&lt;/p&gt;
+
+&lt;h3&gt;Wrapping Up&lt;/h3&gt;
+
+&lt;p&gt;I hope this helps anyone out there who is trying to achieve the same thing and like me, doesn&amp;rsquo;t have a clue how or where
+to begin.&lt;/p&gt;
+
+&lt;p&gt;Anyways, after finishing development of the program on my Macbook, I eventually had to move this to a Windows machine running on Win 10.
+Despite the fact that C is relatively well-supported on Windows (I mean it&amp;rsquo;s just basically compiling to byte code), I had quite
+a hard time compiling it because of all that dll shit and hoops that Windows make you jump through, and some issues surrounding
+certain dependencies the program had. I did get everything to compile in MSVS 2017 eventually, but I think I&amp;rsquo;ll leave that story
+to Part 2 instead. If you wanna skip ahead, the project files can be found in the &lt;a href="https://github.com/aranair/modbus_adapter/tree/master/win32"&gt;win32 folder&lt;/a&gt;!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Golang Telegram Bot - Migrations, Cronjobs &amp; Refactors</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/"/>
+    <id>http://blog.url.com/posts/2017/08/20/golang-telegram-bot-migrations-cronjobs-and-refactors/</id>
+    <published>2017-08-20T00:00:00+08:00</published>
+    <updated>2026-02-23T08:33:21-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;This post is kind of like a continuation from the previous posts of my Golang Telegram Bot, so if you
+haven&amp;rsquo;t seen that yet, it&amp;rsquo;s probably better to start with those first: &lt;a href="https://aranair.github.io/posts/2016/12/25/how-to-set-up-golang-telegram-bot-with-webhooks/"&gt;part 1&lt;/a&gt; and &lt;a href="https://aranair.github.io/posts/2017/01/21/how-i-deployed-golang-bot-on-digital-ocean/"&gt;part 2&lt;/a&gt;. I
+basically wanted my telegram bot to be able to remember dated / timed reminders and send messages to
+notify me when that time comes (like a calendar). Furthermore, just to force me to complete the tasks
+quickly, I also make it repeat the notifications until its cleared.&lt;/p&gt;
+
+&lt;h3&gt;Code Organization&lt;/h3&gt;
+
+&lt;p&gt;Something that I&amp;rsquo;ve never really gotten right in Golang, is code organization.
+I find it hard to decide where each piece belongs; it almost feels like a naming- kind of problem to me
+and I wish there was a little more convention around this, or a generally accepted framework to think about how
+to arrange things.&lt;/p&gt;
+
+&lt;p&gt;When I realised I needed the web-app (for responding to messages/commands) and the timer-app (for
+periodically checking the time and sending overdue reminders etc) to run at the same time,
+a couple of questions came up:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Are these 2 related? (For which the answer is yes - configs, db, handlers)&lt;/li&gt;
+&lt;li&gt;Should these two be separate git repos? (No, because of the previous question)&lt;/li&gt;
+&lt;li&gt;Can they be run with just one &amp;lsquo;app&amp;rsquo;? (No, reasons in another section)&lt;/li&gt;
+&lt;li&gt;They are logically separate &amp;lsquo;apps&amp;rsquo;, so where should each &lt;code&gt;main.go&lt;/code&gt; be at?&lt;/li&gt;
+&lt;li&gt;How do I organise the shared packages and shared configurations?&lt;/li&gt;
+&lt;li&gt;How do I structure it such that my Dockerfile and docker-compose configs don&amp;rsquo;t require massive
+changes? Or even better, can they be shared? (Yes)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;While researching, I came across this &lt;a href="https://medium.com/@benbjohnson/structuring-applications-in-go-3b04be4ff091"&gt;blog post&lt;/a&gt; that talks about code organization in
+Golang in general and thinking about the application from the perspective of a library, which
+all made a ton of sense to me. Head over there to check it out if you&amp;rsquo;re in the same situation as
+me.&lt;/p&gt;
+
+&lt;h3&gt;CMD Folder&lt;/h3&gt;
+
+&lt;p&gt;Anyway, so one of the things that was recommended, is to use a &lt;code&gt;cmd&lt;/code&gt; folder to contain
+the main running packages (those that actually need a &lt;code&gt;main.go&lt;/code&gt;), thereby removing the main.go
+from the root folder. It also satisfies my other criteria of not needing to change my docker
+setup drastically, so that&amp;rsquo;s all good.&lt;/p&gt;
+
+&lt;p&gt;Shared packages are left untouched under the root folder so that logically they&amp;rsquo;re like libraries
+and exist in some sort of a common area and they can also be easily imported in the timer/webapp packages.&lt;/p&gt;
+
+&lt;p&gt;The general structure comes up to something like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;remindbot/
+  cmd/
+    timer/
+      main.go
+      ...
+    webapp/
+      main.go
+      ...
+  config/
+  commands/
+  handlers/
+  migrations/
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;Cron / Scheduled Task&lt;/h3&gt;
+
+&lt;p&gt;I needed a cron that would run perpetually and schedules a task every 5 minutes.&lt;/p&gt;
+
+&lt;p&gt;I feel that this cron job and my webapp should be in somewhat separated. While they are somewhat
+related in terms of configs, commands and databases,I felt that they have two rather different
+responsibilities.&lt;/p&gt;
+
+&lt;p&gt;I could use a single app, with background tasks or threads running the cron that does exactly
+what the timer app does but I&amp;rsquo;ve done them in a way that they run in separate containers,
+almost like microservices. I feel that that is a better way of representing the clear distinction
+of their responsibilities.&lt;/p&gt;
+
+&lt;p&gt;I use &lt;a href="https://github.com/jasonlvhit/gocron"&gt;gocron&lt;/a&gt; to run a function in a shared package every 5 minutes but if you look at the
+code inside, you probably can do without the package if you&amp;rsquo;re afraid of adding dependencies.&lt;/p&gt;
+
+&lt;h3&gt;Migrations&lt;/h3&gt;
+
+&lt;p&gt;I needed to make changes to the database schema; I think there isn&amp;rsquo;t a defacto package for handling
+that out there? There are a couple of them out there like goose for example.&lt;/p&gt;
+
+&lt;p&gt;I ended up using &lt;a href="https://github.com/rubenv/sql-migrate"&gt;rubenv/sql-migrate&lt;/a&gt; though; goose was slightly finicky for me, YMMV.
+They&amp;rsquo;re also run manually for now since I don&amp;rsquo;t forsee that many migrations to happen but if they start to
+become more frequent, I would definitely move them out into a separate docker container that runs
+briefly on every deploy.&lt;/p&gt;
+
+&lt;h3&gt;Docker Setup&lt;/h3&gt;
+
+&lt;p&gt;There were minimal changes to my Dockerfile and docker-compose config files.&lt;/p&gt;
+
+&lt;p&gt;For the &lt;code&gt;docker-compose.yml&lt;/code&gt;, I&amp;rsquo;ve added a &lt;code&gt;base&lt;/code&gt; key that builds the Dockerfile in the root
+folder. And then each of the other 2 services would just define a different entrypoint. I could
+also have two separate Dockerfiles but at this point I think they&amp;rsquo;re still similar enough to just
+have one Dockerfile.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;version&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;2'&lt;/span&gt;
+&lt;span class="na"&gt;services&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+  &lt;span class="na"&gt;base&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;build&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;.&lt;/span&gt;
+  &lt;span class="na"&gt;hazel&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;extends&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;base&lt;/span&gt;
+    &lt;span class="na"&gt;ports&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080:8080"&lt;/span&gt;
+    &lt;span class="na"&gt;expose&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;8080"&lt;/span&gt;
+    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
+    &lt;span class="na"&gt;entrypoint&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;webapp&lt;/span&gt;
+  &lt;span class="na"&gt;timer&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+    &lt;span class="na"&gt;extends&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;base&lt;/span&gt;
+    &lt;span class="na"&gt;volumes&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;/var/data:/var/data&lt;/span&gt;
+    &lt;span class="na"&gt;entrypoint&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+      &lt;span class="pi"&gt;-&lt;/span&gt; &lt;span class="s"&gt;timer&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I&amp;rsquo;ve also setup &lt;a href="https://github.com/tools/godep"&gt;Godep&lt;/a&gt; to deal with external package version control. It does a simple job -
+save the external packages into the vendor folder so that they can be restored easily the next time.&lt;/p&gt;
+
+&lt;p&gt;That way, the Dockerfile would have just one package to grab and restore all the package locally,
+instead of getting all of them via &lt;code&gt;go get&lt;/code&gt;. Other than that, the Dockerfile basically remains
+unchanged other than the Godep stuff and moving the entrypoint from before into the docker-compose
+instead.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;FROM golang:1.6
+
+ADD configs.toml /go/bin/
+ADD . /go/src/github.com/aranair/remindbot
+WORKDIR /go/src/github.com/aranair/remindbot
+
+RUN go get github.com/tools/godep
+RUN godep restore
+RUN go install ./...
+
+WORKDIR /go/src/github.com/aranair/remindbot
+WORKDIR /go/bin/
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;Next Iterations&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;I want to be able to use &amp;ldquo;today&amp;rdquo; / &amp;ldquo;tomorrow&amp;rdquo; / &amp;ldquo;next week&amp;rdquo; instead of having to put in a date
+manually; this probably just means better datetime parsing.&lt;/li&gt;
+&lt;li&gt;Ideally, I also want a snooze function, where you can postpone the notifications by X number of
+hours.&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Building a Python CLI Stock Ticker with Urwid</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/"/>
+    <id>http://blog.url.com/posts/2017/06/28/building-a-python-cli-stock-ticker-with-urwid/</id>
+    <published>2017-06-28T00:00:00+08:00</published>
+    <updated>2026-02-23T08:33:21-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;A bit of context - I do some investing in equities on the side and I&amp;rsquo;ve always wanted to build a simple stock ticker in the form of a
+CLI app that runs in my terminal setup. There were a few out there but none that would show 
+just the information I needed, in a minimalistic fashion. And I thought it would be a fun project 
+for me since I don&amp;rsquo;t have much prior experience building a CLI app. &lt;/p&gt;
+
+&lt;p&gt;So last weekend, I decided to build one for fun! Here is the quick image of it running and 
+you can find the code over at &lt;a href="https://github.com/aranair/rtscli"&gt;https://github.com/aranair/rtscli&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png"&gt;&lt;img src="https://raw.githubusercontent.com/aranair/rtscli/master/rtscli-demo.png" alt="Demo" /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h3&gt;Python &amp;amp; CLI Libraries&lt;/h3&gt;
+
+&lt;p&gt;I&amp;rsquo;ve been starting to work with Python recently - due to the data-related work at Pocketmath.
+So language-wise, Python was a natural choice. But honestly, many other languages offer packages that 
+can achieve the same result or more - like the &lt;a href="http://tldp.org/HOWTO/NCURSES-Programming-HOWTO/intro.html#WHATIS"&gt;ccurses&lt;/a&gt; library in C.&lt;/p&gt;
+
+&lt;p&gt;But for Python, I found a number of different libraries for CLIs:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://docs.python.org/2/howto/curses.html"&gt;curses&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://urwid.org/"&gt;urwid&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://click.pocoo.org/5/"&gt;click&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/thomasballinger/curtsies"&gt;curtsies&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Urwid&lt;/h3&gt;
+
+&lt;p&gt;Eventually I went with &lt;a href="http://urwid.org/"&gt;urwid&lt;/a&gt; because it seems easier to just jump in and get started with it instantly.
+Urwid is an alternative to the &lt;a href="https://docs.python.org/2/howto/curses.html"&gt;curses&lt;/a&gt; library in Python and it implements sort of like a layer
+ontop of boilerplate stuff that turns out to be really productive for me.&lt;/p&gt;
+
+&lt;h3&gt;Stock Ticker - Details&lt;/h3&gt;
+
+&lt;p&gt;Okay, this section is mainly describing some of the functionalities I wanted and strictly
+speaking, has nothing to do with urwid nor python nor code so feel free to skip if you&amp;rsquo;re not into this ;)&lt;/p&gt;
+
+&lt;p&gt;The basic functionalities I wanted was:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Read a list of stock tickers that contain the following:
+
+&lt;ul&gt;
+&lt;li&gt;Name of the Stock&lt;/li&gt;
+&lt;li&gt;Symbol (google symbol - &lt;code&gt;HKG:0005&lt;/code&gt; e.g.)&lt;/li&gt;
+&lt;li&gt;Buy-in price&lt;/li&gt;
+&lt;li&gt;Number of shares held&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Display key information per stock:
+
+&lt;ul&gt;
+&lt;li&gt;Change (day)&lt;/li&gt;
+&lt;li&gt;% Change (day)&lt;/li&gt;
+&lt;li&gt;Gain (overall)&lt;/li&gt;
+&lt;li&gt;% Gain (overall)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Display a portfolio wide change&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3&gt;Implementation - MainLoop&lt;/h3&gt;
+
+&lt;p&gt;I imagined the app to be a long-running CLI that continuously accepts commands, while at the same time
+pulling the stock information at an interval, on top of re-painting the information on screen. That 
+can be modelled with a loop - a &lt;code&gt;MainLoop&lt;/code&gt; as urwid calls it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urwid&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;MainLoop&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;layout&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;palette&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;unhandled_input&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;handle_input&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_alarm_in&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;run&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The code above instantiates a &lt;code&gt;MainLoop&lt;/code&gt; which ties together a display module, some widgets
+and an event loop. Quoting the documentation: &lt;em&gt;It handles passing input from the display module to the 
+widgets, rendering the widgets and passing the rendered canvas to the display module to be drawn.&lt;/em&gt; &lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I think of it as a controller of sorts.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Implementation - Refresh Mechanism&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;set_alarm_in&lt;/code&gt; is like &lt;code&gt;setTimeout&lt;/code&gt; in the JavaScript world; it just calls the &lt;code&gt;refresh&lt;/code&gt; method instantly
+in this case. In the refresh method I set another alarm that goes off in &lt;code&gt;10s&lt;/code&gt;, that is as good as 
+telling it to do one data pull from Google Finance every 10 seconds.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;_loop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_data&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;draw_screen&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;quote_box&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;base_widget&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;get_update&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_alarm_in&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It calls the &lt;code&gt;get_update()&lt;/code&gt; method that spits out an array of tuples of &lt;code&gt;(color_scheme, text)&lt;/code&gt;. I&amp;rsquo;ll
+skip the details of the method but it is basically just calling a REST api that replies with JSON and
+parsing the response into a long string for display.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;This method kind of interrupts the event loop every 10 seconds.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Color Palette&lt;/h3&gt;
+
+&lt;p&gt;I also define a color scheme that can be used throughout the app.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Tuples of (Key, font color, background color)
+&lt;/span&gt;&lt;span class="n"&gt;palette&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'titlebar'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'refresh button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark green,bold'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'quit button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'getting quote'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark blue'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'headers'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'white,bold'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'change '&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark green'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+  &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'change negative'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'dark red'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In other parts of the app where text is displayed, those keys can be used to tell the app
+what color / background the text span should be rendered in.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Notice "refresh button" and "quit button" keys were defined above in the color scheme.
+&lt;/span&gt;&lt;span class="n"&gt;menu&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;([&lt;/span&gt;
+    &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;'Press ('&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'refresh button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;'R'&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;') to manually refresh. '&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;'Press ('&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;'quit button'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;'Q'&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;') to quit.'&lt;/span&gt;
+&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;This is just like a color palette of a site&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3&gt;Layout&lt;/h3&gt;
+
+&lt;p&gt;This creates a header and assigns the &lt;code&gt;titlebar&lt;/code&gt; key color scheme to it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="n"&gt;header_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;' Stock Quotes'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;header&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;AttrMap&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;header_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;'titlebar'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Same for &lt;code&gt;quote_text&lt;/code&gt;, except this time a bunch of other widgets were used.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="n"&gt;quote_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="sa"&gt;u&lt;/span&gt;&lt;span class="s"&gt;'Press (R) to get your first quote!'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;quote_filler&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Filler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;quote_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;valign&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'top'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;top&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;bottom&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;v_padding&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Padding&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;quote_filler&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;left&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;right&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;quote_box&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;LineBox&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;v_padding&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A &lt;a href="http://urwid.org/reference/widget.html?highlight=filler#filler"&gt;Filler&lt;/a&gt; widget will maximise itself to the screen and the &lt;a href="http://urwid.org/reference/widget.html?highlight=padding#padding"&gt;Padding&lt;/a&gt; one is self-explanatory;
+it sets padding in terms of columns. And finally the &lt;code&gt;LineBox&lt;/code&gt; leaves a border around the components nested in it.
+Finally, the &lt;a href="http://urwid.org/reference/widget.html?highlight=frame#frame"&gt;Frame&lt;/a&gt; ties it all up into a layout for my app and it is used in the initialization
+of the &lt;code&gt;MainLoop&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Assemble the widgets
+&lt;/span&gt;&lt;span class="n"&gt;layout&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Frame&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;header&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;header&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;quote_box&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;footer&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;menu&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="c1"&gt;# main_loop = urwid.MainLoop(layout, palette, unhandled_input=handle_input)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;There are a ton of other ways you can structure the main components of the app and there are so many widgets
+implemented in the library like the &lt;a href="http://urwid.org/manual/widgets.html#container-widgets"&gt;container widgets&lt;/a&gt; - where you have 
+Piles(stacking vertically) or ListBox (for menus) for example.&lt;/p&gt;
+
+&lt;h3&gt;Implementation - User Interaction&lt;/h3&gt;
+
+&lt;p&gt;I didn&amp;rsquo;t really need much user interaction so that made things alot easier; the only interaction 
+was basically just 2 keys: &lt;code&gt;R&lt;/code&gt; - which forces a refresh of the data and &lt;code&gt;Q&lt;/code&gt; - which exits the program.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="c1"&gt;# Handle key presses
+&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;handle_input&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;key&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'R'&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'r'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;refresh&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;main_loop&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;''&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'Q'&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;key&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s"&gt;'q'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;urwid&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ExitMainLoop&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; The method has to accept the 2 keys. That&amp;rsquo;s the contract of the &lt;code&gt;main_loop.set_alarm_in()&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3&gt;Preparing the Package for Pypi&lt;/h3&gt;
+
+&lt;p&gt;I added a &lt;code&gt;setup.py&lt;/code&gt;, this is sort of like the &lt;code&gt;gemspec&lt;/code&gt; of ruby gems where metadata and dependencies
+are stated. I didn&amp;rsquo;t use any folders because the script is so short already.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight python"&gt;&lt;code&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;setuptools&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;setup&lt;/span&gt;
+&lt;span class="n"&gt;setup&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'rtscli'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;version&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'0.3'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;description&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'A realtime stocks ticker that runs in CLI'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'http://github.com/aranair/rtscli'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;author&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'Boa Ho Man'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;author_email&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'boa.homan@gmail.com'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;license&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;'MIT'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;install_requires&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s"&gt;'urwid'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s"&gt;'HTMLParser'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s"&gt;'simplejson'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;zip_safe&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;py_modules&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;'rtscli'&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;entry_points&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="s"&gt;'console_scripts'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s"&gt;'rtscli=rtscli:cli'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;},&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Of course, you do have to setup a &lt;a href="https://pypi.python.org/pypi"&gt;pypi&lt;/a&gt; account and have the credentials in the &lt;code&gt;.pypirc&lt;/code&gt; file.
+After that, all that was left was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;python setup.py register &lt;span class="nt"&gt;-r&lt;/span&gt; pypi
+&lt;span class="nv"&gt;$ &lt;/span&gt;python setup.py sdist upload &lt;span class="nt"&gt;-r&lt;/span&gt; pypi
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That&amp;rsquo;s it; All ready for &lt;code&gt;pip install rtscli&lt;/code&gt;!&lt;/p&gt;
+
+&lt;h3&gt;Next Iteration&lt;/h3&gt;
+
+&lt;p&gt;There are a bunch of improvements I can think of, but for a start:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Perhaps, most importantly, I would like to refactor this into using proper widgets 
+instead of appending texts into the quote_box.&lt;/li&gt;
+&lt;li&gt;Grab news from Google related to the stock tickers and displays them in a separate window OR&lt;/li&gt;
+&lt;li&gt;Track transactions (but this is a lot more complicated that I have time for :P)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If you have any suggestions, feel free to let me know below!&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Upgrading to ElasticSearch 5.2.2 on Amazon ECS</title>
+    <link rel="alternate" href="http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5-2-2-to-work-on-amazon-ecs/"/>
+    <id>http://blog.url.com/posts/2017/04/03/getting-elasticsearch-5-2-2-to-work-on-amazon-ecs/</id>
+    <published>2017-04-03T00:00:00+08:00</published>
+    <updated>2026-02-23T08:33:21-05:00</updated>
+    <author>
+      <name>Article Author</name>
+    </author>
+    <content type="html">&lt;p&gt;In &lt;a href="https://github.com/docker-library/elasticsearch/issues/111"&gt;one of my previous post&lt;/a&gt;, I talked about how I set up Elasticsearch 2.3.5 on ECS. I got a comment in
+that post that prompted me to update the setup for Elasticsearch 5. It&amp;rsquo;s been awhile, but better late than never right?
+So I gave it a go! In this post I&amp;rsquo;ll like to share what I found in the process.&lt;/p&gt;
+
+&lt;p&gt;There were a couple of other configuration changes that were required to upgrade to 5.2.2 from 2.3.5 but they weren&amp;rsquo;t
+difficult, except one that may potentially deter you from using ECS with Elasticsearch 5, for the time being at least.&lt;/p&gt;
+
+&lt;h3&gt;Main Caveat&lt;/h3&gt;
+
+&lt;p&gt;At this point, I&amp;rsquo;ll mention a caveat that will likely save you an hour of headache and trouble.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Long story short, You will need to SSH into the ECS instances to run the command on the parent to 
+get past the error message below. I am not aware of any other solutions but if you do, feel free to
+let me know in the comments section below!&lt;/em&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight plaintext"&gt;&lt;code&gt;elasticsearch:5.2.2 max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This &lt;a href="https://github.com/docker-library/elasticsearch/issues/111"&gt;docker-library/elasticsearch github issue&lt;/a&gt; suggests running &lt;code&gt;sudo sysctl -w vm.max_map_count=262144&lt;/code&gt; or run the docker 
+container with the &lt;code&gt;--sysctl&lt;/code&gt; option to fix this problem.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;However&lt;/strong&gt;, because of how ECS implements the agents currently, many of the docker run options are not available. 
+This is well-documented over at the &lt;a href="https://github.com/aws/amazon-ecs-agent/issues/502"&gt;amazon-ecs-agent Github repository&lt;/a&gt; so I won&amp;rsquo;t echo them here. But it does 
+seem like there are a bunch of others who are encountering the same issue.&lt;/p&gt;
+
+&lt;h3&gt;Continuing..&lt;/h3&gt;
+
+&lt;p&gt;In my opinion, this makes the combination slightly less-than-ideal because the manual configuration work that is required 
+on the EC2 instances takes away some of the benefits of implementing ElasticSearch in ECS.&lt;/p&gt;
+
+&lt;p&gt;If you&amp;rsquo;re okay with the manual configuration running that command on the instances, or for example, if you plan to provision
+a few instances and leave them there for awhile, then this hiccup would deal no damage. &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Let&amp;rsquo;s forge on.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h3&gt;Configuration Changes&lt;/h3&gt;
+
+&lt;p&gt;The starting point is the &lt;a href="https://github.com/aranair/docker-elasticsearch-ecs/blob/master/docker-elasticsearch/Dockerfile"&gt;Dockerfile&lt;/a&gt; for ElasticSearch 2.3.5 in my &lt;a href="https://github.com/aranair/docker-elasticsearch-ecs"&gt;docker-elasticsearch-ecs repo&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight docker"&gt;&lt;code&gt;&lt;span class="k"&gt;FROM&lt;/span&gt;&lt;span class="s"&gt; elasticsearch:2.3&lt;/span&gt;
+
+&lt;span class="k"&gt;WORKDIR&lt;/span&gt;&lt;span class="s"&gt; /usr/share/elasticsearch&lt;/span&gt;
+
+&lt;span class="k"&gt;RUN &lt;/span&gt;bin/plugin &lt;span class="nb"&gt;install &lt;/span&gt;cloud-aws
+&lt;span class="k"&gt;RUN &lt;/span&gt;bin/plugin &lt;span class="nb"&gt;install &lt;/span&gt;mobz/elasticsearch-head
+&lt;span class="k"&gt;RUN &lt;/span&gt;bin/plugin &lt;span class="nb"&gt;install &lt;/span&gt;analysis-phonetic
+
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; elasticsearch.yml config/elasticsearch.yml&lt;/span&gt;
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; logging.yml config/logging.yml&lt;/span&gt;
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; elasticsearch-entrypoint.sh /docker-entrypoint.sh&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;And modified to:&lt;/strong&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight docker"&gt;&lt;code&gt;&lt;span class="k"&gt;FROM&lt;/span&gt;&lt;span class="s"&gt; elasticsearch:5.2.2&lt;/span&gt;
+
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; elasticsearch.yml config/elasticsearch.yml&lt;/span&gt;
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; logging.yml config/logging.yml&lt;/span&gt;
+&lt;span class="k"&gt;COPY&lt;/span&gt;&lt;span class="s"&gt; elasticsearch-entrypoint.sh /docker-entrypoint.sh&lt;/span&gt;
+
+&lt;span class="k"&gt;RUN &lt;/span&gt;bin/elasticsearch-plugin &lt;span class="nb"&gt;install &lt;/span&gt;discovery-ec2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Notable changes include bumping the version and changing &lt;code&gt;cloud-aws&lt;/code&gt; plugin to &lt;code&gt;discovery-ec2&lt;/code&gt; which
+is the new plugin for the same purpose of node discovery in cloud environments.&lt;/p&gt;
+
+&lt;h3&gt;File Descriptors and Ulimits&lt;/h3&gt;
+
+&lt;p&gt;I needed to change the docker-compose file slightly to include the &lt;code&gt;ulimits&lt;/code&gt;. It is a new mandatory configuration item.
+You can find out more in &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setting-system-settings.html"&gt;this documentation&lt;/a&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight docker"&gt;&lt;code&gt;version: '2'
+services:
+  data:
+    build: ./docker-data/
+    volumes:
+      - /usr/share/elasticsearch/data
+
+  search:
+    build: ./docker-elasticsearch/
+    volumes_from:
+      - data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+        nofile:
+           soft: 65536
+           hard: 65536
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;elasticsearch.yml&lt;/h3&gt;
+
+&lt;p&gt;&lt;code&gt;plugin.mandatory: cloud-aws&lt;/code&gt; and &lt;code&gt;discovery.type: EC2&lt;/code&gt; and &lt;code&gt;discovery.zen.ping.multicast.enabled: false&lt;/code&gt; has been
+removed or modified to the following below.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="na"&gt;script.inline&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="no"&gt;true&lt;/span&gt;
+&lt;span class="na"&gt;bootstrap.memory_lock&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="no"&gt;false&lt;/span&gt;
+&lt;span class="na"&gt;network.host&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;0.0.0.0&lt;/span&gt;
+&lt;span class="na"&gt;network.publish_host&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;_ec2:privateIp_&lt;/span&gt;
+&lt;span class="na"&gt;discovery.zen.hosts_provider&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;ec2&lt;/span&gt;
+&lt;span class="na"&gt;discovery.ec2.groups&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;dockerecs&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;Task Definition / Heap Size&lt;/h3&gt;
+
+&lt;p&gt;In Elasticsearch 5, the heap size is also a mandatory configuration. For this, I set it directly in ECS via 
+the JSON task definition. I had to set the &lt;code&gt;ES_JAVA_OPTS&lt;/code&gt; for it to work.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="nv"&gt;ES_JAVA_OPTS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"-Xms1g -Xmx1g"&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3&gt;Wrapping up&lt;/h3&gt;
+
+&lt;p&gt;It isn&amp;rsquo;t a whole lot of changes but it did take some time googling each of the issues that came up as I tried to start
+the services on ECS and also eventually had to SSH into the instance to set the &lt;code&gt;vm.max_map_count&lt;/code&gt; before I managed to
+get the cluster up.&lt;/p&gt;
+
+&lt;p&gt;This is obviously less than ideal in a deployment process which otherwise could be full-automated. But if you&amp;rsquo;re 
+still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve you well!&lt;/p&gt;
+</content>
+  </entry>
+</feed>

@@ -1,0 +1,276 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Golang + Protobuf</title>
+
+    <meta name="description" content="A tech blog about learnings in DevOps, Go, Ruby and software engineering in general, written by Boa Ho Man" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Golang + Protobuf" />
+<link rel="description" href="A tech blog about learnings in DevOps, Go, Ruby and software engineering in general, written by Boa Ho Man" />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="Golang + Protobuf" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2015 posts_2015_05 posts_2015_05_05 posts_2015_05_05_golang-protobuf posts_2015_05_05_golang-protobuf_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Golang + Protobuf<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        May 05, 2015
+        <span class="article__middle-dot"></span>
+        6  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/protobuf/" class="article__tag-link">protobuf</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>(This is part 1 of the 3 part series where I discuss how we handled one of our new API projects and the usage of Protobuf + Heka + Kafka + BigQuery to view realtime logs.)</p>
+
+<p>Recently, I&rsquo;ve had the chance to work with Golang in Wego to build our analytics API that will log our visits into flat files + upload them into Kafka for further processing, with one caveat: we&rsquo;re using Protobuf Buffers (or otherwise just Protobuf) for our serialisation of data.</p>
+
+<h3>What is Protobuf?</h3>
+
+<p>Its basically a protocol that comes with a language <a href="https://developers.google.com/protocol-buffers/docs/proto" title="proto">proto</a> with which you define your data structure once and then you can use this source code to generate helpers/classes/models for different languages such as Golang, Python, Ruby etc .. Do note that only C++, Python and Java are officially supported right now.</p>
+
+<p>Think of it as XML, JSON but smaller, faster, and simpler; yet at the same time pretty defined and structured as well. 
+So, Wego is set on replacing the semi-spaghetti JSON communication that we&rsquo;re currently working with, with Protobuf. </p>
+
+<h3>Context</h3>
+
+<p>As usual, the process always have some form of a bump for us to overcome before being able to use it. Typically, I think most golang protobuf repos will have rather simple/flat structure. </p>
+
+<p>Our repo was built in a slightly odd that worked well to define the structure for other protobuf generators (we also use Protobuf for Ruby and Java). Below is a rough idea of how it looked like before a huge round of changes:</p>
+<div class="highlight"><pre class="highlight plaintext"><code># OLD STRUCTURE
+- protos
+  - wego-protos
+  - base.proto
+  - flights.proto
+  - hotels.proto
+  - analytics.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+</code></pre></div>
+<h3>The 1st Hurdle</h3>
+
+<p>Well technically it isn&rsquo;t a bug, more like convention. The basic command for protoc (the tool that converts .proto files) which is shown below, is meant to be run once per package. This command will then look at the included files for a package name to compile them into. But initially, our files that were all in the root folder belong to separate packages. </p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">protoc</span> <span class="o">--</span><span class="n">proto_path</span><span class="o">=</span><span class="p">.</span><span class="nf">/</span><span class="n">protos</span> <span class="p">\</span>
+  <span class="o">--</span><span class="n">go_out</span> <span class="p">.</span><span class="nf">/</span><span class="n">libs</span><span class="o">/</span><span class="n">wego</span><span class="o">-</span><span class="n">protos</span><span class="o">-</span><span class="n">go</span> <span class="p">\</span>
+  <span class="p">.</span><span class="nf">/</span><span class="n">protos</span><span class="o">/</span><span class="n">wego</span><span class="o">-</span><span class="n">protos</span><span class="o">/</span><span class="n">flights</span><span class="p">.</span><span class="nf">proto</span>
+
+<span class="n">protoc</span> <span class="o">--</span><span class="n">proto_path</span><span class="o">=</span><span class="p">.</span><span class="nf">/</span><span class="n">protos</span> <span class="p">\</span>
+  <span class="o">--</span><span class="n">go_out</span> <span class="p">.</span><span class="nf">/</span><span class="n">libs</span><span class="o">/</span><span class="n">wego</span><span class="o">-</span><span class="n">protos</span><span class="o">-</span><span class="n">go</span> <span class="p">\</span>
+  <span class="p">.</span><span class="nf">/</span><span class="n">protos</span><span class="o">/</span><span class="n">wego</span><span class="o">-</span><span class="n">protos</span><span class="o">/</span><span class="n">hotels</span><span class="p">.</span><span class="nf">proto</span>
+
+<span class="o">...</span>
+<span class="o">...</span>
+</code></pre></div>
+<p>Specifying one file at a time and repeating it for the 4 files did not work either. Because it would break the name spaces inside them; they essentially become the same package instead of separate packages. </p>
+
+<p>This issue doesn&rsquo;t really exist in other languages because I think files are resolved file level in Java/Ruby but at a package level in Golang. <a href="https://github.com/golang/protobuf/issues/8" title="import issue">this issue</a> and <a href="https://github.com/golang/protobuf/commit/dded9133a99a3cd7c3a9d24a9f85c2b8ef76ff31" title="commit">this commit</a> describes it in fuller details.</p>
+
+<p>And so to get past it, we restructured the files in this way, such that each of the packages reside in individual folders, following the convention of Golang. </p>
+<div class="highlight"><pre class="highlight plaintext"><code># NEW STRUCTURE
+- protos
+  - wego-protos
+   - wego
+    - base.proto
+   - flights
+      - base.proto
+   - hotels
+    - base.proto 
+   - analytics 
+    - base.proto
+
+  - wegosdk-protos (actually a symlink to ANOTHER repo)
+  - flights
+  - base.proto
+  - hotels
+  - base.proto
+</code></pre></div>
+<h3>The 2nd Problem</h3>
+
+<p>This problem is abit uglier. So in the <code>wego-protos</code> files, we do imports that are from the other repo <code>wegosdk-protos</code>. It is an entirely separate git repo that is included as a git submodule. </p>
+<div class="highlight"><pre class="highlight mosel"><code><span class="k">package</span> <span class="n">wego</span><span class="p">.</span><span class="n">flights</span>
+<span class="n">import</span> <span class="s2">"wegosdk-protos/wegosdk/base.proto"</span><span class="p">;</span>
+</code></pre></div>
+<p>The generated package name from that snippet was wrong. I had to include an undocumented option go<em>package in proto2 (it is available in proto3). &ldquo;` option go</em>package = &quot;wego&rdquo;; &ldquo;`</p>
+
+<p>This actually generates <code>import &quot;wegosdk-protos/wegosdk/base&quot;</code> in the *.pb.go files. It was clear that we needed to customise the import paths + package names.</p>
+
+<p>Looking at <a href="https://github.com/golang/protobuf/blob/master/protoc-gen-go/plugin/Makefile#L38" title="protobuf code">this file</a>, we found that the &ndash;go-out has a &quot;M&rdquo; flag that allows us to modify the final import paths to point to the correct github.com/wego/wego-protos filepaths. We also don&rsquo;t do another <code>go get github.com/wego/wegosdk-proto</code>; basically treating it as one repo.</p>
+
+<h3>The Solution</h3>
+
+<p>Finally I ended up with this long &ndash;go-out option to somewhat &ldquo;replace&rdquo; all of the default imports (that works with other languages) to use the correct $GOPATH source path.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>--go-out=Mwegosdk-protos/wegosdk_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_hotels,
+Mwegosdk-protos/wegosdk_flights/fares.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk_flights,
+Mwegosdk-protos/wegosdk/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wegosdk-protos/wegosdk,
+Mwego-protos/wego_hotels/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_hotels,
+Mwego-protos/wego_flights/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_flights,
+Mwego-protos/wego_analytics/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego_analytics,
+Mwego-protos/wego/base.proto=github.com/wego/wego-protos/libs/wego-protos-go/wego-protos/wego,
+
+</code></pre></div>
+<p>On hindsight, it would probably have been alot easier if we just treated wegosdk-protos as an entirely separate project in Golang. Nevertheless I think the workaround is reasonable if we wanted to work with only 1 repo at that time.</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2015/golang-and-protobuf';
+                        var disqus_title = 'Golang and Protobuf';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

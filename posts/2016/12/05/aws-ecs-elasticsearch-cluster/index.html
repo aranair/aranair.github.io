@@ -1,0 +1,347 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>How to set up Elasticsearch Cluster in Amazon ECS</title>
+
+    <meta name="description" content="In this post, I run through how to set up Elasticsearch in Amazon ECS and show some of the problems that you might face setting up this way and the solutions to them. A github repository is also provided" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="How to set up Elasticsearch Cluster in Amazon ECS" />
+<link rel="description" href="In this post, I run through how to set up Elasticsearch in Amazon ECS and show some of the problems that you might face setting up this way and the solutions to them. A github repository is also provided" />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="How to set up Elasticsearch Cluster in Amazon ECS" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_12 posts_2016_12_05 posts_2016_12_05_aws-ecs-elasticsearch-cluster posts_2016_12_05_aws-ecs-elasticsearch-cluster_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    How to set up Elasticsearch Cluster in Amazon ECS<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Dec 05, 2016
+        <span class="article__middle-dot"></span>
+        9  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/elasticsearch/" class="article__tag-link">elasticsearch</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/aws/" class="article__tag-link">aws</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/ecs/" class="article__tag-link">ecs</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>At Pocketmath, we heavily utilize the EC2 container service (ECS) to host a significant portion of our applications. It provides us with an easily scalable, zero-downtime infrastructure. Recently, I upgraded the Elasticsearch to <code>2.3.5</code> for our clusters, so I thought it was a good idea just to jot down some of the things I had to do or was already
+there for it to function properly.</p>
+
+<h3>Preface</h3>
+
+<p>If you&rsquo;ll like to skip to the end and just take a look at the Docker-compose, task definitions and config files, feel
+free to skip right to <a href="https://github.com/aranair/docker-elasticsearch-ecs">the github repository</a> that I&rsquo;ve prepared to contain all this!</p>
+
+<h3>Dockerfile</h3>
+
+<p>First, I had to change the destination as well as the syntax for the plugin installs.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>FROM elasticsearch:2.3
+
+WORKDIR /usr/share/elasticsearch
+
+RUN bin/plugin install cloud-aws
+RUN bin/plugin install mobz/elasticsearch-head
+RUN bin/plugin install analysis-phonetic
+
+COPY elasticsearch.yml config/elasticsearch.yml
+COPY logging.yml config/logging.yml
+COPY elasticsearch-entrypoint.sh /docker-entrypoint.sh
+</code></pre></div>
+<h3>Docker &amp; Elasticsearch Setup</h3>
+
+<p>Do take note that the <code>network.host</code> is required for <strong>Zen Discovery</strong> to work in ECS.</p>
+
+<p>It&rsquo;s a simple dockerized container setup with mounted volumes in a separate data container and exposed ports for
+elasticsearch communication.</p>
+
+<p><code>docker-compose.yml</code> sample:</p>
+<div class="highlight"><pre class="highlight yaml"><code><span class="na">services</span><span class="pi">:</span>
+  <span class="na">data</span><span class="pi">:</span>
+    <span class="na">build</span><span class="pi">:</span> <span class="s">./docker-data/</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">/usr/share/elasticsearch/data</span>
+
+  <span class="na">search</span><span class="pi">:</span>
+    <span class="na">build</span><span class="pi">:</span> <span class="s">./docker-elasticsearch/</span>
+    <span class="na">volumes_from</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">data</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s2">"</span><span class="s">9200:9200"</span>
+      <span class="pi">-</span> <span class="s2">"</span><span class="s">9300:9300"</span>
+</code></pre></div>
+<p>elasticsearch.yml:</p>
+<div class="highlight"><pre class="highlight yaml"><code><span class="na">script.inline</span><span class="pi">:</span> <span class="no">true</span>
+<span class="na">bootstrap.mlockall</span><span class="pi">:</span> <span class="no">true</span>
+
+<span class="na">network.host</span><span class="pi">:</span> <span class="s">0.0.0.0</span>
+<span class="na">plugin.mandatory</span><span class="pi">:</span> <span class="s">cloud-aws</span>
+<span class="na">network.publish_host</span><span class="pi">:</span> <span class="s">_ec2:privateIp_</span>
+<span class="na">discovery.type</span><span class="pi">:</span> <span class="s">ec2</span>
+<span class="na">discovery.ec2.groups</span><span class="pi">:</span> <span class="s">xx-xxxxx</span>
+<span class="na">discovery.zen.ping.multicast.enabled</span><span class="pi">:</span> <span class="no">false</span>
+</code></pre></div>
+<p>The first two lines are fairly standard, so I&rsquo;ll skip them; you can find these around in the official docs. It&rsquo;s the last
+few lines that I had to meddle around with a bit for it to work.</p>
+
+<h3>Discovery</h3>
+
+<p>So, the default node discovery module for Elasticsearch is <a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.x/modules-discovery-zen.html">Zen Discovery</a>, and it supports both multicast and unicast.
+Although, since EC2 <a href="https://aws.amazon.com/vpc/faqs/">doesn&rsquo;t support multicast</a>, I disabled multicast and used only unicast. There are some
+notable things that were in that docs, though: <strong>the ping (discovery)</strong> and <strong>the master election</strong>.</p>
+
+<p>During the <code>ping phase</code>, each node uses the discovery mechanism to find other nodes in the cluster. That process, however,
+won&rsquo;t work out-of-the-box for cloud environments like Elastic Cloud or AWS EC2. There is a plugin that fixes this- <code>cloud-aws</code>. So I installed it via the Dockerfile above, for each container that runs inside
+the cluster. One issue is that the plugin was built for EC2 where each instance naturally publishes their own instance&rsquo;s IP
+for the discovery process. Inside ECS, that discovery mechanism will fail since it just publishes its container&rsquo;s IP address.</p>
+
+<h3>Running it in ECS</h3>
+
+<p>Back in Elasticsearch V1, I think the code below was the de-facto solution as an entry point for Docker. It pings Amazon&rsquo;s <code>169.254.169.254</code> instance information endpoint for the private IP. You could then start the service with its container&rsquo;s IP as the published address; this address allows for other nodes to connect to it.  A reasonably updated
+<a href="https://github.com/daptiv/elasticsearch-ecs">github repo</a> still uses this method. <strong>And it still works.</strong> But there is a cleaner way now.</p>
+<div class="highlight"><pre class="highlight shell"><code><span class="c">#!/bin/bash</span>
+
+<span class="nb">set</span> <span class="nt">-e</span>
+
+<span class="c"># Add elasticsearch as command if needed</span>
+<span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="k">${</span><span class="nv">1</span>:0:1<span class="k">}</span><span class="s2">"</span> <span class="o">=</span> <span class="s1">'-'</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+    </span><span class="nb">set</span> <span class="nt">--</span> elasticsearch <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+<span class="k">fi</span>
+
+<span class="c"># Drop root privileges if we are running elasticsearch</span>
+<span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> <span class="o">=</span> <span class="s1">'elasticsearch'</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="c"># Change the ownership of /usr/share/elasticsearch/data to elasticsearch</span>
+    <span class="nb">chown</span> <span class="nt">-R</span> elasticsearch:elasticsearch /usr/share/elasticsearch/data
+    <span class="nb">exec </span>gosu elasticsearch <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+<span class="k">fi</span>
+
+<span class="c"># ECS will report the docker interface without help, so we override that with host's private IP</span>
+<span class="nv">AWS_PRIVATE_IP</span><span class="o">=</span><span class="sb">`</span>curl http://169.254.169.254/latest/meta-data/local-ipv4<span class="sb">`</span>
+<span class="nb">set</span> <span class="nt">--</span> <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span> <span class="nt">--network</span>.publish_host<span class="o">=</span><span class="nv">$AWS_PRIVATE_IP</span>
+
+<span class="c"># As argument is not related to elasticsearch,</span>
+<span class="c"># then assume that user wants to run his process.</span>
+<span class="c"># For example, a `bash` shell to explore this image</span>
+<span class="nb">exec</span> <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+</code></pre></div>
+<p>Now, just open up port 9200/9300 for communication within the security groups, and that&rsquo;s it!</p>
+
+<h3>Cleaner, you say?</h3>
+
+<p>In later versions, (along with t cloud-aws plugin versions), you can now <code>_ec2:privateIp_</code> in the elasticsearch.yml file.</p>
+<div class="highlight"><pre class="highlight yaml"><code><span class="na">network.host</span><span class="pi">:</span> <span class="s">0.0.0.0</span>
+<span class="na">plugin.mandatory</span><span class="pi">:</span> <span class="s">cloud-aws</span>
+<span class="na">network.publish_host</span><span class="pi">:</span> <span class="s">_ec2:privateIp_</span>
+<span class="na">discovery.type</span><span class="pi">:</span> <span class="s">ec2</span>
+<span class="na">discovery.ec2.groups</span><span class="pi">:</span> <span class="s">xx-xxxxx</span>
+<span class="na">discovery.zen.ping.multicast.enabled</span><span class="pi">:</span> <span class="no">false</span>
+</code></pre></div>
+<h3>Master Election, and why it is important</h3>
+
+<p>Next, we go on to the master election part of the cluster.</p>
+
+<p>Like all distributed systems, the master/leader election is an important process that allows a cluster to choose its <code>brain</code>,
+for the purpose of handling allocations, state maintenance, index creations, etc. It is vital to the health of the cluster.
+Elastic.co has a comprehensive <a href="https://www.elastic.co/blog/found-leader-election-in-general">blog post</a>, and you can read a quick intro there.</p>
+
+<p>In this context, I could set a minimum number of master nodes.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>The discovery.zen.minimum_master_nodes sets the minimum number of master eligible nodes that need to join a newly elected master for an election to complete and for the elected node to accept its mastership.
+</code></pre></div>
+<p>We need to set the minimum number to a quorum (a majority wins situation) otherwise, the cluster is inoperable.
+You can read more about the split-brain scenario <a href="http://blog.trifork.com/2013/10/24/how-to-avoid-the-split-brain-problem-in-elasticsearch/">here</a>. For automatic election, having only 2
+master-eligible nodes should be avoided, since a quorum of 2 is 2 and a loss of either master-eligible nodes
+will result in the split-brain state.</p>
+
+<p>If you dynamically scale your clusters, the below command would help with dynamically changing that number as you grow
+your cluster.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>PUT /_cluster/settings
+{
+    "persistent" : {
+        "discovery.zen.minimum_master_nodes" : 2
+    }
+}
+</code></pre></div>
+<h3>Container memory limit and Heap Size</h3>
+
+<p>Next, this is something that gets tricky if you deploy to ECS and use the default settings.</p>
+
+<p>In my case, my task definitions were set to 1 GB, and the Elasticsearch service was running with a default of 1gb heap size.
+After deploying to ECS, I noticed my docker container was just repeatedly getting stopped and restarted by the ECS agent.</p>
+
+<p>There were no errors; and elasticsearch logs just announced that it was shutting itself down, gracefully.</p>
+
+<p>At that point, I tweaked the memory hard limits via the task definitions in ECS and the restarts stopped.
+The heap size that the Elasticsearch service was using was hitting beyond the hard memory limit of the container;
+so the containers was repeatedly asked to restart.</p>
+
+<p>So if you&rsquo;re deploying these docker containers to ECS, <strong>its good practice to set a hard memory limit to the ECS task definition!</strong></p>
+
+<p>On top of that, you should also run the containers with the environment variable <code>ES_HEAP_SIZE=2g</code>. The value there should be
+roughly half the size of the hard memory limit in ECS to prevent the above scenario from happening.</p>
+
+<h3>Roundup</h3>
+
+<p>That&rsquo;s it! I hope this post has helped you get your cluster setup in the ECS.</p>
+
+<p>Feel free to checkout <a href="https://github.com/aranair/docker-elasticsearch-ecs">this github repository</a> that I&rsquo;ve put together the code I&rsquo;ve talked about!</p>
+
+<p>Do check back in a week or two!</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/aws-ecs-elasticsearch';
+                        var disqus_title = 'Elasticsearch Cluster in ECS';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

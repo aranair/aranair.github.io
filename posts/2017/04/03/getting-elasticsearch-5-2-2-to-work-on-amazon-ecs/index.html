@@ -1,0 +1,294 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Upgrading to ElasticSearch 5.2.2 on Amazon ECS</title>
+
+    <meta name="description" content="I talk about some of the configuration changes that were required to bump the version of a ElasticSearch cluster running in ECS from 2.3.5 to 5.2.2. I also talk about the massive caveat of the sysctl config issue in E..." />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Upgrading to ElasticSearch 5.2.2 on Amazon ECS" />
+<link rel="description" href="I talk about some of the configuration changes that were required to bump the version of a ElasticSearch cluster running in ECS from 2.3.5 to 5.2.2. I also talk about the massive caveat of the sysctl config issue in ECS that currently makes this a less-than-ideal combination at the moment." />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="Upgrading to ElasticSearch 5.2.2 on Amazon ECS" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2017 posts_2017_04 posts_2017_04_03 posts_2017_04_03_getting-elasticsearch-5-2-2-to-work-on-amazon-ecs posts_2017_04_03_getting-elasticsearch-5-2-2-to-work-on-amazon-ecs_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Upgrading to ElasticSearch 5.2.2 on Amazon ECS<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Apr 03, 2017
+        <span class="article__middle-dot"></span>
+        5  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/elasticsearch/" class="article__tag-link">elasticsearch</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/aws/" class="article__tag-link">aws</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/ecs/" class="article__tag-link">ecs</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>In <a href="https://github.com/docker-library/elasticsearch/issues/111">one of my previous post</a>, I talked about how I set up Elasticsearch 2.3.5 on ECS. I got a comment in
+that post that prompted me to update the setup for Elasticsearch 5. It&rsquo;s been awhile, but better late than never right?
+So I gave it a go! In this post I&rsquo;ll like to share what I found in the process.</p>
+
+<p>There were a couple of other configuration changes that were required to upgrade to 5.2.2 from 2.3.5 but they weren&rsquo;t
+difficult, except one that may potentially deter you from using ECS with Elasticsearch 5, for the time being at least.</p>
+
+<h3>Main Caveat</h3>
+
+<p>At this point, I&rsquo;ll mention a caveat that will likely save you an hour of headache and trouble.</p>
+
+<p><em>Long story short, You will need to SSH into the ECS instances to run the command on the parent to 
+get past the error message below. I am not aware of any other solutions but if you do, feel free to
+let me know in the comments section below!</em></p>
+<div class="highlight"><pre class="highlight plaintext"><code>elasticsearch:5.2.2 max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
+</code></pre></div>
+<p>This <a href="https://github.com/docker-library/elasticsearch/issues/111">docker-library/elasticsearch github issue</a> suggests running <code>sudo sysctl -w vm.max_map_count=262144</code> or run the docker 
+container with the <code>--sysctl</code> option to fix this problem.</p>
+
+<p><strong>However</strong>, because of how ECS implements the agents currently, many of the docker run options are not available. 
+This is well-documented over at the <a href="https://github.com/aws/amazon-ecs-agent/issues/502">amazon-ecs-agent Github repository</a> so I won&rsquo;t echo them here. But it does 
+seem like there are a bunch of others who are encountering the same issue.</p>
+
+<h3>Continuing..</h3>
+
+<p>In my opinion, this makes the combination slightly less-than-ideal because the manual configuration work that is required 
+on the EC2 instances takes away some of the benefits of implementing ElasticSearch in ECS.</p>
+
+<p>If you&rsquo;re okay with the manual configuration running that command on the instances, or for example, if you plan to provision
+a few instances and leave them there for awhile, then this hiccup would deal no damage. </p>
+
+<p><em>Let&rsquo;s forge on.</em></p>
+
+<h3>Configuration Changes</h3>
+
+<p>The starting point is the <a href="https://github.com/aranair/docker-elasticsearch-ecs/blob/master/docker-elasticsearch/Dockerfile">Dockerfile</a> for ElasticSearch 2.3.5 in my <a href="https://github.com/aranair/docker-elasticsearch-ecs">docker-elasticsearch-ecs repo</a>:</p>
+<div class="highlight"><pre class="highlight docker"><code><span class="k">FROM</span><span class="s"> elasticsearch:2.3</span>
+
+<span class="k">WORKDIR</span><span class="s"> /usr/share/elasticsearch</span>
+
+<span class="k">RUN </span>bin/plugin <span class="nb">install </span>cloud-aws
+<span class="k">RUN </span>bin/plugin <span class="nb">install </span>mobz/elasticsearch-head
+<span class="k">RUN </span>bin/plugin <span class="nb">install </span>analysis-phonetic
+
+<span class="k">COPY</span><span class="s"> elasticsearch.yml config/elasticsearch.yml</span>
+<span class="k">COPY</span><span class="s"> logging.yml config/logging.yml</span>
+<span class="k">COPY</span><span class="s"> elasticsearch-entrypoint.sh /docker-entrypoint.sh</span>
+</code></pre></div>
+<p><strong>And modified to:</strong></p>
+<div class="highlight"><pre class="highlight docker"><code><span class="k">FROM</span><span class="s"> elasticsearch:5.2.2</span>
+
+<span class="k">COPY</span><span class="s"> elasticsearch.yml config/elasticsearch.yml</span>
+<span class="k">COPY</span><span class="s"> logging.yml config/logging.yml</span>
+<span class="k">COPY</span><span class="s"> elasticsearch-entrypoint.sh /docker-entrypoint.sh</span>
+
+<span class="k">RUN </span>bin/elasticsearch-plugin <span class="nb">install </span>discovery-ec2
+</code></pre></div>
+<p>Notable changes include bumping the version and changing <code>cloud-aws</code> plugin to <code>discovery-ec2</code> which
+is the new plugin for the same purpose of node discovery in cloud environments.</p>
+
+<h3>File Descriptors and Ulimits</h3>
+
+<p>I needed to change the docker-compose file slightly to include the <code>ulimits</code>. It is a new mandatory configuration item.
+You can find out more in <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setting-system-settings.html">this documentation</a>.</p>
+<div class="highlight"><pre class="highlight docker"><code>version: '2'
+services:
+  data:
+    build: ./docker-data/
+    volumes:
+      - /usr/share/elasticsearch/data
+
+  search:
+    build: ./docker-elasticsearch/
+    volumes_from:
+      - data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+        nofile:
+           soft: 65536
+           hard: 65536
+</code></pre></div>
+<h3>elasticsearch.yml</h3>
+
+<p><code>plugin.mandatory: cloud-aws</code> and <code>discovery.type: EC2</code> and <code>discovery.zen.ping.multicast.enabled: false</code> has been
+removed or modified to the following below.</p>
+<div class="highlight"><pre class="highlight yaml"><code><span class="na">script.inline</span><span class="pi">:</span> <span class="no">true</span>
+<span class="na">bootstrap.memory_lock</span><span class="pi">:</span> <span class="no">false</span>
+<span class="na">network.host</span><span class="pi">:</span> <span class="s">0.0.0.0</span>
+<span class="na">network.publish_host</span><span class="pi">:</span> <span class="s">_ec2:privateIp_</span>
+<span class="na">discovery.zen.hosts_provider</span><span class="pi">:</span> <span class="s">ec2</span>
+<span class="na">discovery.ec2.groups</span><span class="pi">:</span> <span class="s">dockerecs</span>
+</code></pre></div>
+<h3>Task Definition / Heap Size</h3>
+
+<p>In Elasticsearch 5, the heap size is also a mandatory configuration. For this, I set it directly in ECS via 
+the JSON task definition. I had to set the <code>ES_JAVA_OPTS</code> for it to work.</p>
+<div class="highlight"><pre class="highlight shell"><code><span class="nv">ES_JAVA_OPTS</span><span class="o">=</span><span class="s2">"-Xms1g -Xmx1g"</span>
+</code></pre></div>
+<h3>Wrapping up</h3>
+
+<p>It isn&rsquo;t a whole lot of changes but it did take some time googling each of the issues that came up as I tried to start
+the services on ECS and also eventually had to SSH into the instance to set the <code>vm.max_map_count</code> before I managed to
+get the cluster up.</p>
+
+<p>This is obviously less than ideal in a deployment process which otherwise could be full-automated. But if you&rsquo;re 
+still looking ahead to use ElasticSearch 5 in ECS, I hope the above steps serve you well!</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2017/elasticsearch-5-2-2-amazon-ecs';
+                        var disqus_title = 'Elasticsearch 5.2.2 Cluster in ECS';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

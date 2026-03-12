@@ -1,0 +1,232 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Nil, Try & The Lonely Operator</title>
+
+    <meta name="description" content="A small discussion about nil, try and lonely operator in ruby code" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Nil, Try &amp; The Lonely Operator" />
+<link rel="description" href="A small discussion about nil, try and lonely operator in ruby code" />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="Nil, Try &amp; The Lonely Operator" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_07 posts_2016_07_28 posts_2016_07_28_nil-try-and-lonely-operator posts_2016_07_28_nil-try-and-lonely-operator_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Nil, Try & The Lonely Operator<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Jul 28, 2016
+        <span class="article__middle-dot"></span>
+        3  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/rails/" class="article__tag-link">rails</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/try/" class="article__tag-link">try</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>Recently, I left a comment on one of my colleague&rsquo;s PR and we had a discussion with him about
+the use of <code>try</code> vs the lonely operator <code>&amp;.</code> and it led to a number of conclusions personally.</p>
+
+<p>I used to use lots of <code>.try</code>. I&rsquo;ve also come across codebases littered with it, be it in the
+presentation layer or in the models. From personal experience, I&rsquo;ll say it&rsquo;s pretty easy to end up with
+<code>.try</code> littered all around.</p>
+
+<p>I was curious about when it shouldn&rsquo;t be used, and if there were better alternatives.</p>
+
+<h3>The Obvious Scenario</h3>
+
+<p>Before the lonely operator was introduced, I used <code>try</code> in a 2 distinct scenarios.</p>
+
+<p>The first obvious usecase: when I am not sure if the object that I are calling the method on
+could be a <code>nil</code> object or not. Obviously, calling any method on a <code>nil</code> object
+rightfully throws an error during runtime. Of course, I could use something like this to avoid the
+error.</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">user</span> <span class="o">&amp;&amp;</span> <span class="n">user</span><span class="p">.</span><span class="nf">name</span>
+</code></pre></div>
+<p>And <code>user.try(:name)</code> yields the same result.</p>
+
+<h3>The Not So Obvious Scenario</h3>
+
+<p>Surprisingly, even when I don&rsquo;t know what the object is and whether it even has that method defined or not,
+I still found myself using <code>try</code>. It still returns <code>nil</code>. It&rsquo;s like this deceivingly good and
+lazy way to sidestep <code>NoMethodError</code>. But I find that this laziness, potentially leads to surprises
+(which obviously isn&rsquo;t good).</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="c1"># Either a guest user without a name, or a registered user with a name</span>
+<span class="n">some_user</span><span class="p">.</span><span class="nf">try</span><span class="p">(</span><span class="ss">:name</span><span class="p">)</span>
+</code></pre></div>
+<h3>The Lonely Operator</h3>
+
+<p><code>user&amp;.name</code> is equivalent to <code>user &amp;&amp; user.name</code> and only this. It still throws a <code>NoMethodError</code>
+when the method doesn&rsquo;t exist on the object. And that&rsquo;s good for various reasons.</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="p">[]</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">invalid_method</span> <span class="c1"># throws NoMethodError</span>
+</code></pre></div>
+<p>In the event where I have no idea what the object is, it is a <em>clear</em> sign that I should spend
+the time to refactor the code so that the object class is deterministic and
+not rely on a <code>.try</code> to squirm out of the situation.</p>
+
+<p>Another nice side effect is that, the lonely operator really doesn&rsquo;t look great when I chain it.
+Being huge on aesthetics and coding styles, I just end up chaining less.</p>
+<div class="highlight"><pre class="highlight ruby"><code><span class="n">user</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">name</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">truncate</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># this just looks clunky imo</span>
+</code></pre></div>
+<p>All those <code>.try(..).try(..)</code>? I always knew I should be getting rid of those too, but it was just
+so safe. <a href="https://en.wikipedia.org/wiki/Law_of_Demeter">Law of Demeter</a> literally screams at me
+every time.</p>
+
+<p>I hope this post makes you think twice the next time <code>.try</code> chains comes to mind:P</p>
+
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/nil-try-lonely-operator';
+                        var disqus_title = 'Nil, Try and the Lonely Operator';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>

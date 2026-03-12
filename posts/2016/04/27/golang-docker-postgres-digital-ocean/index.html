@@ -1,0 +1,295 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine or request Chrome Frame -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <!-- Use title if it's in the page YAML frontmatter -->
+    <title>Setting up Dockerized Golang + Postgres on Digital Ocean</title>
+
+    <meta name="description" content="This is a walk-through of the steps that you need to set up a dockerized Go container with a dockerized database on Digital Ocean" />
+<meta property="og:site_name" content="aranair.github.io" />
+<meta property="og:title" content="Setting up Dockerized Golang + Postgres on Digital Ocean" />
+<link rel="description" href="This is a walk-through of the steps that you need to set up a dockerized Go container with a dockerized database on Digital Ocean" />
+<link rel="og:site_name" href="aranair.github.io" />
+<link rel="og:title" href="Setting up Dockerized Golang + Postgres on Digital Ocean" />
+
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700|Lato|Montserrat">
+    <link href="/stylesheets/normalize-672beeec.css" rel="stylesheet" />
+    <link href="/stylesheets/blog-7c88c07b.css" rel="stylesheet" />
+    <script src="/javascripts/all-1a563073.js"></script>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51305292-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+  </head>
+  <body class="posts posts_2016 posts_2016_04 posts_2016_04_27 posts_2016_04_27_golang-docker-postgres-digital-ocean posts_2016_04_27_golang-docker-postgres-digital-ocean_index">
+    <header id="header" class="header header--fixed" role="banner">
+  <nav class="navbar navbar-default">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapsible-content" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" class="navbar-links navbar-links--name pull-left">
+      </a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbar-collapsible-content">
+      <a href="/posts" class="navbar-links pull-right">
+        Posts
+      </a>
+      <a href="/projects" class="navbar-links pull-right">
+        Projects
+      </a>
+      <a href="/bio" class="navbar-links pull-right">
+        Bio
+      </a>
+    </div>
+  </nav>
+</header>
+
+    <div class="wrapper">
+      <div class="tags">
+  Tag Cloud </br>
+    <a href="/posts/tags/concourse/" class="tags-link">Concourse</a>
+    <a href="/posts/tags/ci-cd/" class="tags-link">CI/CD</a>
+    <a href="/posts/tags/devops/" class="tags-link">devops</a>
+    <a href="/posts/tags/prometheus/" class="tags-link">prometheus</a>
+    <a href="/posts/tags/kubernetes/" class="tags-link">kubernetes</a>
+    <a href="/posts/tags/monitoring/" class="tags-link">monitoring</a>
+    <a href="/posts/tags/modbus/" class="tags-link">modbus</a>
+    <a href="/posts/tags/kepware/" class="tags-link">kepware</a>
+    <a href="/posts/tags/c-programming/" class="tags-link">c-programming</a>
+    <a href="/posts/tags/iot/" class="tags-link">IoT</a>
+    <a href="/posts/tags/golang/" class="tags-link">golang</a>
+    <a href="/posts/tags/telegram/" class="tags-link">telegram</a>
+    <a href="/posts/tags/bot/" class="tags-link">bot</a>
+    <a href="/posts/tags/python/" class="tags-link">python</a>
+    <a href="/posts/tags/cli/" class="tags-link">cli</a>
+    <a href="/posts/tags/urwid/" class="tags-link">urwid</a>
+    <a href="/posts/tags/elasticsearch/" class="tags-link">elasticsearch</a>
+    <a href="/posts/tags/aws/" class="tags-link">aws</a>
+    <a href="/posts/tags/ecs/" class="tags-link">ecs</a>
+    <a href="/posts/tags/apache-spark/" class="tags-link">apache spark</a>
+    <a href="/posts/tags/scala/" class="tags-link">scala</a>
+    <a href="/posts/tags/aws/" class="tags-link">AWS</a>
+    <a href="/posts/tags/emr/" class="tags-link">EMR</a>
+    <a href="/posts/tags/hadoop/" class="tags-link">hadoop</a>
+    <a href="/posts/tags/webhooks/" class="tags-link">webhooks</a>
+    <a href="/posts/tags/ssl/" class="tags-link">ssl</a>
+    <a href="/posts/tags/nginx/" class="tags-link">nginx</a>
+    <a href="/posts/tags/digital-ocean/" class="tags-link">digital-ocean</a>
+    <a href="/posts/tags/emr/" class="tags-link">emr</a>
+    <a href="/posts/tags/apache-pig/" class="tags-link">apache pig</a>
+    <a href="/posts/tags/datapipeline/" class="tags-link">datapipeline</a>
+    <a href="/posts/tags/found-io/" class="tags-link">found.io</a>
+    <a href="/posts/tags/elastic-cloud/" class="tags-link">elastic-cloud</a>
+    <a href="/posts/tags/rails/" class="tags-link">rails</a>
+    <a href="/posts/tags/try/" class="tags-link">try</a>
+    <a href="/posts/tags/capybara/" class="tags-link">capybara</a>
+    <a href="/posts/tags/docker/" class="tags-link">docker</a>
+    <a href="/posts/tags/capistrano/" class="tags-link">capistrano</a>
+    <a href="/posts/tags/heka/" class="tags-link">heka</a>
+    <a href="/posts/tags/bigquery/" class="tags-link">bigquery</a>
+    <a href="/posts/tags/kafka/" class="tags-link">kafka</a>
+    <a href="/posts/tags/protobuf/" class="tags-link">protobuf</a>
+    <a href="/posts/tags/vim/" class="tags-link">vim</a>
+    <a href="/posts/tags/iterm/" class="tags-link">iterm</a>
+    <a href="/posts/tags/javascript/" class="tags-link">javascript</a>
+    <a href="/posts/tags/emberjs/" class="tags-link">emberjs</a>
+    <a href="/posts/tags/git/" class="tags-link">git</a>
+    <a href="/posts/tags/scripting/" class="tags-link">scripting</a>
+    <a href="/posts/tags/dnsmasq/" class="tags-link">dnsmasq</a>
+    <a href="/posts/tags/bem/" class="tags-link">bem</a>
+    <a href="/posts/tags/frontend/" class="tags-link">frontend</a>
+    <a href="/posts/tags/meteorjs/" class="tags-link">meteorjs</a>
+    <a href="/posts/tags/meteorite/" class="tags-link">meteorite</a>
+    <a href="/posts/tags/heroku/" class="tags-link">heroku</a>
+</div>
+
+          <h1 class="page-header article__article-title">
+    Setting up Dockerized Golang + Postgres on Digital Ocean<br>
+  </h1>
+  <div class="container">
+    <div class="article row">
+      <div class="article__published-date">
+        Written by Ho Man
+        <span class="article__middle-dot"></span>
+        Apr 27, 2016
+        <span class="article__middle-dot"></span>
+        5  minutes read
+      </div>
+      <div class="article__tags-container">
+        <ul class="article__tags">
+          <li class="article__tag">
+            <a href="/posts/tags/golang/" class="article__tag-link">golang</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/docker/" class="article__tag-link">docker</a>
+          </li>
+          <li class="article__tag">
+            <a href="/posts/tags/devops/" class="article__tag-link">devops</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="article__content">
+        <p>My previous deploy on the Rails stack was a little more involved so I chose to just deploy it in the conventional capistrano way after setting the server up.</p>
+
+<p>But with the rise in popularity of Docker recently, I&rsquo;ve been wanting to deploy something into production with Docker but never found the right app for it until this one.</p>
+
+<p>It was a simple Golang scraper + Api that is backed by PostgreSQL.</p>
+
+<h3>Overview</h3>
+
+<p>I went with a fresh Ubuntu 14.04 DigitalOcean droplet (yes again). Some boilerplate setup for a digital ocean instance is recorded here in a <a href="https://aranair.github.io/posts/2016/01/22/capistrano-postgres-rails-rvm-nginx-puma">previous post</a>:</p>
+
+<p>The basic idea was to have 2 Dockerized components to this deployment. The first Docker container would be running the Golang app. The second one is to run Postgres via linked data.</p>
+
+<h3>Dockerize the Postgres</h3>
+
+<p>I chose to go with a base installation of Postgres and configure it from there, but YMMV.</p>
+
+<p>This runs the postgres service under <code>db</code> name and as a daemon.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>docker run --name db -e POSTGRES_PASSWORD=YOUR_PASSWORD -d postgres
+</code></pre></div>
+<p>To setup a dedicated user for the app and create the database, I opened the bash shell into the container via:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>docker exec -it db /bin/bash
+</code></pre></div>
+<p>From there, a new user was created and granted privileges via psql CLI.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>psql -U postgres
+</code></pre></div><div class="highlight"><pre class="highlight plaintext"><code>CREATE USER app;
+CREATE DATABASE appdb;
+GRANT ALL PRIVILEGES ON DATABASE appdb TO app;
+</code></pre></div>
+<p>If you try to connect the app at this point, it will fail because it does not listen to addresses outside of 127.0.0.1 and doesn&rsquo;t allow client authentication in connections yet.</p>
+
+<p>In order for it to work, there were two files which I had to modify:</p>
+
+<ul>
+<li><code>hba_file</code> - To enable client authentication</li>
+<li><code>postgresql.conf</code> - To enable listening of addresses other than localhost</li>
+</ul>
+
+<p>To find the location of the <code>hba_file</code> simply run <code>show hba_file;</code> in the psql interactive shell.</p>
+
+<p>The default one should lie at this location:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>/var/lib/postgresql/data/pg_hba.conf
+</code></pre></div>
+<p>Installed my favourite text editor via:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>apt-get update &amp;&amp; apt-get install vim
+</code></pre></div>
+<p>Changed from this:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>host  all  all  127.0.0.1/32  md5
+</code></pre></div>
+<p>To this, so that it allows connections that are from the same machine:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>host all  all  192.168.1.0/24  md5
+</code></pre></div>
+<p>For <code>/etc/postgresql/9.3/main/postgresql.conf</code>:  Changing <code>#listen_addresses = &#39;localhost&#39;</code> to <code>listen_addresses = &#39;*&#39;</code> would enable it to listen for incoming connection requests from all available IP addresses.</p>
+
+<p>A restart of the postgres service was also required.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>sudo service postgresql stop
+sudo service postgresql start
+</code></pre></div>
+<h3>Docker Volumes</h3>
+
+<p>The best practice for all dockerized database components is for it to have an external data volume so that you can always restart the container without losing the data.
+In my deployment, you&rsquo;ll notice that I do not specifically set this up and that is because the <a href="https://github.com/docker-library/postgres/blob/8e867c8ba0fc8fd347e43ae53ddeba8e67242a53/9.3/Dockerfile">Postgres Dockerfile</a> already does this by default!</p>
+<div class="highlight"><pre class="highlight plaintext"><code>ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
+ENV PGDATA /var/lib/postgresql/data
+VOLUME /var/lib/postgresql/data
+</code></pre></div>
+<p>You can find out more about it in the <a href="https://docs.docker.com/engine/userguide/containers/dockervolumes/">official documentation</a> if you&rsquo;re interested.</p>
+
+<h3>Dockerize the Golang App</h3>
+
+<p>This is the simple Dockerfile that I&rsquo;ve used for my Golang App.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>FROM golang:onbuild
+
+RUN go get bitbucket.org/liamstask/goose/cmd/goose
+
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "vim"]
+
+ADD config.toml /go/bin/
+ADD dbconf.yml /go/src/app/db/
+
+EXPOSE 5000
+</code></pre></div>
+<p>A quick run through of each line:</p>
+
+<ul>
+<li>The first line runs the &lsquo;onbuild&rsquo; variant of the golang image that automatically copies the source, build and run it.</li>
+<li>The second line installs &lsquo;goose&rsquo;, which is the tool I use to get (somewhat) Rails-like database migrations.</li>
+<li>Next two lines just installs Vim, and are just nice to haves when I ssh into the Docker instance to check the config files out.</li>
+<li>Then copy some app config files into the docker image.</li>
+<li>Last line simply exposes port 5000 of the container to the outside world.</li>
+</ul>
+<div class="highlight"><pre class="highlight plaintext"><code>docker built -t app
+docker run -d -p 80:5000 --name gosnap --link db:postgres app
+</code></pre></div>
+<ul>
+<li><code>-d</code> tells it to run it as a daemon,</li>
+<li><code>-p 80:5000</code> tells it to link the host container&rsquo;s port 80 to port 5000 of the docker container</li>
+<li><code>--link db:postgres</code> links our app to the postgres container that we&rsquo;ve created earlier</li>
+</ul>
+
+<p>Via the link to the postgres container, you automatically get this environment variable <code>$POSTGRES_PORT_5432_TCP_ADDR</code> in the app. This contains</p>
+
+<p>If like me, you use goose, your dbconf.yml will should look something like this at the end.</p>
+<div class="highlight"><pre class="highlight plaintext"><code>db:
+   driver: postgres
+   open: host=$POSTGRES_PORT_5432_TCP_ADDR user=app dbname=appdb sslmode=disable
+</code></pre></div>
+<p>I then ran the migrations at this point:</p>
+<div class="highlight"><pre class="highlight plaintext"><code>docker exec -it gosnap goose up
+</code></pre></div>
+      </div>
+
+      <div id='disqus_thread'></div>
+<script type='text/javascript'>
+//<![CDATA[
+                  var disqus_shortname = 'homan-gh-blog';
+                        var disqus_identifier = '2016/docker-golang-postgres-digital-ocean';
+                        var disqus_title = 'Dockerized Golang with Postgres on Digital Ocean';
+          
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+//]]>
+</script>
+<noscript>Please enable JavaScript to view the <a href='http://disqus.com/?ref_noscript'>comments powered by Disqus.</a></noscript>
+<a href='http://disqus.com' class='dsq-brlink'>comments powered by <span class='logo-disqus'>Disqus</span></a>
+
+      <script type="text/javascript">
+//<![CDATA[
+    var disqus_shortname = 'homan-gh-blog';
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+//]]>
+</script>
+
+    </div>
+  </div>
+
+    </div>
+  </body>
+</html>
